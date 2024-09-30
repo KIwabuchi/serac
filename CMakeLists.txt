@@ -10,7 +10,7 @@
 
 # Do not bump this over 3.14 due to it changing CMake policies and breaking
 # the CUDA build. We check the required version specifically for this below
-cmake_minimum_required(VERSION 3.14) 
+cmake_minimum_required(VERSION 3.14)
 
 # Check for minimum CMake version required w/o changing policies like cmake_minimum_required
 if(ENABLE_CUDA AND ${CMAKE_VERSION} VERSION_LESS 3.18.0)
@@ -25,7 +25,7 @@ if (NOT SERAC_STYLE_CI_ONLY)
     set(ENABLE_MPI ON CACHE BOOL "")
 
     if (NOT MPI_C_COMPILER OR NOT MPI_CXX_COMPILER)
-        message(FATAL_ERROR 
+        message(FATAL_ERROR
                 "Serac requires MPI.  It is required to provide the MPI C/C++ "
                 "compiler wrappers via the CMake variables, "
                 "MPI_C_COMPILER and MPI_CXX_COMPILER.")
@@ -146,7 +146,7 @@ endif()
 if (SERAC_STYLE_CI_ONLY)
     # Exit processing the rest of the build in style only build to avoid any possible
     # CMake configuration issues outside of just enabling `make style`. This build,
-    # is not capable of building Serac and should not be advertised. It is for CI 
+    # is not capable of building Serac and should not be advertised. It is for CI
     # purposes only.
     return()
 endif()
@@ -167,6 +167,17 @@ set(CMAKE_C_FLAGS   ${SERAC_CMAKE_C_FLAGS})
 set(CMAKE_CXX_FLAGS ${SERAC_CMAKE_CXX_FLAGS})
 
 include(${PROJECT_SOURCE_DIR}/cmake/SeracConfigHeader.cmake)
+
+# FIXME: need to clean up this logic
+find_package(Boost 1.64)
+if (Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS}) # Maybe this is not necessary
+endif ()
+
+find_package(Metall)
+if (Metall_FOUND)
+    link_libraries(Metall::Metall)
+endif ()
 
 #------------------------------------------------------------------------------
 # Add subdirectories
@@ -212,7 +223,7 @@ if (SERAC_ENABLE_CODEVELOP)
             )
 endif()
 
-install(EXPORT serac-targets 
+install(EXPORT serac-targets
         NAMESPACE serac::
         DESTINATION lib/cmake
         )
