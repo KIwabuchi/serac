@@ -36,7 +36,7 @@ void L2_test_2D()
   auto mesh = mesh::refineAndDistribute(buildMeshFromFile(meshfile), 0);
 
   auto fec = mfem::L2_FECollection(p, dim, mfem::BasisType::GaussLobatto);
-  mfem::ParFiniteElementSpace fespace(mesh.get(), &fec);
+  mfem::ParFiniteElementSpace fespace(mesh.get(), &fec, dim, serac::ordering);
 
   mfem::Vector U(fespace.TrueVSize());
   U.Randomize();

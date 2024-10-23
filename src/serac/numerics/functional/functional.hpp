@@ -607,12 +607,12 @@ private:
       int nz = 0;
       int last_row = -1;
       for (auto [row, col] : nonzero_entries) {
-        col_ind[nz] = col;
-        for (int i = last_row+1; i <= row; i++) { row_ptr[i] = nz; }
+        col_ind[uint32_t(nz)] = col;
+        for (int i = last_row+1; i <= row; i++) { row_ptr[uint32_t(i)] = nz; }
         last_row = row;
         nz++;
       }
-      for (int i = last_row+1; i <= nrows; i++) { row_ptr[i] = nz; }
+      for (int i = last_row+1; i <= nrows; i++) { row_ptr[uint32_t(i)] = nz; }
     };
 
     uint64_t max_buffer_size() {
@@ -671,7 +671,7 @@ private:
         // if this integral's derivative isn't identically zero
         if (integral.functional_to_integral_index_.count(which_argument) > 0) {
 
-          int id = integral.functional_to_integral_index_.at(which_argument);
+          uint32_t id = integral.functional_to_integral_index_.at(which_argument);
           const auto& G_test  = dom.get_restriction(form_.test_function_space_);
           const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
           for (const auto& [geom, calculate_element_matrices_func] : integral.element_gradient_[id]) {
@@ -698,8 +698,8 @@ private:
             std::vector<DoF> trial_vdofs(cols_per_elem);
 
             for (uint32_t e = 0; e < element_ids.size(); e++) {
-              test_restriction.GetElementVDofs(e, test_vdofs);
-              trial_restriction.GetElementVDofs(e, trial_vdofs);
+              test_restriction.GetElementVDofs(int(e), test_vdofs);
+              trial_restriction.GetElementVDofs(int(e), trial_vdofs);
 
               for (uint32_t i = 0; i < cols_per_elem; i++) {
                 int col = int(trial_vdofs[i].index());
