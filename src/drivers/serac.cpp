@@ -204,35 +204,34 @@ std::unique_ptr<serac::BasePhysics> createPhysics(
  * @param[in] heat_transfer_options   Optional container of input options for HeatTransfer physics module
  * @param[in] thermomechanics_options Optional container of input options for Thermomechanics physics module
  *
- * @return The order of the discretization
+ * @return The pair of possible orders of the discretization
  */
-int getOrder(std::optional<serac::SolidMechanicsInputOptions>  solid_mechanics_options,
+std::pair<int, int> getOrder(std::optional<serac::SolidMechanicsInputOptions>  solid_mechanics_options,
              std::optional<serac::HeatTransferInputOptions>    heat_transfer_options,
              std::optional<serac::ThermomechanicsInputOptions> thermomechanics_options)
 {
-  int order = 0;
+  int solid_order = 0;
+  int heat_order = 0;
   if (thermomechanics_options) {
-    order             = thermomechanics_options->solid_options.order;
-    int thermal_order = thermomechanics_options->thermal_options.order;
-    SLIC_ERROR_ROOT_IF(
-        order != thermal_order,
-        axom::fmt::format("Solid order '{0}' and thermal order '{1}'' do not match.", order, thermal_order));
+    solid_order = thermomechanics_options->solid_options.order;
+    heat_order = thermomechanics_options->thermal_options.order;
   } else if (solid_mechanics_options && heat_transfer_options) {
-    order             = solid_mechanics_options->order;
-    int thermal_order = heat_transfer_options->order;
-    SLIC_ERROR_ROOT_IF(
-        order != thermal_order,
-        axom::fmt::format("Solid order '{0}' and thermal order '{1}'' do not match.", order, thermal_order));
+    solid_order = solid_mechanics_options->order;
+    heat_order = thermomechanics_options->thermal_options.order;
   } else if (solid_mechanics_options) {
-    order = solid_mechanics_options->order;
+    solid_order = solid_mechanics_options->order;
   } else if (heat_transfer_options) {
-    order = heat_transfer_options->order;
+    heat_order = thermomechanics_options->thermal_options.order;
   } else {
     SLIC_ERROR_ROOT("Neither solid, heat_transfer, nor thermal_solid blocks specified in the input file.");
   }
-  SLIC_ERROR_ROOT_IF(order < 1 || order > 3,
-                     axom::fmt::format("Invalid solver order '{0}' given. Valid values are 1, 2, or 3.", order));
-  return order;
+  SLIC_ERROR_ROOT_IF(solid_order == 0 || heat_order == 0,
+                     axom::fmt::format("No valid solver order given. Solid Mechanics and/or Heat Transfer modules must have a valid value. Valid values are 1, 2, or 3."));
+  SLIC_ERROR_ROOT_IF((solid_order != 0 && (solid_order < 1 || solid_order > 3),
+                     axom::fmt::format("Invalid Solid Mechanics solver order '{0}' given. Valid values are 1, 2, or 3.", solid_order));
+  SLIC_ERROR_ROOT_IF((heat_order != 0 && (heat_order < 1 || heat_order > 3),
+                     axom::fmt::format("Invalid Heat Transfer solver order '{0}' given. Valid values are 1, 2, or 3.", solid_order));
+  return {solid_order, heat_order};
 }
 
 /**
@@ -377,7 +376,7 @@ int main(int argc, char* argv[])
   int dim = serac::StateManager::mesh(mesh_tag).Dimension();
   SLIC_ERROR_ROOT_IF(dim < 2 || dim > 3,
                      axom::fmt::format("Invalid mesh dimension '{0}' provided. Valid values are 2 or 3.", dim));
-  int order = getOrder(solid_mechanics_options, heat_transfer_options, thermomechanics_options);
+  auto [solid_order, heat_order] = getOrder(solid_mechanics_options, heat_transfer_options, thermomechanics_options);
 
   // Create the physics object
   auto main_physics = createPhysics(dim, order, solid_mechanics_options, heat_transfer_options, thermomechanics_options,
