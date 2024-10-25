@@ -69,7 +69,8 @@ std::map<std::string, NonlinSolve> nonlinSolveMap = {
     {"none", NonlinSolve::NONE},
 };
 std::map<std::string, ProblemSize> problemSizeMap = {
-    {"small", ProblemSize::SMALL}, {"large", ProblemSize::LARGE},
+    {"small", ProblemSize::SMALL},
+    {"large", ProblemSize::LARGE},
 };
 
 const std::string precToString(Prec prec)
@@ -277,8 +278,7 @@ void functional_solid_test_nonlinear_buckle(NonlinSolve nonlinSolve, Prec prec, 
   static constexpr int DIM{3};
 
   int Nx, Ny, Nz;
-  switch(problemSize)
-  {
+  switch (problemSize) {
     case ProblemSize::SMALL:
       Nx = 500;
       Ny = 6;
