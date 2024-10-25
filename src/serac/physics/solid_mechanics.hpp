@@ -1419,6 +1419,8 @@ public:
 
     double       dt_np1_to_np2     = getCheckpointedTimestep(cycle_ + 1);
     const double dt_n_to_np1       = getCheckpointedTimestep(cycle_);
+
+    printf("about to get at cycle %d\n", cycle_ + 1);
     auto         end_step_solution = getCheckpointedStates(cycle_ + 1);
 
     displacement_ = end_step_solution.at("displacement");

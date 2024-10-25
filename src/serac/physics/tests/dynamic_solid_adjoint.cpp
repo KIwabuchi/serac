@@ -98,7 +98,7 @@ std::unique_ptr<SolidMechanics<p, dim>> createNonlinearSolidMechanicsSolver(
                                               .max_iterations = 2000,
                                               .print_level    = 0};
 
-  bool checkpoint_to_disk = true; //false; //true; //false;
+  bool checkpoint_to_disk = true; //true; //false; //true; //false;
   auto solid =
       std::make_unique<SolidMechanics<p, dim>>(nonlinear_opts, linear_options, dyn_opts,
                                                geoNonlinear, physics_prefix + std::to_string(iter++), mesh_tag, std::vector<std::string>{}, 0, 0.0, checkpoint_to_disk, false);

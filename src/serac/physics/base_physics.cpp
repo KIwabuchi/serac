@@ -197,10 +197,11 @@ void BasePhysics::outputStateToDisk(std::optional<std::string> paraview_output_d
   StateManager::updateState(shape_displacement_);
   StateManager::updateDual(*shape_displacement_sensitivity_);
 
+  std::cout << "about to output disp at " << cycle_ << " " << states_[0]->Norml2() << std::endl;
+
   // Save the restart/Sidre file
   StateManager::save(time_, cycle_, mesh_tag_);
 
-  std::cout << "outputting disp at " << cycle_ << " " << states_[0]->Norml2() << std::endl;
 
   // Optionally output a paraview datacollection for visualization
   if (paraview_output_dir) {
@@ -366,6 +367,8 @@ std::unordered_map<std::string, FiniteElementState> BasePhysics::getCheckpointed
   std::unordered_map<std::string, FiniteElementState> previous_states_map;
   std::vector<FiniteElementState*>                    previous_states_ptrs;
 
+  printf("about to get cp states = %d\n", cycle_to_load);
+  
   if (checkpoint_to_disk_) {
     for (const auto& state_name : stateNames()) {
       previous_states_map.emplace(state_name, state(state_name));
