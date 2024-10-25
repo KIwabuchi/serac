@@ -3,7 +3,6 @@
 .on_toss4:
   variables:
     SCHEDULER_PARAMETERS: "--res=ci --exclusive=user --deadline=now+${ALLOC_DEADLINE}minutes -N ${ALLOC_NODES} -t ${ALLOC_TIME} -A ${ALLOC_BANK}"
-    ALLOC_DEADLINE: $((ALLOC_TIME+10))
   tags:
     - batch
     - ruby
@@ -46,6 +45,7 @@ toss4-clang_14_0_6-src:
     DO_INTEGRATION_TESTS: "yes"
     ALLOC_NODES: "2"
     ALLOC_TIME: "30"
+    ALLOC_DEADLINE: "60"
   extends: .src_build_on_toss4
 
 toss4-gcc_10_3_1-src:
@@ -55,6 +55,7 @@ toss4-gcc_10_3_1-src:
     EXTRA_CMAKE_OPTIONS: "-DENABLE_BENCHMARKS=ON"
     ALLOC_NODES: "1"
     ALLOC_TIME: "30"
+    ALLOC_DEADLINE: "60"
   extends: .src_build_on_toss4
 
 toss4-gcc_10_3_1-src-no-tribol:
@@ -64,6 +65,7 @@ toss4-gcc_10_3_1-src-no-tribol:
     EXTRA_CMAKE_OPTIONS: "-DENABLE_BENCHMARKS=ON -UTRIBOL_DIR"
     ALLOC_NODES: "1"
     ALLOC_TIME: "30"
+    ALLOC_DEADLINE: "60"
   extends: .src_build_on_toss4
 
 toss4-gcc_10_3_1-src-no-optional-solvers:
@@ -73,6 +75,7 @@ toss4-gcc_10_3_1-src-no-optional-solvers:
     EXTRA_CMAKE_OPTIONS: "-DENABLE_BENCHMARKS=ON -USUNDIALS_DIR -UPETSC_DIR"
     ALLOC_NODES: "1"
     ALLOC_TIME: "20"
+    ALLOC_DEADLINE: "60"
   extends: .src_build_on_toss4
 
 toss4-clang_14_0_6-full:
@@ -81,6 +84,7 @@ toss4-clang_14_0_6-full:
     SPEC: "--spec=%${COMPILER}"
     ALLOC_NODES: "1"
     ALLOC_TIME: "45"
+    ALLOC_DEADLINE: "60"
   extends: .full_build_on_toss4
 
 toss4-gcc_10_3_1-full:
@@ -89,6 +93,7 @@ toss4-gcc_10_3_1-full:
     SPEC: "--spec=%${COMPILER}"
     ALLOC_NODES: "1"
     ALLOC_TIME: "45"
+    ALLOC_DEADLINE: "60"
   extends: .full_build_on_toss4
 
 toss4-clang_14_0_6-benchmarks:
@@ -97,6 +102,7 @@ toss4-clang_14_0_6-benchmarks:
     HOST_CONFIG: "ruby-toss_4_x86_64_ib-${COMPILER}.cmake"
     ALLOC_NODES: "1"
     ALLOC_TIME: "120"
+    ALLOC_DEADLINE: "180"
   extends: .benchmarks_build_on_toss4
 
 toss4-gcc_10_3_1-benchmarks:
@@ -105,4 +111,5 @@ toss4-gcc_10_3_1-benchmarks:
     HOST_CONFIG: "ruby-toss_4_x86_64_ib-${COMPILER}.cmake"
     ALLOC_NODES: "1"
     ALLOC_TIME: "120"
+    ALLOC_DEADLINE: "180"
   extends: .benchmarks_build_on_toss4
