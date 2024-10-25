@@ -99,43 +99,8 @@ public:
    * @brief Create a shared ptr to a quadrature data buffer for the given material type
    *
    * @tparam T the type to be created at each quadrature point
-   * @param mesh_tag The tag for the stored mesh used to construct the finite element state
-   * @param order The order of the discretization of the displacement and velocity fields
-   * @param dim The spatial dimension of the mesh
-   * @param initial_state the value to be broadcast to each quadrature point
-   * @return shared pointer to quadrature data buffer
-   */
-  template <typename T>
-  static std::shared_ptr<QuadratureData<T>> newQuadratureDataBuffer(const std::string& mesh_tag, int order, int dim,
-                                                                    T initial_state)
-  {
-    SLIC_ERROR_ROOT_IF(!hasMesh(mesh_tag), axom::fmt::format("Mesh tag '{}' not found in the data store", mesh_tag));
-
-    int Q = order + 1;
-
-    std::array<uint32_t, mfem::Geometry::NUM_GEOMETRIES> elems = geometry_counts(mesh(mesh_tag));
-    std::array<uint32_t, mfem::Geometry::NUM_GEOMETRIES> qpts_per_elem{};
-
-    std::vector<mfem::Geometry::Type> geometries;
-    if (dim == 2) {
-      geometries = {mfem::Geometry::TRIANGLE, mfem::Geometry::SQUARE};
-    } else {
-      geometries = {mfem::Geometry::TETRAHEDRON, mfem::Geometry::CUBE};
-    }
-
-    for (auto geom : geometries) {
-      qpts_per_elem[size_t(geom)] = uint32_t(num_quadrature_points(geom, Q));
-    }
-
-    return std::make_shared<QuadratureData<T>>(elems, qpts_per_elem, initial_state);
-  }
-
-  /**
-   * @overload
-   *
-   * @tparam T the type to be created at each quadrature point
-   * @param domain The domain to which this buffer will pertain
-   * @param order The order of the discretization of the displacement and velocity fields
+   * @param domain The spatial domain over which to allocate the quadrature data
+   * @param order The order of the discretization of the primal fields
    * @param dim The spatial dimension of the mesh
    * @param initial_state the value to be broadcast to each quadrature point
    * @return shared pointer to quadrature data buffer
