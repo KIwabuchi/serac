@@ -192,21 +192,30 @@ void evaluation_kernel_impl(trial_element_type trial_elements, test_element, dou
 }
 
 //clang-format off
-template <typename S, typename T>
+template <bool is_QOI, typename S, typename T>
 SERAC_HOST_DEVICE auto chain_rule(const S& dfdx, const T& dx)
 {
-  return serac::chain_rule(serac::get<0>(serac::get<0>(dfdx)), serac::get<0>(dx)) +
-         serac::chain_rule(serac::get<1>(serac::get<0>(dfdx)), serac::get<1>(dx));
+  if constexpr (is_QOI) {
+    return serac::chain_rule(serac::get<0>(dfdx), serac::get<0>(dx)) +
+           serac::chain_rule(serac::get<1>(dfdx), serac::get<1>(dx));
+  }
+
+  if constexpr (!is_QOI) {
+    return serac::tuple{serac::chain_rule(serac::get<0>(serac::get<0>(dfdx)), serac::get<0>(dx)) +
+                            serac::chain_rule(serac::get<1>(serac::get<0>(dfdx)), serac::get<1>(dx)),
+                        serac::chain_rule(serac::get<0>(serac::get<1>(dfdx)), serac::get<0>(dx)) +
+                            serac::chain_rule(serac::get<1>(serac::get<1>(dfdx)), serac::get<1>(dx))};
+  }
 }
 //clang-format on
 
-template <typename derivative_type, int n, typename T>
+template <bool is_QOI, typename derivative_type, int n, typename T>
 SERAC_HOST_DEVICE auto batch_apply_chain_rule(derivative_type* qf_derivatives, const tensor<T, n>& inputs)
 {
-  using return_type = decltype(chain_rule(derivative_type{}, T{}));
-  tensor<tuple<return_type, zero>, n> outputs{};
+  using return_type = decltype(chain_rule<is_QOI>(derivative_type{}, T{}));
+  tensor<return_type, n> outputs{};
   for (int i = 0; i < n; i++) {
-    get<0>(outputs[i]) = chain_rule(qf_derivatives[i], inputs[i]);
+    outputs[i] = chain_rule<is_QOI>(qf_derivatives[i], inputs[i]);
   }
   return outputs;
 }
@@ -244,9 +253,10 @@ void action_of_gradient_kernel(const double* dU, double* dR, derivatives_type* q
 
   // mfem provides this information in 1D arrays, so we reshape it
   // into strided multidimensional arrays before using
+  constexpr bool is_QOI   = (test::family == Family::QOI);
   constexpr int                                   nqp = num_quadrature_points(geom, Q);
-  auto                                            du  = reinterpret_cast<const typename trial_element::dof_type*>(dU);
-  auto                                            dr  = reinterpret_cast<typename test_element::dof_type*>(dR);
+  auto                                            du  = reinterpret_cast<const typename trial_element::dof_type_if*>(dU);
+  auto                                            dr  = reinterpret_cast<typename test_element::dof_type_if*>(dR);
   static constexpr TensorProductQuadratureRule<Q> rule{};
 
   // for each element in the domain
@@ -255,7 +265,7 @@ void action_of_gradient_kernel(const double* dU, double* dR, derivatives_type* q
     auto qf_inputs = trial_element::interpolate(du[e], rule);
 
     // (batch) evalute the q-function at each quadrature point
-    auto qf_outputs = batch_apply_chain_rule(qf_derivatives + e * nqp, qf_inputs);
+    auto qf_outputs = batch_apply_chain_rule<is_QOI>(qf_derivatives + e * nqp, qf_inputs);
 
     // (batch) integrate the material response against the test-space basis functions
     test_element::integrate(qf_outputs, rule, &dr[e]);
