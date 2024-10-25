@@ -6,7 +6,6 @@
 
 #include "serac/physics/solid_mechanics.hpp"
 
-#include "axom/slic/core/SimpleLogger.hpp"
 #include <gtest/gtest.h>
 
 #include "serac/mesh/mesh_utils.hpp"
@@ -178,7 +177,6 @@ TEST(Solid, MultiMaterialWithState)
 
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
-  // _solver_params_start
   serac::LinearSolverOptions linear_options{.linear_solver = LinearSolver::SuperLU};
 
   serac::NonlinearSolverOptions nonlinear_options{.nonlin_solver  = NonlinearSolver::Newton,
@@ -189,7 +187,6 @@ TEST(Solid, MultiMaterialWithState)
 
   SolidMechanics<p, dim> solid(nonlinear_options, linear_options, solid_mechanics::default_quasistatic_options,
                                GeometricNonlinearities::Off, "solid_mechanics", mesh_tag);
-  // _solver_params_end
 
   auto is_in_left = [](std::vector<tensor<double, dim>> coords, int /* attribute */) {
     return average(coords)[0] < 0.5 * L;
