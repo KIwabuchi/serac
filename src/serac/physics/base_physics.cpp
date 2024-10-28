@@ -197,11 +197,8 @@ void BasePhysics::outputStateToDisk(std::optional<std::string> paraview_output_d
   StateManager::updateState(shape_displacement_);
   StateManager::updateDual(*shape_displacement_sensitivity_);
 
-  std::cout << "about to output disp at " << cycle_ << " " << states_[0]->Norml2() << std::endl;
-
   // Save the restart/Sidre file
   StateManager::save(time_, cycle_, mesh_tag_);
-
 
   // Optionally output a paraview datacollection for visualization
   if (paraview_output_dir) {
@@ -348,8 +345,6 @@ FiniteElementState BasePhysics::loadCheckpointedState(const std::string& state_n
     SLIC_ERROR_ROOT_IF(
         cached_checkpoint_states_.find(state_name) == cached_checkpoint_states_.end(),
         axom::fmt::format("Requested state name {} does not exist in physics module {}.", state_name, name_));
-    
-    std::cout << "loading disp at " << cycle << " " << cycle_ << " " << cached_checkpoint_states_.at(state_name).Norml2() << std::endl;
 
     return cached_checkpoint_states_.at(state_name);
   }
@@ -367,14 +362,14 @@ std::unordered_map<std::string, FiniteElementState> BasePhysics::getCheckpointed
   std::unordered_map<std::string, FiniteElementState> previous_states_map;
   std::vector<FiniteElementState*>                    previous_states_ptrs;
 
-  printf("about to get cp states = %d\n", cycle_to_load);
-  
   if (checkpoint_to_disk_) {
     for (const auto& state_name : stateNames()) {
-      previous_states_map.emplace(state_name, state(state_name));
       previous_states_ptrs.emplace_back(const_cast<FiniteElementState*>(&state(state_name)));
-    }
+    }    
     StateManager::loadCheckpointedStates(cycle_to_load, previous_states_ptrs);
+    for (const auto& state_name : stateNames()) {
+      previous_states_map.emplace(state_name, state(state_name));
+    }
     return previous_states_map;
   } else {
     for (const auto& state_name : stateNames()) {

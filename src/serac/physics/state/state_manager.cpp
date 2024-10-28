@@ -103,7 +103,6 @@ void StateManager::loadCheckpointedStates(int cycle_to_load, std::vector<FiniteE
 
   previous_datacoll.SetComm(meshPtr->GetComm());
   previous_datacoll.SetPrefixPath(output_dir_);
-  std::cout << "loading at cycle " << cycle_to_load << std::endl;
   previous_datacoll.Load(cycle_to_load);
 
   for (auto state : states_to_load) {
@@ -221,8 +220,6 @@ void StateManager::save(const double t, const int cycle, const std::string& mesh
   std::string file_path = axom::utilities::filesystem::joinPath(datacoll.GetPrefixPath(), datacoll.GetCollectionName());
   SLIC_INFO_ROOT(
       axom::fmt::format("Saving data collection at time: '{}' and cycle: '{}' to path: '{}'", t, cycle, file_path));
-
-  std::cout << "cycle output = " << cycle << " " << mesh_tag << std::endl;
 
   datacoll.SetTime(t);
   datacoll.SetCycle(cycle);
