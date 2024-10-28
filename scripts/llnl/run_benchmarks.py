@@ -27,7 +27,8 @@ def parse_args():
     parser.add_argument("-e", "--extra-cmake-options",
                       dest="extra_cmake_options",
                       default=os.environ.get("EXTRA_CMAKE_OPTIONS", ""),
-                      help="Extra cmake options to add to the cmake configure line. Note '-DENABLE_BENCHMARKS=ON -DENABLE_DOCS=OFF' is always appended.")
+                      help="Extra cmake options to add to the cmake configure line. Note that options to enable benchmarks, " +
+                           "disable docs, and build as Release are always appended.")
     parser.add_argument("-hc", "--host-config",
                     dest="host_config",
                     default=os.environ.get("HOST_CONFIG", None),
@@ -56,7 +57,7 @@ def parse_args():
 def main():
     # Args
     args = parse_args()
-    cmake_options = args["extra_cmake_options"] + " -DENABLE_BENCHMARKS=ON -DENABLE_DOCS=OFF"
+    cmake_options = args["extra_cmake_options"] + " -DENABLE_BENCHMARKS=ON -DENABLE_DOCS=OFF -DCMAKE_BUILD_TYPE=Release"
     host_config = args["host_config"]
     spot_dir = args["spot_dir"]
     timestamp = args["timestamp"]
