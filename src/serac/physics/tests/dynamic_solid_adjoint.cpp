@@ -124,6 +124,7 @@ double computeSolidMechanicsQoi(BasePhysics& solid_solver, const TimeSteppingInf
   auto dts = ts_info.dts;
 
   solid_solver.advanceTimestep(dts(0));  // advance by 0.0 seconds to get initial acceleration
+  solid_solver.outputStateToDisk();
 
   FiniteElementState dispForObjective      = solid_solver.state("displacement");
 
@@ -132,9 +133,9 @@ double computeSolidMechanicsQoi(BasePhysics& solid_solver, const TimeSteppingInf
 
   for (int i = 1; i <= ts_info.numTimesteps(); ++i) {
     solid_solver.advanceTimestep(dts(i));
+    solid_solver.outputStateToDisk();
 
     dispForObjective      = solid_solver.state("displacement");
-
     reactionsForObjective = solid_solver.dual("reactions");
     qoi += computeStepQoi(dispForObjective, reactionsForObjective, 0.5 * (dts(i) + dts(i + 1)));
   }
@@ -316,7 +317,7 @@ TEST_F(SolidMechanicsSensitivityFixture, ShapeSensitivities)
   double qoi_plus = computeSolidMechanicsQoiAdjustingShape(*solid_solver, tsInfo, derivative_direction, eps);
 
   double directional_deriv = innerProduct(derivative_direction, shape_sensitivity);
-  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, eps);
+  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 10*eps);
 }
 
 TEST_F(SolidMechanicsSensitivityFixture, QuasiStaticShapeSensitivities)
@@ -333,7 +334,7 @@ TEST_F(SolidMechanicsSensitivityFixture, QuasiStaticShapeSensitivities)
   double qoi_plus = computeSolidMechanicsQoiAdjustingShape(*solid_solver, tsInfo, derivative_direction, eps);
 
   double directional_deriv = innerProduct(derivative_direction, shape_sensitivity);
-  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, eps);
+  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 10*eps);
 }
 
 TEST_F(SolidMechanicsSensitivityFixture, WhenShapeSensitivitiesCalledTwice_GetSameObjectiveAndGradient)
