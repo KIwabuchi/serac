@@ -345,7 +345,6 @@ FiniteElementState BasePhysics::loadCheckpointedState(const std::string& state_n
     SLIC_ERROR_ROOT_IF(
         cached_checkpoint_states_.find(state_name) == cached_checkpoint_states_.end(),
         axom::fmt::format("Requested state name {} does not exist in physics module {}.", state_name, name_));
-
     return cached_checkpoint_states_.at(state_name);
   }
 
@@ -365,7 +364,7 @@ std::unordered_map<std::string, FiniteElementState> BasePhysics::getCheckpointed
   if (checkpoint_to_disk_) {
     for (const auto& state_name : stateNames()) {
       previous_states_ptrs.emplace_back(const_cast<FiniteElementState*>(&state(state_name)));
-    }    
+    }
     StateManager::loadCheckpointedStates(cycle_to_load, previous_states_ptrs);
     for (const auto& state_name : stateNames()) {
       previous_states_map.emplace(state_name, state(state_name));
