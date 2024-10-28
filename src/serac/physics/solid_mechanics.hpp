@@ -1413,8 +1413,8 @@ public:
 
     cycle_--;  // cycle is now at n \in [0,N-1]
 
-    double       dt_np1_to_np2     = getCheckpointedTimestep(cycle_ + 1);
-    const double dt_n_to_np1       = getCheckpointedTimestep(cycle_);
+    double       dt_np1_to_np2 = getCheckpointedTimestep(cycle_ + 1);
+    const double dt_n_to_np1   = getCheckpointedTimestep(cycle_);
 
     auto end_step_solution = getCheckpointedStates(cycle_ + 1);
 

@@ -90,7 +90,7 @@ void applyInitialAndBoundaryConditions(SolidMechanics<p, dim>& solid_solver)
 std::unique_ptr<SolidMechanics<p, dim>> createNonlinearSolidMechanicsSolver(
     const NonlinearSolverOptions& nonlinear_opts, const TimesteppingOptions& dyn_opts, const SolidMaterial& mat)
 {
-  static int iter = 0;
+  static int                iter           = 0;
   const LinearSolverOptions linear_options = {.linear_solver  = LinearSolver::CG,
                                               .preconditioner = Preconditioner::HypreJacobi,
                                               .relative_tol   = 1.0e-9,
@@ -99,11 +99,11 @@ std::unique_ptr<SolidMechanics<p, dim>> createNonlinearSolidMechanicsSolver(
                                               .print_level    = 0};
 
   bool checkpoint_to_disk = true;
-  auto solid =
-      std::make_unique<SolidMechanics<p, dim>>(nonlinear_opts, linear_options, dyn_opts,
-                                               geoNonlinear, physics_prefix + std::to_string(iter++), mesh_tag, std::vector<std::string>{}, 0, 0.0, checkpoint_to_disk, false);
+  auto solid = std::make_unique<SolidMechanics<p, dim>>(nonlinear_opts, linear_options, dyn_opts, geoNonlinear,
+                                                        physics_prefix + std::to_string(iter++), mesh_tag,
+                                                        std::vector<std::string>{}, 0, 0.0, checkpoint_to_disk, false);
   solid->setMaterial(mat);
-  
+
   solid->setDisplacementBCs(
       {1}, [](const mfem::Vector&, double t, mfem::Vector& disp) { disp = (1.0 + 10 * t) * boundary_disp; });
   solid->addBodyForce([](auto X, auto t) {
@@ -126,10 +126,10 @@ double computeSolidMechanicsQoi(BasePhysics& solid_solver, const TimeSteppingInf
   solid_solver.advanceTimestep(dts(0));  // advance by 0.0 seconds to get initial acceleration
   solid_solver.outputStateToDisk();
 
-  FiniteElementState dispForObjective      = solid_solver.state("displacement");
+  FiniteElementState dispForObjective = solid_solver.state("displacement");
 
-  FiniteElementDual  reactionsForObjective = solid_solver.dual("reactions");
-  double             qoi = computeStepQoi(dispForObjective, reactionsForObjective, 0.5 * (dts(0) + dts(1)));
+  FiniteElementDual reactionsForObjective = solid_solver.dual("reactions");
+  double            qoi = computeStepQoi(dispForObjective, reactionsForObjective, 0.5 * (dts(0) + dts(1)));
 
   for (int i = 1; i <= ts_info.numTimesteps(); ++i) {
     solid_solver.advanceTimestep(dts(i));
@@ -258,7 +258,8 @@ struct SolidMechanicsSensitivityFixture : public ::testing::Test {
   axom::sidre::DataStore dataStore;
   mfem::ParMesh*         mesh;
 
-  NonlinearSolverOptions nonlinear_opts{.nonlin_solver=NonlinearSolver::TrustRegion, .relative_tol = 1.0e-15, .absolute_tol = 1.0e-14};
+  NonlinearSolverOptions nonlinear_opts{
+      .nonlin_solver = NonlinearSolver::TrustRegion, .relative_tol = 1.0e-15, .absolute_tol = 1.0e-14};
 
   bool                dispBc = true;
   TimesteppingOptions dyn_opts{.timestepper        = TimestepMethod::Newmark,
@@ -317,7 +318,7 @@ TEST_F(SolidMechanicsSensitivityFixture, ShapeSensitivities)
   double qoi_plus = computeSolidMechanicsQoiAdjustingShape(*solid_solver, tsInfo, derivative_direction, eps);
 
   double directional_deriv = innerProduct(derivative_direction, shape_sensitivity);
-  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 10*eps);
+  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 10 * eps);
 }
 
 TEST_F(SolidMechanicsSensitivityFixture, QuasiStaticShapeSensitivities)
@@ -334,7 +335,7 @@ TEST_F(SolidMechanicsSensitivityFixture, QuasiStaticShapeSensitivities)
   double qoi_plus = computeSolidMechanicsQoiAdjustingShape(*solid_solver, tsInfo, derivative_direction, eps);
 
   double directional_deriv = innerProduct(derivative_direction, shape_sensitivity);
-  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 10*eps);
+  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 10 * eps);
 }
 
 TEST_F(SolidMechanicsSensitivityFixture, WhenShapeSensitivitiesCalledTwice_GetSameObjectiveAndGradient)
