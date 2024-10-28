@@ -1324,7 +1324,6 @@ public:
       }
     }
 
-
     {
       // after finding displacements that satisfy equilibrium,
       // compute the residual one more time, this time enabling
