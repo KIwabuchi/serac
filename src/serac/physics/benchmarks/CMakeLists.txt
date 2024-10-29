@@ -21,7 +21,7 @@ foreach(physics_benchmark ${physics_benchmark_targets})
                        FOLDER serac/benchmarks
                        )
 
-    # Increase benchmark time limit to one hour
+    # Increase benchmark time limit
     set_tests_properties(${physics_benchmark} PROPERTIES TIMEOUT 4800)
 
     # Add benchmarks with various task counts
