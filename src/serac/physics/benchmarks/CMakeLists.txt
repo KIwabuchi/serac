@@ -13,23 +13,24 @@ set(physics_benchmark_targets
     )
 
 # Create executable for each benchmark
-foreach(physics_benchmark ${physics_benchmark_targets})
-    blt_add_executable(NAME ${physics_benchmark}
-                       SOURCES ${physics_benchmark}.cpp
+foreach(physics_benchmark_exec ${physics_benchmark_targets})
+    blt_add_executable(NAME ${physics_benchmark_exec}
+                       SOURCES ${physics_benchmark_exec}.cpp
                        DEPENDS_ON ${physics_benchmark_depends}
                        OUTPUT_DIR ${PROJECT_BINARY_DIR}/benchmarks
                        FOLDER serac/benchmarks
                        )
 
-    # Increase benchmark time limit
-    set_tests_properties(${physics_benchmark} PROPERTIES TIMEOUT 4800)
-
     # Add benchmarks with various task counts
     foreach(task_count 1 4 16)
-        blt_add_benchmark(NAME ${physics_benchmark}_${task_count}_task_count
-                          COMMAND ${physics_benchmark}
+        set(physics_benchmark ${physics_benchmark_exec}_${task_count}_task_count)
+        blt_add_benchmark(NAME ${physics_benchmark}
+                          COMMAND ${physics_benchmark_exec}
                           NUM_MPI_TASKS ${task_count}
                           WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
                           )
+
+        # Increase benchmark time limit
+        set_tests_properties(${physics_benchmark} PROPERTIES TIMEOUT 4800)
     endforeach()
 endforeach()
