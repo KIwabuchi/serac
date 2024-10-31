@@ -333,7 +333,7 @@ Installing Python Developer Tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This step is only required if you wish to use Serac's developer tools. In order to use Python devtools, you will need to create a Python venv. This is much more reliable than having Spack install 20+ Python packages.
-In this example, we are using the builtin `python3` in `/usr/bin`, but it is possible to use a version installed from Brew or elsewhere.
+In this example, we are using the builtin Python in ``/usr/bin``, but it is possible to use a version installed from Brew or elsewhere.
 
 Next, you will need to install wheel, sphinx, and `ATS <https://github.com/LLNL/ATS/tree/7.0.105>`_:
 
@@ -351,7 +351,7 @@ Keep track of the sphinx version while installing, since you'll need it for the 
 Adding Developer Tools to Spack Environment File
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-After setting up a Python venv, you should add the following under ``packages`` in the ``spack.yaml`` files. Versions may vary.
+Again, skip this step if not using devtools. After setting up a Python venv, you should add the following under ``packages`` in the ``spack.yaml`` files. Versions may vary.
 
 .. code-block:: yaml
 
@@ -388,11 +388,11 @@ After setting up a Python venv, you should add the following under ``packages`` 
 Building dependencies
 ^^^^^^^^^^^^^^^^^^^^^
 
-The invocation of ``uberenv.py`` is slightly modified from the standard instructions above in order to force the use of the Homebrew-installed MPI and compilers:
+Uberenv is a Spack wrapper simplifing the TPL build process. The invocation of ``uberenv.py`` is slightly modified from the standard instructions above in order to force the use of the Homebrew-installed MPI and compilers:
 
 .. code-block:: bash
 
    $ ./scripts/uberenv/uberenv.py --spack-env-file=/path/to/spack.yaml --prefix=/path/to/install --spec="%clang@14 ^openmpi@5"
 
 .. note::
-   To build with devtools and profiling enabled, change the spec to `"%clang@14+devtools+profiling ^openmpi@5"`
+   To build with devtools and profiling enabled, change the spec to ``"%clang@14+devtools+profiling ^openmpi@5"``
