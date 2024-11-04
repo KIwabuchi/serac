@@ -68,6 +68,7 @@ def main():
     host_config_path = get_host_config_path(repo_dir, host_config)
     host_config_root = get_host_config_root(host_config)
     benchmarks_output_file = os.path.join(test_root, "output.log.%s.benchmarks.txt" % host_config_root)
+    build_dir = os.path.join(test_root, "build-%s" % host_config_root)
 
     # Build Serac
     os.chdir(repo_dir)
@@ -77,11 +78,6 @@ def main():
                                skip_install=True, skip_tests=True)
 
     # Go to build location
-    build_dir=""
-    dirs = glob.glob(pjoin(test_root, "*"))
-    for dir in dirs:
-        if os.path.exists(dir) and "build-" in dir:
-            build_dir=dir
     os.chdir(build_dir)
 
     # Run benchmarks
