@@ -17,17 +17,24 @@ variables:
 .run_update_uberenv: &run_update_uberenv |
   [[ -n "${UPDATE_UBERENV}" ]] && ./scripts/gitlab/update-uberenv.sh "${UPDATE_UBERENV}"
 
+# Run src build each time a merge request has been updated
 .src_workflow:
   rules:
-    - if: '$FULL_BUILD != "ON" && $BENCHMARKS_BUILD != "ON"'
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_EVENT_TYPE == "merged_result"
+    - if: $CI_PIPELINE_SOURCE == "push"
+      when: never
+    - if: $CI_COMMIT_BRANCH == "develop"
+      when: never
 
+# Run full build as a nightly scheduled pipeline
 .full_workflow:
   rules:
-    - if: '$FULL_BUILD == "ON" && $BENCHMARKS_BUILD != "ON"'
+    - if: $CI_WORKFLOW_TYPE == "full"
 
+# Run benchmarks build as a weekly scheduled pipeline
 .benchmarks_workflow:
   rules:
-    - if: '$FULL_BUILD != "ON" && $BENCHMARKS_BUILD == "ON"'
+    - if: $CI_WORKFLOW_TYPE == "benchmarks"
 
 ####
 # Templates
