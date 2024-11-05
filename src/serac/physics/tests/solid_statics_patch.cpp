@@ -88,8 +88,7 @@ public:
     // natural BCs
     typename Material::State state;
     auto H = make_tensor<dim, dim>([&](int i, int j) { return A(i,j); });
-    tensor<double, dim, dim> sigma = material(state, H);
-    auto P = solid_mechanics::CauchyToPiola(sigma, H);
+    tensor<double, dim, dim> P = material(state, H);
     auto traction = [P](auto, auto n0, auto) { return dot(P, n0); };
     sf.setTraction(traction);
   }
@@ -188,8 +187,7 @@ public:
     auto traction = [=](auto X, auto n0, auto) {
       auto H = gradient(get_value(X));
       typename material_type::State state{};
-      auto sigma = material(state, H);
-      auto P = solid_mechanics::CauchyToPiola(sigma, H);
+      auto P = material(state, H);
       return dot(P, n0);
     };
 
@@ -199,8 +197,7 @@ public:
       auto X_val = get_value(X);
       auto H = gradient(make_dual(X_val));
       solid_mechanics::LinearIsotropic::State state{};
-      auto sigma = material(state, H);
-      auto P = solid_mechanics::CauchyToPiola(sigma, H);
+      auto P = material(state, H);
       auto dPdX = get_gradient(P);
       tensor<double,dim> divP{};
       for (int i = 0; i < dim; i++) {

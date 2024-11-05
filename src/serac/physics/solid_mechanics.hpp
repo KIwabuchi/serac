@@ -868,15 +868,7 @@ public:
 
       auto stress = material_(state, du_dX, params...);
 
-      auto dx_dX = 0.0 * du_dX + I;
-
-      if (geom_nonlin_ == GeometricNonlinearities::On) {
-        dx_dX += du_dX;
-      }
-
-      auto flux = dot(stress, transpose(inv(dx_dX))) * det(dx_dX);
-
-      return serac::tuple{material_.density * d2u_dt2, flux};
+      return serac::tuple{material_.density * d2u_dt2, stress};
     }
   };
 
