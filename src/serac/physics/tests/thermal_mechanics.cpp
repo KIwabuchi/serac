@@ -236,8 +236,8 @@ void parameterized()
   Thermomechanics<p, dim, H1<p>> thermal_solid_solver(
       heat_transfer::default_nonlinear_options, heat_transfer::default_linear_options,
       heat_transfer::default_static_options, solid_mechanics::default_nonlinear_options,
-      solid_mechanics::default_linear_options, solid_mechanics::default_quasistatic_options,
-      "thermal_solid_functional", mesh_tag);
+      solid_mechanics::default_linear_options, solid_mechanics::default_quasistatic_options, "thermal_solid_functional",
+      mesh_tag);
 
   double rho       = 1.0;
   double E         = 1.0;

@@ -156,8 +156,8 @@ void shape_test()
 
     // Construct a functional-based solid mechanics solver including references to the shape velocity field.
     SolidMechanics<p, dim> solid_solver_no_shape(nonlinear_options, linear_options,
-                                                 solid_mechanics::default_quasistatic_options,
-                                                 "solid_functional", new_mesh_tag);
+                                                 solid_mechanics::default_quasistatic_options, "solid_functional",
+                                                 new_mesh_tag);
 
     mfem::VisItDataCollection visit_dc("pure_version", const_cast<mfem::ParMesh*>(&solid_solver_no_shape.mesh()));
     visit_dc.RegisterField("displacement", &solid_solver_no_shape.displacement().gridFunction());

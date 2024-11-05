@@ -90,7 +90,7 @@ struct ParameterizedNeoHookeanSolid {
     auto           G         = G0 + get<0>(DeltaG);
     auto           lambda    = K - (2.0 / dim) * G;
     auto           B_minus_I = du_dX * transpose(du_dX) + transpose(du_dX) + du_dX;
-    auto logJ = log1p(detApIm1(du_dX));
+    auto           logJ      = log1p(detApIm1(du_dX));
 
     // Kirchoff stress, in form that avoids cancellation error when F is near I
     auto TK = lambda * logJ * I + G * B_minus_I;

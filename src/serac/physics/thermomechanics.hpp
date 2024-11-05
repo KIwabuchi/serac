@@ -48,8 +48,7 @@ public:
   Thermomechanics(const NonlinearSolverOptions thermal_nonlin_opts, const LinearSolverOptions thermal_lin_opts,
                   TimesteppingOptions thermal_timestepping, const NonlinearSolverOptions solid_nonlin_opts,
                   const LinearSolverOptions solid_lin_opts, TimesteppingOptions solid_timestepping,
-                  const std::string& physics_name, std::string mesh_tag,
-                  int cycle = 0, double time = 0.0)
+                  const std::string& physics_name, std::string mesh_tag, int cycle = 0, double time = 0.0)
       : Thermomechanics(
             std::make_unique<EquationSolver>(thermal_nonlin_opts, thermal_lin_opts,
                                              StateManager::mesh(mesh_tag).GetComm()),
@@ -73,13 +72,12 @@ public:
    */
   Thermomechanics(std::unique_ptr<EquationSolver> thermal_solver, TimesteppingOptions thermal_timestepping,
                   std::unique_ptr<EquationSolver> solid_solver, TimesteppingOptions solid_timestepping,
-                  const std::string& physics_name, std::string mesh_tag,
-                  int cycle = 0, double time = 0.0)
+                  const std::string& physics_name, std::string mesh_tag, int cycle = 0, double time = 0.0)
       : BasePhysics(physics_name, mesh_tag),
         thermal_(std::move(thermal_solver), thermal_timestepping, physics_name + "thermal", mesh_tag, {"displacement"},
                  cycle, time),
-        solid_(std::move(solid_solver), solid_timestepping, physics_name + "mechanical", mesh_tag,
-               {"temperature"}, cycle, time)
+        solid_(std::move(solid_solver), solid_timestepping, physics_name + "mechanical", mesh_tag, {"temperature"},
+               cycle, time)
   {
     SLIC_ERROR_ROOT_IF(mesh_.Dimension() != dim,
                        axom::fmt::format("Compile time dimension and runtime mesh dimension mismatch"));
@@ -103,8 +101,8 @@ public:
                   const std::string& physics_name, std::string mesh_tag, int cycle = 0, double time = 0.0)
       : Thermomechanics(thermal_options.nonlin_solver_options, thermal_options.lin_solver_options,
                         thermal_options.timestepping_options, solid_options.nonlin_solver_options,
-                        solid_options.lin_solver_options, solid_options.timestepping_options,
-                        physics_name, mesh_tag, cycle, time)
+                        solid_options.lin_solver_options, solid_options.timestepping_options, physics_name, mesh_tag,
+                        cycle, time)
   {
   }
 

@@ -218,8 +218,7 @@ void finite_difference_shape_test(LoadingType load)
 
   // Construct a functional-based solid solver
   SolidMechanics<p, dim> solid_solver(nonlin_options, solid_mechanics::direct_linear_options,
-                                      solid_mechanics::default_quasistatic_options,
-                                      "solid_functional", mesh_tag);
+                                      solid_mechanics::default_quasistatic_options, "solid_functional", mesh_tag);
 
   solid_mechanics::NeoHookean mat{1.0, 1.0, 1.0};
   solid_solver.setMaterial(mat);

@@ -238,9 +238,9 @@ void functional_solid_test_euler(NonlinSolve nonlinSolve, Prec prec)
 
   auto [nonlinear_options, linear_options] = get_opts(nonlinSolve, prec, 3 * Nx * Ny * Nz, 1e-9);
 
-  auto seracSolid = std::make_unique<seracSolidType>(
-      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options,
-      "serac_solid", meshTag, std::vector<std::string>{});
+  auto seracSolid = std::make_unique<seracSolidType>(nonlinear_options, linear_options,
+                                                     serac::solid_mechanics::default_quasistatic_options, "serac_solid",
+                                                     meshTag, std::vector<std::string>{});
 
   serac::solid_mechanics::NeoHookean material{density, bulkMod, shearMod};
   seracSolid->setMaterial(serac::DependsOn<>{}, material);
@@ -316,9 +316,9 @@ void functional_solid_test_nonlinear_buckle(NonlinSolve nonlinSolve, Prec prec, 
 
   auto [nonlinear_options, linear_options] = get_opts(nonlinSolve, prec, 3 * Nx * Ny * Nz, 1e-11);
 
-  auto seracSolid = std::make_unique<seracSolidType>(
-      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options,
-      "serac_solid", meshTag, std::vector<std::string>{});
+  auto seracSolid = std::make_unique<seracSolidType>(nonlinear_options, linear_options,
+                                                     serac::solid_mechanics::default_quasistatic_options, "serac_solid",
+                                                     meshTag, std::vector<std::string>{});
 
   serac::solid_mechanics::NeoHookean material{density, bulkMod, shearMod};
   seracSolid->setMaterial(serac::DependsOn<>{}, material);

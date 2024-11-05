@@ -57,9 +57,8 @@ int main(int argc, char* argv[])
                                         .type        = serac::ContactType::Frictionless,
                                         .penalty     = 1.0e5};
 
-  serac::SolidMechanicsContact<p, dim> solid_solver(nonlinear_options, linear_options,
-                                                    serac::solid_mechanics::default_quasistatic_options,
-                                                    name, "twist_mesh");
+  serac::SolidMechanicsContact<p, dim> solid_solver(
+      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options, name, "twist_mesh");
 
   serac::solid_mechanics::NeoHookean mat{1.0, 10.0, 10.0};
   solid_solver.setMaterial(mat);

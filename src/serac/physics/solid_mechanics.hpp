@@ -135,13 +135,12 @@ public:
    *       writing and reading the needed trainsient states to disk for adjoint solves
    */
   SolidMechanics(const NonlinearSolverOptions nonlinear_opts, const LinearSolverOptions lin_opts,
-                 const serac::TimesteppingOptions timestepping_opts,
-                 const std::string& physics_name, std::string mesh_tag, std::vector<std::string> parameter_names = {},
-                 int cycle = 0, double time = 0.0, bool checkpoint_to_disk = false, bool use_warm_start = true)
+                 const serac::TimesteppingOptions timestepping_opts, const std::string& physics_name,
+                 std::string mesh_tag, std::vector<std::string> parameter_names = {}, int cycle = 0, double time = 0.0,
+                 bool checkpoint_to_disk = false, bool use_warm_start = true)
       : SolidMechanics(
             std::make_unique<EquationSolver>(nonlinear_opts, lin_opts, StateManager::mesh(mesh_tag).GetComm()),
-            timestepping_opts, physics_name, mesh_tag, parameter_names, cycle, time, checkpoint_to_disk,
-            use_warm_start)
+            timestepping_opts, physics_name, mesh_tag, parameter_names, cycle, time, checkpoint_to_disk, use_warm_start)
   {
   }
 
@@ -163,9 +162,8 @@ public:
    *       writing and reading the needed trainsient states to disk for adjoint solves
    */
   SolidMechanics(std::unique_ptr<serac::EquationSolver> solver, const serac::TimesteppingOptions timestepping_opts,
-                 const std::string& physics_name, std::string mesh_tag,
-                 std::vector<std::string> parameter_names = {}, int cycle = 0, double time = 0.0,
-                 bool checkpoint_to_disk = false, bool use_warm_start = true)
+                 const std::string& physics_name, std::string mesh_tag, std::vector<std::string> parameter_names = {},
+                 int cycle = 0, double time = 0.0, bool checkpoint_to_disk = false, bool use_warm_start = true)
       : BasePhysics(physics_name, mesh_tag, cycle, time, checkpoint_to_disk),
         displacement_(
             StateManager::newState(H1<order, dim>{}, detail::addPrefix(physics_name, "displacement"), mesh_tag_)),
@@ -277,8 +275,7 @@ public:
   SolidMechanics(const SolidMechanicsInputOptions& input_options, const std::string& physics_name, std::string mesh_tag,
                  int cycle = 0, double time = 0.0)
       : SolidMechanics(input_options.nonlin_solver_options, input_options.lin_solver_options,
-                       input_options.timestepping_options, physics_name, mesh_tag, {}, cycle,
-                       time)
+                       input_options.timestepping_options, physics_name, mesh_tag, {}, cycle, time)
   {
     for (auto& mat : input_options.materials) {
       if (std::holds_alternative<serac::solid_mechanics::NeoHookean>(mat)) {
@@ -833,7 +830,7 @@ public:
   template <typename Material>
   struct MaterialStressFunctor {
     /// @brief Constructor for the functor
-    MaterialStressFunctor(Material material) : material_(material){}
+    MaterialStressFunctor(Material material) : material_(material) {}
 
     /// @brief Material model
     Material material_;

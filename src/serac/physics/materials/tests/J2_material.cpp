@@ -211,10 +211,10 @@ TEST(J2, Uniaxial)
 
   for (auto r : response_history) {
     auto [t, dudx, P, state] = r;
-    auto TK = dot(P, transpose(dudx + Identity<3>()));
-    double e  = std::log1p(get<1>(r)[0][0]);       // log strain
-    double s  = TK[0][0];                          // Kirchhoff stress
-    double pe = -std::log(get<3>(r).Fpinv[0][0]);  // plastic strain
+    auto   TK                = dot(P, transpose(dudx + Identity<3>()));
+    double e                 = std::log1p(get<1>(r)[0][0]);       // log strain
+    double s                 = TK[0][0];                          // Kirchhoff stress
+    double pe                = -std::log(get<3>(r).Fpinv[0][0]);  // plastic strain
     ASSERT_NEAR(s, stress_exact(e), 1e-6 * std::abs(stress_exact(e)));
     ASSERT_NEAR(pe, plastic_strain_exact(e), 1e-6 * std::abs(plastic_strain_exact(e)));
   }

@@ -56,8 +56,8 @@ int main(int argc, char* argv[])
                                         .penalty     = 1.0e3};
 
   serac::SolidMechanicsContact<p, dim, serac::Parameters<serac::L2<0>, serac::L2<0>>> solid_solver(
-      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options,
-      name, "ironing_mesh", {"bulk_mod", "shear_mod"});
+      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options, name, "ironing_mesh",
+      {"bulk_mod", "shear_mod"});
 
   serac::FiniteElementState K_field(serac::StateManager::newState(serac::L2<0>{}, "bulk_mod", "ironing_mesh"));
   // each vector value corresponds to a different element attribute:

@@ -52,9 +52,9 @@ public:
    * @param time The simulation time to initialize the physics module to
    */
   SolidMechanicsContact(const NonlinearSolverOptions nonlinear_opts, const LinearSolverOptions lin_opts,
-                        const serac::TimesteppingOptions timestepping_opts,
-                        const std::string& physics_name, std::string mesh_tag,
-                        std::vector<std::string> parameter_names = {}, int cycle = 0, double time = 0.0)
+                        const serac::TimesteppingOptions timestepping_opts, const std::string& physics_name,
+                        std::string mesh_tag, std::vector<std::string> parameter_names = {}, int cycle = 0,
+                        double time = 0.0)
       : SolidMechanicsContact(
             std::make_unique<EquationSolver>(nonlinear_opts, lin_opts, StateManager::mesh(mesh_tag).GetComm()),
             timestepping_opts, physics_name, mesh_tag, parameter_names, cycle, time)
@@ -73,11 +73,10 @@ public:
    * @param time The simulation time to initialize the physics module to
    */
   SolidMechanicsContact(std::unique_ptr<serac::EquationSolver> solver,
-                        const serac::TimesteppingOptions timestepping_opts,
-                        const std::string& physics_name, std::string mesh_tag,
-                        std::vector<std::string> parameter_names = {}, int cycle = 0, double time = 0.0)
-      : SolidMechanicsBase(std::move(solver), timestepping_opts, physics_name, mesh_tag, parameter_names,
-                           cycle, time),
+                        const serac::TimesteppingOptions timestepping_opts, const std::string& physics_name,
+                        std::string mesh_tag, std::vector<std::string> parameter_names = {}, int cycle = 0,
+                        double time = 0.0)
+      : SolidMechanicsBase(std::move(solver), timestepping_opts, physics_name, mesh_tag, parameter_names, cycle, time),
         contact_(mesh_),
         forces_(StateManager::newDual(displacement_.space(), detail::addPrefix(physics_name, "contact_forces")))
   {

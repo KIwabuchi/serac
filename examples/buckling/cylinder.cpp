@@ -138,8 +138,7 @@ int main(int argc, char* argv[])
   std::unique_ptr<SolidMechanics<p, dim>> solid_solver;
   if (use_contact) {
     auto solid_contact_solver = std::make_unique<serac::SolidMechanicsContact<p, dim>>(
-        nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options,
-        name, mesh_tag);
+        nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options, name, mesh_tag);
 
     // Add the contact interaction
     serac::ContactOptions contact_options{.method      = serac::ContactMethod::SingleMortar,
@@ -150,11 +149,10 @@ int main(int argc, char* argv[])
     solid_contact_solver->addContactInteraction(contact_interaction_id, xpos, xneg, contact_options);
     solid_solver = std::move(solid_contact_solver);
   } else {
-    solid_solver = std::make_unique<serac::SolidMechanics<p, dim>>(nonlinear_options, linear_options,
-                                                                   serac::solid_mechanics::default_quasistatic_options,
-                                                                   name, mesh_tag);
-    auto domain  = serac::Domain::ofBoundaryElements(
-         StateManager::mesh(mesh_tag), [&](std::vector<vec3>, int attr) { return xpos.find(attr) != xpos.end(); });
+    solid_solver = std::make_unique<serac::SolidMechanics<p, dim>>(
+        nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options, name, mesh_tag);
+    auto domain = serac::Domain::ofBoundaryElements(
+        StateManager::mesh(mesh_tag), [&](std::vector<vec3>, int attr) { return xpos.find(attr) != xpos.end(); });
     solid_solver->setPressure([&](auto&, double t) { return 0.01 * t; }, domain);
   }
 
