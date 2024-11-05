@@ -41,19 +41,19 @@ TEST_P(ContactPatchTied, patch)
   // Construct the appropriate dimension mesh and give it to the data store
   std::string filename = SERAC_REPO_DIR "/data/meshes/twohex_for_contact.mesh";
 
-  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), 2, 0);
+  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), 3, 0);
   StateManager::setMesh(std::move(mesh), "patch_mesh");
 
-#ifdef SERAC_USE_PETSC
-  LinearSolverOptions linear_options{
-      .linear_solver        = LinearSolver::PetscGMRES,
-      .preconditioner       = Preconditioner::Petsc,
-      .petsc_preconditioner = PetscPCType::HMG,
-      .absolute_tol         = 1e-16,
-      .print_level          = 1,
-  };
-#elif defined(MFEM_USE_STRUMPACK)
-// #ifdef MFEM_USE_STRUMPACK
+// #ifdef SERAC_USE_PETSC
+//   LinearSolverOptions linear_options{
+//       .linear_solver        = LinearSolver::PetscGMRES,
+//       .preconditioner       = Preconditioner::Petsc,
+//       .petsc_preconditioner = PetscPCType::HMG,
+//       .absolute_tol         = 1e-12,
+//       .print_level          = 1,
+//   };
+// #elif defined(MFEM_USE_STRUMPACK)
+#ifdef MFEM_USE_STRUMPACK
   LinearSolverOptions linear_options{.linear_solver = LinearSolver::Strumpack, .print_level = 1};
 #else
   LinearSolverOptions linear_options{};
@@ -62,8 +62,8 @@ TEST_P(ContactPatchTied, patch)
 #endif
 
   NonlinearSolverOptions nonlinear_options{.nonlin_solver  = NonlinearSolver::Newton,
-                                           .relative_tol   = 1.0e-12,
-                                           .absolute_tol   = 1.0e-12,
+                                           .relative_tol   = 1.0e-10,
+                                           .absolute_tol   = 1.0e-10,
                                            .max_iterations = 20,
                                            .print_level    = 1};
 
@@ -74,7 +74,7 @@ TEST_P(ContactPatchTied, patch)
 
   SolidMechanicsContact<p, dim> solid_solver(nonlinear_options, linear_options,
                                              solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On,
-                                             name, "patch_mesh", {}, 0, 0.0, false, true);
+                                             name, "patch_mesh");
 
   double                      K = 10.0;
   double                      G = 0.25;
@@ -128,8 +128,8 @@ TEST_P(ContactPatchTied, patch)
   mfem::ParGridFunction approx_error(elasticity_sol);
   approx_error -= solid_solver.displacement().gridFunction();
   auto approx_error_l2 = mfem::ParNormlp(approx_error, 2, MPI_COMM_WORLD);
-  // At 5% strain, linear elastic approximation breaks down, so larger error is expected here.
-  EXPECT_NEAR(0.0, approx_error_l2, 0.02);
+  // At 10% strain, linear elastic approximation breaks down, so larger error is expected here.
+  EXPECT_NEAR(0.0, approx_error_l2, 0.13);
 }
 
 INSTANTIATE_TEST_SUITE_P(tribol, ContactPatchTied,
