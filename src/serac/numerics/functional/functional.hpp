@@ -707,9 +707,13 @@ private:
                 for (uint32_t j = 0; j < rows_per_elem; j++) {
                   int row = int(test_vdofs[j].index());
 
+                  std::cout << row << " " << col << " " << K_e(e, i, j) << std::endl;
+
                   A_local.SearchRow(row, col) += K_e(e, i, j);
                 }
               }
+
+              std::cout << std::endl;
             }
 
           }

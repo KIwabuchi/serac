@@ -24,6 +24,44 @@
 using namespace serac;
 using namespace serac::profiling;
 
+template <typename T>
+void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& U, double epsilon = 1.0e-4) {
+
+  mfem::Vector dU(U.Size());
+  dU = 0.0;
+
+  auto [value, dfdU]                                = f(t, serac::differentiate_wrt(U));
+  std::unique_ptr<mfem::HypreParMatrix> dfdU_matrix = assemble(dfdU);
+
+  std::cout << "{";
+  for (int i = 0; i < U.Size(); i++) {
+    dU[i] = 1;
+    mfem::Vector df_jvp = dfdU(dU);  // matrix-free
+
+    std::cout << "{";
+    for (int j = 0; j < df_jvp.Size(); j++) {
+      std::cout << df_jvp[j];
+      if (j != df_jvp.Size() - 1) {
+        std::cout << ",";
+      } else {
+        std::cout << " ";
+      }
+    }
+    std::cout << "}";
+    if (i != U.Size() - 1) {
+      std::cout << ",\n";
+    } else {
+      std::cout << "\n";
+    }
+
+    dU[i] = 0;
+  }
+  std::cout << "}" << std::endl;
+
+  dfdU_matrix->Print("K.mtx");
+
+}
+
 template <int p>
 void L2_test_2D()
 {
@@ -31,7 +69,8 @@ void L2_test_2D()
   using test_space  = L2<p, dim>;
   using trial_space = L2<p, dim>;
 
-  std::string meshfile = SERAC_REPO_DIR "/data/meshes/patch2D.mesh";
+  //std::string meshfile = SERAC_REPO_DIR "/data/meshes/patch2D.mesh";
+  std::string meshfile = SERAC_REPO_DIR "/data/meshes/two_tris.mesh";
 
   auto mesh = mesh::refineAndDistribute(buildMeshFromFile(meshfile), 0);
 
@@ -51,7 +90,7 @@ void L2_test_2D()
   residual.AddInteriorFaceIntegral(
       Dimension<dim-1>{}, DependsOn<0>{},
       [=](double /*t*/, auto X, auto velocity) {
-
+#if 0
         // compute the surface normal
         auto dX_dxi = get<DERIVATIVE>(X);
         auto n = normalize(cross(dX_dxi));
@@ -66,11 +105,15 @@ void L2_test_2D()
         auto f_1 = u_1 * a;
         auto f_2 = u_2 * a;
         return serac::tuple{f_1, f_2};
-
+#else
+        return velocity;
+#endif
       }, interior_faces);
 
   double t = 0.0;
   check_gradient(residual, t, U);
+
+  debug_sparse_matrix(residual, t, U);
 
 }
 

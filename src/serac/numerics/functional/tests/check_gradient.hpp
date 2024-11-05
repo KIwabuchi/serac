@@ -72,6 +72,12 @@ void check_gradient(serac::Functional<T>& f, double t, const mfem::Vector& U, do
   double e2 = df1_fd[1].DistanceTo(df_jvp1.GetData()) / denominator;
   EXPECT_TRUE(fabs(e1 / e2 - 2.0) < 0.1 || fmin(e1, e2) < 1.0e-9);
 
+  df1_fd[0].Print(std::cout);
+  std::cout << std::endl;
+  df1_fd[1].Print(std::cout);
+  std::cout << std::endl;
+  df_jvp1.Print(std::cout);
+
   // halving epsilon should make the error decrease
   // by about a factor of four for the center-difference stencil
   double e3 = df1_cd[0].DistanceTo(df_jvp1.GetData()) / denominator;

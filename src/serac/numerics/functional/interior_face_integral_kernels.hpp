@@ -298,7 +298,6 @@ void element_gradient_kernel([[maybe_unused]] ExecArrayView<double, 3, Execution
                              [[maybe_unused]] derivatives_type* qf_derivatives,
                              [[maybe_unused]] std::size_t num_elements)
 {
-  #if 0
   using test_element  = finite_element<g, test>;
   using trial_element = finite_element<g, trial>;
 
@@ -308,7 +307,7 @@ void element_gradient_kernel([[maybe_unused]] ExecArrayView<double, 3, Execution
 
   // for each element in the domain
   for (uint32_t e = 0; e < num_elements; e++) {
-    auto* output_ptr = reinterpret_cast<typename test_element::dof_type*>(&dK(elements[e], 0, 0));
+    auto* output_ptr = reinterpret_cast<typename test_element::dof_type_if*>(&dK(e, 0, 0));
 
     tensor<derivatives_type, nquad> derivatives{};
     for (int q = 0; q < nquad; q++) {
@@ -316,11 +315,12 @@ void element_gradient_kernel([[maybe_unused]] ExecArrayView<double, 3, Execution
     }
 
     for (int J = 0; J < trial_element::ndof; J++) {
-      auto source_and_flux = trial_element::batch_apply_shape_fn(J, derivatives, rule);
-      test_element::integrate(source_and_flux, rule, output_ptr + J, trial_element::ndof);
+      auto source_and_flux = trial_element::batch_apply_shape_fn_interior_face(J, derivatives, rule);
+      test_element::integrate(source_and_flux, rule, output_ptr + J, 2 * trial_element::ndof);
+      std::cout << *(output_ptr + J) << std::endl;
     }
+
   }
-  #endif
 }
 
 template <uint32_t wrt, int Q, mfem::Geometry::Type geom, typename signature, typename lambda_type,

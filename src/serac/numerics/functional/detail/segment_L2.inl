@@ -121,6 +121,35 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
     return output;
   }
 
+  template <typename T, int q>
+  static auto batch_apply_shape_fn_interior_face(int jx, tensor<T, q> input, const TensorProductQuadratureRule<q>&)
+  {
+    static constexpr bool apply_weights = false;
+    static constexpr auto B             = calculate_B<apply_weights, q>();
+
+    using source_t = decltype(get<0>(get<0>(T{})) + get<1>(get<0>(T{})));
+
+    tensor<tuple<source_t, source_t>, q> output;
+
+    for (int qx = 0; qx < q; qx++) {
+      double phi_j      = B(qx, jx);
+
+      auto& d00 = get<0>(get<0>(input(qx)));
+      auto& d01 = get<1>(get<0>(input(qx)));
+      auto& d10 = get<0>(get<1>(input(qx)));
+      auto& d11 = get<1>(get<1>(input(qx)));
+
+      output[qx] = {(d00 + d01) * phi_j, (d10 + d11) * phi_j};
+    }
+
+    std::cout << input[0] << std::endl;
+    std::cout << output[0] << std::endl;
+
+    return output;
+  }
+
+ 
+
   template <int q>
   SERAC_HOST_DEVICE static auto interpolate(const dof_type_if& X, const TensorProductQuadratureRule<q>&)
   {
@@ -218,28 +247,38 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
     }
   }
 
-  template <int q>
-  SERAC_HOST_DEVICE static void integrate(const tensor<tuple< tensor< double, c >, tensor<double, c> >, q>& qf_output,
+  template <typename T, int q>
+  SERAC_HOST_DEVICE static void integrate(const tensor<tuple< T, T >, q>& qf_output,
                                           const TensorProductQuadratureRule<q>&, 
                                           dof_type_if * element_residual,
                                           [[maybe_unused]] int step = 1)
   {
-    using buffer_type = tensor< double, q>;
+
+    constexpr int ntrial = size(T{}) / c;
+
+    using buffer_type = tensor<double, q>;
 
     static constexpr bool apply_weights = true;
     static constexpr auto B             = calculate_B<apply_weights, q>();
 
-    for (int i = 0; i < c; i++) {
-      buffer_type source_0;
-      buffer_type source_1;
+    for (int j = 0; j < ntrial; j++) {
+      for (int i = 0; i < c; i++) {
+        buffer_type source_0;
+        buffer_type source_1;
 
-      for (int qx = 0; qx < q; qx++) {
-        source_0(qx) = get<0>(qf_output[qx])[i];
-        source_1(qx) = get<1>(qf_output[qx])[i];
+        for (int qx = 0; qx < q; qx++) {
+          source_0(qx) = reinterpret_cast<const double*>(&get<0>(qf_output[qx]))[i * ntrial + j];
+          source_1(qx) = reinterpret_cast<const double*>(&get<1>(qf_output[qx]))[i * ntrial + j];
+        }
+
+        //std::cout << j << " " << i << ": " << std::endl;
+        //std::cout << "  " << element_residual[j * step] << std::endl;
+        element_residual[j * step](i, 0) += dot(source_0, B);
+        //std::cout << "  " << element_residual[j * step] << std::endl;
+        element_residual[j * step](i, 1) += dot(source_1, B);
+        //std::cout << "  " << element_residual[j * step] << std::endl;
+
       }
-
-      element_residual[0](i, 0) += dot(source_0, B);
-      element_residual[0](i, 1) += dot(source_1, B);
     }
   }
 
