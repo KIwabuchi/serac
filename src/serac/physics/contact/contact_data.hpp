@@ -130,11 +130,10 @@ public:
   /**
    * @brief Computes the Jacobian including contact terms, given the non-contact Jacobian terms
    *
-   * @param u Solution vector ([displacement; pressure] block vector)
    * @param orig_J The non-contact terms of the Jacobian, not including essential boundary conditions
    * @return Jacobian with contact terms, not including essential boundary conditions
    */
-  std::unique_ptr<mfem::BlockOperator> jacobianFunction(const mfem::Vector& u, mfem::HypreParMatrix* orig_J) const;
+  std::unique_ptr<mfem::BlockOperator> jacobianFunction(mfem::HypreParMatrix* orig_J) const;
 
   /**
    * @brief Set the pressure field
