@@ -18,6 +18,7 @@ set(physics_serial_test_sources
     dynamic_solid_adjoint.cpp
     quasistatic_solid_adjoint.cpp
     finite_element_vector_set_over_domain.cpp
+    solid_multi_material.cpp
     )
 
 serac_add_tests(SOURCES       ${physics_serial_test_sources}
@@ -39,7 +40,6 @@ set(physics_parallel_test_sources
     dynamic_thermal_adjoint.cpp
     solid_reaction_adjoint.cpp
     thermal_nonlinear_solve.cpp
-    solid_nonlinear_solve.cpp
     )
 blt_list_append(TO physics_parallel_test_sources ELEMENTS contact_patch.cpp contact_beam.cpp IF TRIBOL_FOUND)
 
