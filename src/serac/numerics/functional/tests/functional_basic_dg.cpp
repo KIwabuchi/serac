@@ -90,7 +90,7 @@ void L2_test_2D()
   residual.AddInteriorFaceIntegral(
       Dimension<dim-1>{}, DependsOn<0>{},
       [=](double /*t*/, auto X, auto velocity) {
-#if 0
+#if 1
         // compute the surface normal
         auto dX_dxi = get<DERIVATIVE>(X);
         auto n = normalize(cross(dX_dxi));

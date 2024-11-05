@@ -132,18 +132,19 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
     tensor<tuple<source_t, source_t>, q> output;
 
     for (int qx = 0; qx < q; qx++) {
-      double phi_j      = B(qx, jx);
+      int j = jx % ndof;
+      int s = jx / ndof;
+
+      double phi0_j = B(qx, j) * (s == 0);
+      double phi1_j = B(qx, j) * (s == 1);
 
       auto& d00 = get<0>(get<0>(input(qx)));
       auto& d01 = get<1>(get<0>(input(qx)));
       auto& d10 = get<0>(get<1>(input(qx)));
       auto& d11 = get<1>(get<1>(input(qx)));
 
-      output[qx] = {(d00 + d01) * phi_j, (d10 + d11) * phi_j};
+      output[qx] = {d00 * phi0_j + d01 * phi1_j, d10 * phi0_j + d11 * phi1_j};
     }
-
-    std::cout << input[0] << std::endl;
-    std::cout << output[0] << std::endl;
 
     return output;
   }
@@ -256,6 +257,8 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
 
     constexpr int ntrial = size(T{}) / c;
 
+    std::cout << "ntrial: " << ntrial << std::endl;
+
     using buffer_type = tensor<double, q>;
 
     static constexpr bool apply_weights = true;
@@ -276,8 +279,6 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
         element_residual[j * step](i, 0) += dot(source_0, B);
         //std::cout << "  " << element_residual[j * step] << std::endl;
         element_residual[j * step](i, 1) += dot(source_1, B);
-        //std::cout << "  " << element_residual[j * step] << std::endl;
-
       }
     }
   }
