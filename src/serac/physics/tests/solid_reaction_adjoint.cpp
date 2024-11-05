@@ -43,7 +43,7 @@ std::unique_ptr<SolidMechanicsType> createNonlinearSolidMechanicsSolver(mfem::Pa
 {
   static int iter  = 0;
   auto       solid = std::make_unique<SolidMechanicsType>(nonlinear_opts, solid_mechanics::direct_linear_options,
-                                                    solid_mechanics::default_quasistatic_options, geoNonlinear,
+                                                    solid_mechanics::default_quasistatic_options,
                                                     physics_prefix + std::to_string(iter++), mesh_tag,
                                                     std::vector<std::string>{"shear modulus", "bulk modulus"});
 
