@@ -321,7 +321,7 @@ double solution_error(PatchBoundaryCondition bc)
 
   auto equation_solver = std::make_unique<EquationSolver>(nonlin_solver_options, serac::solid_mechanics::default_linear_options, pmesh.GetComm());
 
-  SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On, "solid", mesh_tag);
+  SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, "solid", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density=1.0, .K=1.0, .G=1.0};
   solid.setMaterial(mat);
@@ -396,7 +396,7 @@ double pressure_error()
 
   auto equation_solver = std::make_unique<EquationSolver>(nonlin_solver_options, serac::solid_mechanics::default_linear_options, pmesh.GetComm());
 
-  SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On, "solid", mesh_tag);
+  SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, "solid", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density=1.0, .K=1.0, .G=1.0};
   solid.setMaterial(mat);

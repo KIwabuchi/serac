@@ -307,7 +307,7 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
 
   SolidMechanics<p, dim> solid(nonlin_opts, serac::solid_mechanics::default_linear_options,
                                TimesteppingOptions{TimestepMethod::Newmark, DirichletEnforcementMethod::DirectControl},
-                               GeometricNonlinearities::On, "solid_dynamics", mesh_tag);
+                               "solid_dynamics", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = 1.0, .G = 1.0};
   solid.setMaterial(mat);
