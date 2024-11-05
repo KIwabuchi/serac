@@ -52,7 +52,7 @@ void functional_solid_test_robin_condition()
                                                   .print_level    = 1};
 
   SolidMechanics<p, dim> solid_solver(nonlinear_options, solid_mechanics::default_linear_options,
-                                      solid_mechanics::default_quasistatic_options, GeometricNonlinearities::Off,
+                                      solid_mechanics::default_quasistatic_options,
                                       "solid_mechanics", mesh_tag);
   // _solver_params_end
 

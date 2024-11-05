@@ -73,7 +73,7 @@ TEST_P(ContactTest, patch)
                                  .penalty     = 1.0e4};
 
   SolidMechanicsContact<p, dim> solid_solver(nonlinear_options, linear_options,
-                                             solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On,
+                                             solid_mechanics::default_quasistatic_options,
                                              name, "patch_mesh");
 
   double                      K = 10.0;

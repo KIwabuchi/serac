@@ -153,8 +153,7 @@ TEST(quasistatic, finiteDifference)
                                                          .print_level    = 1};
   auto seracSolid = ::std::make_unique<solidType>(nonlinear_options, serac::solid_mechanics::direct_linear_options,
                                                   ::serac::solid_mechanics::default_quasistatic_options,
-                                                  ::serac::GeometricNonlinearities::On, physics_prefix, mesh_tag,
-                                                  std::vector<std::string>{"E", "v"});
+                                                  physics_prefix, mesh_tag, std::vector<std::string>{"E", "v"});
 
   using materialType = ParameterizedNeoHookeanSolid;
   materialType material;

@@ -66,7 +66,7 @@ TEST_P(ContactTest, beam)
                                  .penalty     = 1.0e2};
 
   SolidMechanicsContact<p, dim> solid_solver(nonlinear_options, linear_options,
-                                             solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On,
+                                             solid_mechanics::default_quasistatic_options,
                                              name, "beam_mesh");
 
   double                      K = 10.0;

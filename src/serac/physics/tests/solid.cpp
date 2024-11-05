@@ -57,7 +57,7 @@ void functional_solid_test_static_J2()
                                                   .print_level    = 1};
 
   SolidMechanics<p, dim> solid_solver(nonlinear_options, linear_options, solid_mechanics::default_quasistatic_options,
-                                      GeometricNonlinearities::Off, "solid_mechanics", mesh_tag);
+                                      "solid_mechanics", mesh_tag);
   // _solver_params_end
 
   using Hardening = solid_mechanics::LinearHardening;
@@ -140,7 +140,7 @@ void functional_solid_spatial_essential_bc()
   // Construct a functional-based solid mechanics solver
   SolidMechanics<p, dim> solid_solver(
       solid_mechanics::default_nonlinear_options, solid_mechanics::direct_linear_options,
-      solid_mechanics::default_quasistatic_options, GeometricNonlinearities::Off, "solid_mechanics", mesh_tag);
+      solid_mechanics::default_quasistatic_options, "solid_mechanics", mesh_tag);
 
   solid_mechanics::LinearIsotropic mat{1.0, 1.0, 1.0};
   solid_solver.setMaterial(mat);
@@ -294,7 +294,7 @@ void functional_parameterized_solid_test(double expected_disp_norm)
                                                           std::move(preconditioner));
 
   SolidMechanics<p, dim, Parameters<H1<1>, H1<1>>> solid_solver(
-      std::move(equation_solver), solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On,
+      std::move(equation_solver), solid_mechanics::default_quasistatic_options,
       "parameterized_solid", mesh_tag, {"shear", "bulk"});
   // _custom_solver_end
 

@@ -20,7 +20,7 @@
 
 namespace serac {
 
-void shape_test(GeometricNonlinearities geo_nonlin)
+void shape_test()
 {
   MPI_Barrier(MPI_COMM_WORLD);
 
@@ -112,7 +112,7 @@ void shape_test(GeometricNonlinearities geo_nonlin)
 
     // Construct a functional-based solid mechanics solver including references to the shape velocity field.
     SolidMechanics<p, dim> solid_solver(nonlinear_options, linear_options, solid_mechanics::default_quasistatic_options,
-                                        geo_nonlin, "solid_functional", mesh_tag);
+                                        "solid_functional", mesh_tag);
 
     // Set the initial displacement and boundary condition
     solid_solver.setDisplacementBCs(ess_bdr, bc);
@@ -156,7 +156,7 @@ void shape_test(GeometricNonlinearities geo_nonlin)
 
     // Construct a functional-based solid mechanics solver including references to the shape velocity field.
     SolidMechanics<p, dim> solid_solver_no_shape(nonlinear_options, linear_options,
-                                                 solid_mechanics::default_quasistatic_options, geo_nonlin,
+                                                 solid_mechanics::default_quasistatic_options,
                                                  "solid_functional", new_mesh_tag);
 
     mfem::VisItDataCollection visit_dc("pure_version", const_cast<mfem::ParMesh*>(&solid_solver_no_shape.mesh()));
@@ -187,8 +187,8 @@ void shape_test(GeometricNonlinearities geo_nonlin)
   EXPECT_LT(relative_error, 4.5e-12);
 }
 
-TEST(SolidMechanics, MoveShapeLinear) { shape_test(GeometricNonlinearities::Off); }
-TEST(SolidMechanics, MoveShapeNonlinear) { shape_test(GeometricNonlinearities::On); }
+TEST(SolidMechanics, MoveShapeLinear) { shape_test(); }
+TEST(SolidMechanics, MoveShapeNonlinear) { shape_test(); }
 
 }  // namespace serac
 

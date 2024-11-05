@@ -32,7 +32,6 @@ const std::string physics_prefix = "solid";
 
 using SolidMaterial = solid_mechanics::ParameterizedNeoHookeanSolid;
 // using SolidMaterial = solid_mechanics::ParameterizedLinearIsotropicSolid;
-auto geoNonlinear = GeometricNonlinearities::Off;
 
 constexpr double boundary_disp       = 0.013;
 constexpr double shear_modulus_value = 1.0;

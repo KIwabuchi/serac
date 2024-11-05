@@ -28,7 +28,6 @@ const std::string mesh_tag       = "mesh";
 const std::string physics_prefix = "solid";
 
 using SolidMaterial = solid_mechanics::NeoHookean;
-auto geoNonlinear   = GeometricNonlinearities::On;
 
 struct TimeSteppingInfo {
   TimeSteppingInfo() : dts({0.0, 0.2, 0.4, 0.24, 0.12, 0.0}) {}

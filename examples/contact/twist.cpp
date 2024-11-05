@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 
   serac::SolidMechanicsContact<p, dim> solid_solver(nonlinear_options, linear_options,
                                                     serac::solid_mechanics::default_quasistatic_options,
-                                                    serac::GeometricNonlinearities::On, name, "twist_mesh");
+                                                    name, "twist_mesh");
 
   serac::solid_mechanics::NeoHookean mat{1.0, 10.0, 10.0};
   solid_solver.setMaterial(mat);
