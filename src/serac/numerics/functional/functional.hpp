@@ -220,6 +220,8 @@ public:
              std::array<const mfem::ParFiniteElementSpace*, num_trial_spaces> trial_fes)
       : update_qdata_(false), test_space_(test_fes), trial_space_(trial_fes)
   {
+    SERAC_MARK_FUNCTION;
+
     auto mem_type = mfem::Device::GetMemoryType();
 
     for (auto type : {Domain::Type::Elements, Domain::Type::BoundaryElements}) {
@@ -299,7 +301,7 @@ public:
 
   /// @overload
   template <int dim, int... args, typename lambda, typename qpt_data_type = Nothing>
-  void AddDomainIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, Domain& domain,
+  void AddDomainIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, const Domain& domain,
                          std::shared_ptr<QuadratureData<qpt_data_type>> qdata = NoQData)
   {
     if (domain.mesh_.GetNE() == 0) return;
@@ -543,6 +545,7 @@ private:
           trial_space_(f.trial_space_[which]),
           df_(f.test_space_->GetTrueVSize())
     {
+      SERAC_MARK_FUNCTION;
     }
 
     /**
