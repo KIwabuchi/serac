@@ -187,8 +187,7 @@ void shape_test()
   EXPECT_LT(relative_error, 4.5e-12);
 }
 
-TEST(SolidMechanics, MoveShapeLinear) { shape_test(); }
-TEST(SolidMechanics, MoveShapeNonlinear) { shape_test(); }
+TEST(SolidMechanics, MoveShape) { shape_test(); }
 
 }  // namespace serac
 
