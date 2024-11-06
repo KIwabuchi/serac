@@ -109,11 +109,7 @@ of this file, use `cali-query <https://software.llnl.gov/Caliper/tools.html#cali
 
 To view this data with SPOT, open a browser, navigate to the SPOT server (e.g. `LC <https://lc.llnl.gov/spot2>`_), and open the directory containing one or more ``.cali`` files.  For more information, watch this recorded `tutorial <https://www.youtube.com/watch?v=p8gjA6rbpvo>`_.
 
-==================
 Benchmarking Serac
-==================
-
-Running Benchmarks
 ------------------
 
 To run all of Serac's benchmarks in one command, first make sure Serac is configured
@@ -150,8 +146,9 @@ way:
 - Select one option from each category to filter the graph
 - Scroll down to the table and and select the "compare" tab to view the graph
 
-When changing the filter options in the pie charts, ensure you deselect the previous options, so you don't view two of
-one single category.
+Filtering benchmarks in this way will allow you to see changes of one benchmark over time, rather than a mix of many
+different ones. When changing the filter options in the pie and bar charts, ensure you deselect the previous options, so
+you don't view two of one single category.
 
 .. note::
   There is a bug in SPOT where if you remove Caliper files from a directory, they still show up on SPOT - if you've
