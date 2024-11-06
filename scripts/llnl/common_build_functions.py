@@ -328,7 +328,7 @@ def build_and_test_host_config(test_root, host_config, report_to_stdout=False, e
             return res
     else:
         # Create empty xml file to avoid Azure CI warning when not running tests
-        empty_ctest_file = pjoin(build_dir, "Testing/*/Test.xml")
+        empty_ctest_file = pjoin(build_dir, "Test.xml")
         with open(empty_ctest_file , 'w'):
             pass
         print("[skipping unit tests]")
