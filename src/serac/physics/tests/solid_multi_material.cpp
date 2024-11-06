@@ -70,7 +70,7 @@ TEST(Solid, MultiMaterial)
                                                   .print_level    = 1};
 
   SolidMechanics<p, dim> solid(nonlinear_options, linear_options, solid_mechanics::default_quasistatic_options,
-                               GeometricNonlinearities::Off, "solid_mechanics", mesh_tag);
+                               "solid_mechanics", mesh_tag);
   // _solver_params_end
 
   using Material = solid_mechanics::LinearIsotropic;
@@ -186,7 +186,7 @@ TEST(Solid, MultiMaterialWithState)
                                                   .print_level    = 1};
 
   SolidMechanics<p, dim> solid(nonlinear_options, linear_options, solid_mechanics::default_quasistatic_options,
-                               GeometricNonlinearities::Off, "solid_mechanics", mesh_tag);
+                               "solid_mechanics", mesh_tag);
 
   auto is_in_left = [](std::vector<tensor<double, dim>> coords, int /* attribute */) {
     return average(coords)[0] < 0.5 * L;
