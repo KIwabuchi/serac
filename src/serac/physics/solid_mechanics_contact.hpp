@@ -62,8 +62,8 @@ public:
                         bool checkpoint_to_disk = false, bool use_warm_start = true)
       : SolidMechanicsContact(
             std::make_unique<EquationSolver>(nonlinear_opts, lin_opts, StateManager::mesh(mesh_tag).GetComm()),
-            timestepping_opts, geom_nonlin, physics_name, mesh_tag, parameter_names, cycle, time,
-            checkpoint_to_disk, use_warm_start)
+            timestepping_opts, geom_nonlin, physics_name, mesh_tag, parameter_names, cycle, time, checkpoint_to_disk,
+            use_warm_start)
   {
   }
 
@@ -120,8 +120,8 @@ public:
   {
     auto residual_fn = [this](const mfem::Vector& u, mfem::Vector& r) {
       const mfem::Vector u_blk(const_cast<mfem::Vector&>(u), 0, displacement_.Size());
-      const mfem::Vector res = (*residual_)(time_, shape_displacement_, u_blk, acceleration_,
-                                            *parameters_[parameter_indices].state...);
+      const mfem::Vector res =
+          (*residual_)(time_, shape_displacement_, u_blk, acceleration_, *parameters_[parameter_indices].state...);
 
       // TODO this copy is required as the sundials solvers do not allow move assignments because of their memory
       // tracking strategy
@@ -300,7 +300,6 @@ protected:
     }
 
     if (use_warm_start_) {
-
       // use the most recently evaluated Jacobian
       auto [_, drdu] = (*residual_)(time_, shape_displacement_, differentiate_wrt(displacement_), acceleration_,
                                     *parameters_[parameter_indices].previous_state...);
@@ -308,24 +307,22 @@ protected:
       J_ = assemble(drdu);
 
       contact_.update(cycle_, time_, dt);
-      if (contact_.haveLagrangeMultipliers())
-      {
-        J_offsets_ = mfem::Array<int>({0, displacement_.Size(), displacement_.Size() + contact_.numPressureDofs()});
+      if (contact_.haveLagrangeMultipliers()) {
+        J_offsets_    = mfem::Array<int>({0, displacement_.Size(), displacement_.Size() + contact_.numPressureDofs()});
         J_constraint_ = contact_.jacobianFunction(J_.release());
 
         // take ownership of blocks
         J_constraint_->owns_blocks = false;
-        J_                         = std::unique_ptr<mfem::HypreParMatrix>(
-            static_cast<mfem::HypreParMatrix*>(&J_constraint_->GetBlock(0, 0)));
-        J_12_ = std::unique_ptr<mfem::HypreParMatrix>(
-            static_cast<mfem::HypreParMatrix*>(&J_constraint_->GetBlock(0, 1)));
-        J_21_ = std::unique_ptr<mfem::HypreParMatrix>(
-            static_cast<mfem::HypreParMatrix*>(&J_constraint_->GetBlock(1, 0)));
-        J_22_ = std::unique_ptr<mfem::HypreParMatrix>(
-            static_cast<mfem::HypreParMatrix*>(&J_constraint_->GetBlock(1, 1)));
+        J_ = std::unique_ptr<mfem::HypreParMatrix>(static_cast<mfem::HypreParMatrix*>(&J_constraint_->GetBlock(0, 0)));
+        J_12_ =
+            std::unique_ptr<mfem::HypreParMatrix>(static_cast<mfem::HypreParMatrix*>(&J_constraint_->GetBlock(0, 1)));
+        J_21_ =
+            std::unique_ptr<mfem::HypreParMatrix>(static_cast<mfem::HypreParMatrix*>(&J_constraint_->GetBlock(1, 0)));
+        J_22_ =
+            std::unique_ptr<mfem::HypreParMatrix>(static_cast<mfem::HypreParMatrix*>(&J_constraint_->GetBlock(1, 1)));
 
         J_e_.reset();
-        J_e_ = bcs_.eliminateAllEssentialDofsFromMatrix(*J_);
+        J_e_    = bcs_.eliminateAllEssentialDofsFromMatrix(*J_);
         J_e_21_ = std::unique_ptr<mfem::HypreParMatrix>(J_21_->EliminateCols(bcs_.allEssentialTrueDofs()));
         J_12_->EliminateRows(bcs_.allEssentialTrueDofs());
 
@@ -343,7 +340,7 @@ protected:
 
       // Update the linearized Jacobian matrix
       mfem::Vector augmented_residual(displacement_.space().TrueVSize() + contact_.numPressureDofs());
-      augmented_residual = 0.0;
+      augmented_residual     = 0.0;
       const mfem::Vector res = (*residual_)(time_ + dt, shape_displacement_, displacement_, acceleration_,
                                             *parameters_[parameter_indices].state...);
 

@@ -82,12 +82,10 @@ TEST_P(ContactPatchTied, patch)
   solid_solver.setMaterial(mat);
 
   // Define the function for the initial displacement and boundary condition
-  auto zero_disp_bc    = [](const mfem::Vector&) { return 0.0; };
+  auto zero_disp_bc = [](const mfem::Vector&) { return 0.0; };
   // NOTE: Tribol will miss this contact if warm start doesn't account for contact
-  constexpr double max_disp = 0.2;
-  auto nonzero_disp_bc = [](const mfem::Vector&, double t) {
-    return -max_disp*t;
-  };
+  constexpr double max_disp        = 0.2;
+  auto             nonzero_disp_bc = [](const mfem::Vector&, double t) { return -max_disp * t; };
 
   // Define a boundary attribute set and specify initial / boundary conditions
   solid_solver.setDisplacementBCs({1}, zero_disp_bc, 0);
@@ -106,9 +104,8 @@ TEST_P(ContactPatchTied, patch)
 
   // Perform the quasi-static solve
   constexpr int n_steps = 1;
-  double dt = 1.0 / static_cast<double>(n_steps);
-  for (int i{0}; i < n_steps; ++i)
-  {
+  double        dt      = 1.0 / static_cast<double>(n_steps);
+  for (int i{0}; i < n_steps; ++i) {
     solid_solver.advanceTimestep(dt);
 
     // Output the sidre-based plot files
