@@ -39,12 +39,6 @@ solid = {
     -- neo-Hookean material parameters
     materials = { { model = "NeoHookean", mu = 0.25, K = 10.0, density = 1.0 }, },
 
-    -- Turn the material nonlinearities off
-    -- TODO: this should be replaced with a proper material definition
-    -- BT 11/5/24: I think this option is outdated and no longer used, can an inlet
-    -- expert confirm?
-    material_nonlin = false,
-
     -- boundary condition parameters
     boundary_conds = {
         ['displacement'] = {
