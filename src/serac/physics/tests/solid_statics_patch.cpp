@@ -88,8 +88,7 @@ public:
     // natural BCs
     typename Material::State state;
     auto H = make_tensor<dim, dim>([&](int i, int j) { return A(i,j); });
-    tensor<double, dim, dim> sigma = material(state, H);
-    auto P = solid_mechanics::CauchyToPiola(sigma, H);
+    tensor<double, dim, dim> P = material(state, H);
     auto traction = [P](auto, auto n0, auto) { return dot(P, n0); };
     sf.setTraction(traction);
   }
@@ -188,8 +187,7 @@ public:
     auto traction = [=](auto X, auto n0, auto) {
       auto H = gradient(get_value(X));
       typename material_type::State state{};
-      auto sigma = material(state, H);
-      auto P = solid_mechanics::CauchyToPiola(sigma, H);
+      auto P = material(state, H);
       return dot(P, n0);
     };
 
@@ -199,8 +197,7 @@ public:
       auto X_val = get_value(X);
       auto H = gradient(make_dual(X_val));
       solid_mechanics::LinearIsotropic::State state{};
-      auto sigma = material(state, H);
-      auto P = solid_mechanics::CauchyToPiola(sigma, H);
+      auto P = material(state, H);
       auto dPdX = get_gradient(P);
       tensor<double,dim> divP{};
       for (int i = 0; i < dim; i++) {
@@ -324,7 +321,7 @@ double solution_error(PatchBoundaryCondition bc)
 
   auto equation_solver = std::make_unique<EquationSolver>(nonlin_solver_options, serac::solid_mechanics::default_linear_options, pmesh.GetComm());
 
-  SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On, "solid", mesh_tag);
+  SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, "solid", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density=1.0, .K=1.0, .G=1.0};
   solid.setMaterial(mat);
@@ -399,7 +396,7 @@ double pressure_error()
 
   auto equation_solver = std::make_unique<EquationSolver>(nonlin_solver_options, serac::solid_mechanics::default_linear_options, pmesh.GetComm());
 
-  SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On, "solid", mesh_tag);
+  SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, "solid", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density=1.0, .K=1.0, .G=1.0};
   solid.setMaterial(mat);

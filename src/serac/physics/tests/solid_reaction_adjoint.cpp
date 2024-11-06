@@ -32,7 +32,6 @@ const std::string physics_prefix = "solid";
 
 using SolidMaterial = solid_mechanics::ParameterizedNeoHookeanSolid;
 // using SolidMaterial = solid_mechanics::ParameterizedLinearIsotropicSolid;
-auto geoNonlinear = GeometricNonlinearities::Off;
 
 constexpr double boundary_disp       = 0.013;
 constexpr double shear_modulus_value = 1.0;
@@ -43,10 +42,9 @@ std::unique_ptr<SolidMechanicsType> createNonlinearSolidMechanicsSolver(mfem::Pa
                                                                         const SolidMaterial&          mat)
 {
   static int iter  = 0;
-  auto       solid = std::make_unique<SolidMechanicsType>(nonlinear_opts, solid_mechanics::direct_linear_options,
-                                                    solid_mechanics::default_quasistatic_options, geoNonlinear,
-                                                    physics_prefix + std::to_string(iter++), mesh_tag,
-                                                    std::vector<std::string>{"shear modulus", "bulk modulus"});
+  auto       solid = std::make_unique<SolidMechanicsType>(
+      nonlinear_opts, solid_mechanics::direct_linear_options, solid_mechanics::default_quasistatic_options,
+      physics_prefix + std::to_string(iter++), mesh_tag, std::vector<std::string>{"shear modulus", "bulk modulus"});
 
   // Construct and initialized the user-defined moduli to be used as a differentiable parameter in
   // the solid physics module.
