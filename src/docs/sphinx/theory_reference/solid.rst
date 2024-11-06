@@ -48,7 +48,7 @@ value problem
 .. math::
 
    \begin{align*}
-   \nabla_\mathbf{X} \cdot \mathbf{P} + \rho_0 \mathbf{b}_0 &= \rho \ddot{\mathbf{u}} \\
+   \nabla_\mathbf{X} \cdot \mathbf{P} + \rho_0 \mathbf{b}_0 &= \rho_0 \ddot{\mathbf{u}} \\
    \mathbf{u} &= \mathbf{u}_D & \text{on } \Gamma_D \\
    \mathbf{P} \mathbf{n}_0 &= \mathbf{t}_0 & \text{on } \Gamma_N \\
    \mathbf{u}(\mathbf{X}, 0) & = \mathbf{u}_0 \\
