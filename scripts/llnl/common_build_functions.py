@@ -327,6 +327,10 @@ def build_and_test_host_config(test_root, host_config, report_to_stdout=False, e
             print("[ERROR: Tests for host-config: %s failed]\n" % host_config)
             return res
     else:
+        # Create empty xml file to avoid Azure CI errors when not running tests
+        empty_ctest_file = pjoin(build_dir, "Testing/*/Test.xml")
+        with open(empty_ctest_file , 'w'):
+            pass
         print("[skipping unit tests]")
 
     # build the docs
