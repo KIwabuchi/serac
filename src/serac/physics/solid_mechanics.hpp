@@ -422,6 +422,77 @@ public:
   }
 
   /**
+   * @brief Set essential displacement boundary conditions on all components
+   *
+   * @param[in] applied_displacement
+   * @param[in] domain Domain to apply the boundary condition to
+   *
+   * @note This method must be called prior to completeSetup()
+   *
+   * The signature of the applied_displacement callable is:
+   * tensor<double, dim> applied_displacement(tensor<double, dim> X, double t)
+   * Parameters:
+   *   X - coordinates of node
+   *   t - time
+   * Returns:
+   *   u, vector of applied displacements
+   */
+  template <typename AppliedDisplacementFunction>
+  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain)
+  {
+    auto mfem_coefficient_function = [applied_displacement](const mfem::Vector& X_mfem, double t, mfem::Vector& u_mfem) {
+      tensor<double, dim> X;
+      std::copy(X_mfem.begin(), X_mfem.end(), X.data);
+      auto u = applied_displacement(X, t);
+      std::copy(u.data, u.data + dim, u_mfem.begin());
+    };
+
+    // Project the coefficient onto the grid function
+    disp_bdr_coef_ = std::make_shared<mfem::VectorFunctionCoefficient>(dim, mfem_coefficient_function);
+
+    auto dof_list = domain.dof_list(&displacement_.space());
+    displacement_.space().DofsToVDofs(dof_list);
+
+    bcs_.addEssential(dof_list, disp_bdr_coef_, displacement_.space());
+  }
+
+
+  /**
+   * @brief Set essential displacement boundary conditions on one component
+   *
+   * @param[in] applied_displacement_component
+   * @param[in] domain Domain to apply the boundary condition to
+   *
+   * @note This method must be called prior to completeSetup()
+   *
+   * The signature of the applied_displacement callable is:
+   * tensor<double, dim> applied_displacement(tensor<double, dim> X, double t)
+   * Parameters:
+   *   X - coordinates of node
+   *   t - time
+   * Returns:
+   *   u, vector of applied displacements
+   */
+  template <typename AppliedDisplacementFunction>
+  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement_component, const Domain& domain, int component)
+  {
+    auto mfem_coefficient_function = [&applied_displacement_component, component](const mfem::Vector& X_mfem, double t, mfem::Vector& u_mfem) {
+      tensor<double, dim> X;
+      std::copy(X_mfem.begin(), X_mfem.end(), X.data);
+      u_mfem = 0.0;
+      u_mfem(component) = applied_displacement_component(X, t);
+    };
+
+    // Project the coefficient onto the grid function
+    disp_bdr_coef_ = std::make_shared<mfem::VectorFunctionCoefficient>(dim, mfem_coefficient_function);
+
+    auto dof_list = domain.dof_list(&displacement_.space());
+    displacement_.space().DofsToVDofs(component, dof_list);
+
+    bcs_.addEssential(dof_list, disp_bdr_coef_, displacement_.space());
+  }
+
+  /**
    * @brief Set essential displacement boundary conditions (strongly enforced)
    *
    * @param[in] disp_bdr The boundary attributes from the mesh on which to enforce a displacement
@@ -479,27 +550,6 @@ public:
     component_disp_bdr_coef_ = std::make_shared<mfem::FunctionCoefficient>(disp);
 
     bcs_.addEssential(disp_bdr, component_disp_bdr_coef_, displacement_.space(), component);
-  }
-
-
-
-  template <typename AppliedDisplacementFunction>
-  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain)
-  {
-    auto mfem_coefficient_function = [applied_displacement](const mfem::Vector& X_mfem, double t, mfem::Vector& u_mfem) {
-      tensor<double, dim> X;
-      std::copy(X_mfem.begin(), X_mfem.end(), X.data);
-      auto u = applied_displacement(X, t);
-      std::copy(u.data, u.data + dim, u_mfem.begin());
-    };
-
-    // Project the coefficient onto the grid function
-    disp_bdr_coef_ = std::make_shared<mfem::VectorFunctionCoefficient>(dim, mfem_coefficient_function);
-
-    auto dof_list = domain.dof_list(&displacement_.space());
-    displacement_.space().DofsToVDofs(dof_list);
-
-    bcs_.addEssential(dof_list, disp_bdr_coef_, displacement_.space());
   }
 
   /**
