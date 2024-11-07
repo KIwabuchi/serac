@@ -136,12 +136,12 @@ files:
 - `SPOT CZ <https://lc.llnl.gov/spot2>`_
 - `SPOT RZ <https://rzlc.llnl.gov/spot2>`_
 
-Serac benchmarks are run weekly to track changes over time. The following are steps to view this data in a meaningful
+Serac benchmarks are run weekly to track changes over time. The following are steps to visualize this data in a meaningful
 way:
 
 - Go to https://lc.llnl.gov/spot2/?sf=/usr/WS2/smithdev/califiles
 - Click the check mark button on the top right to view additional data categories
-- Ensure ``mpi.world.size``, ``executable``, ``cluster``, and ``compilers`` are ticked on
+- Ensure ``mpi.world.size``, ``executable``, ``cluster``, and ``compilers`` are enabled
 - Find the pie and bar charts associated with those categories
 - Select one option from each category to filter the graph
 - Scroll down to the table and and select the "compare" tab to view the graph
