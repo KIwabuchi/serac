@@ -210,10 +210,11 @@ TEST(J2, Uniaxial)
   };
 
   for (auto r : response_history) {
-    double J  = detApIm1(get<1>(r)) + 1;
-    double e  = std::log1p(get<1>(r)[0][0]);       // log strain
-    double s  = get<2>(r)[0][0] * J;               // Kirchhoff stress
-    double pe = -std::log(get<3>(r).Fpinv[0][0]);  // plastic strain
+    auto [t, dudx, P, state] = r;
+    auto   TK                = dot(P, transpose(dudx + Identity<3>()));
+    double e                 = std::log1p(get<1>(r)[0][0]);       // log strain
+    double s                 = TK[0][0];                          // Kirchhoff stress
+    double pe                = -std::log(get<3>(r).Fpinv[0][0]);  // plastic strain
     ASSERT_NEAR(s, stress_exact(e), 1e-6 * std::abs(stress_exact(e)));
     ASSERT_NEAR(pe, plastic_strain_exact(e), 1e-6 * std::abs(plastic_strain_exact(e)));
   }
@@ -304,8 +305,8 @@ TEST(J2, FrameIndifference)
   // initialize internal state variables
   auto internal_state = Material::State{};
 
-  // stress components in original coordinate frame
-  auto sigma = material(internal_state, H);
+  // Piola stress components in original coordinate frame
+  auto P = material(internal_state, H);
 
   // make sure that this load case is actually yielding
   ASSERT_GT(internal_state.accumulated_plastic_strain, 1e-3);
@@ -320,10 +321,10 @@ TEST(J2, FrameIndifference)
   auto internal_state_star = Material::State{};
 
   // stress in second coordinate frame
-  auto sigma_star = material(internal_state_star, H_star);
+  auto P_star = material(internal_state_star, H_star);
 
-  auto error = sigma_star - dot(dot(Q, sigma), transpose(Q));
-  ASSERT_LT(norm(error), 1e-13*norm(sigma));
+  auto error = P_star - dot(Q, P);
+  ASSERT_LT(norm(error), 1e-13*norm(P));
 
   // The plastic distortion Fp has no legs in the observed space and should be invariant
   error = internal_state.Fpinv - internal_state_star.Fpinv;

@@ -63,7 +63,7 @@ TEST(SolidMechanics, FiniteDifferenceParameter)
 
   SolidMechanics<p, dim, Parameters<H1<1>, H1<1>>> solid_solver(
       solid_mechanics::default_nonlinear_options, lin_options, solid_mechanics::default_quasistatic_options,
-      GeometricNonlinearities::On, "solid_functional", mesh_tag, {"shear modulus", "bulk modulus"});
+      "solid_functional", mesh_tag, {"shear modulus", "bulk modulus"});
 
   solid_solver.setParameter(0, user_defined_bulk_modulus);
   solid_solver.setParameter(1, user_defined_shear_modulus);
@@ -218,8 +218,7 @@ void finite_difference_shape_test(LoadingType load)
 
   // Construct a functional-based solid solver
   SolidMechanics<p, dim> solid_solver(nonlin_options, solid_mechanics::direct_linear_options,
-                                      solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On,
-                                      "solid_functional", mesh_tag);
+                                      solid_mechanics::default_quasistatic_options, "solid_functional", mesh_tag);
 
   solid_mechanics::NeoHookean mat{1.0, 1.0, 1.0};
   solid_solver.setMaterial(mat);

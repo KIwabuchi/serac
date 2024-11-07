@@ -64,7 +64,7 @@ TEST(BeamBending, TwoDimensional)
 #endif
 
   SolidMechanics<p, dim> solid_solver(nonlinear_options, linear_options, solid_mechanics::default_quasistatic_options,
-                                      GeometricNonlinearities::On, "solid_mechanics", mesh_tag);
+                                      "solid_mechanics", mesh_tag);
 
   double                             K = 1.91666666666667;
   double                             G = 1.0;

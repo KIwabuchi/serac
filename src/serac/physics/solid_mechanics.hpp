@@ -122,7 +122,6 @@ public:
    * @param nonlinear_opts The nonlinear solver options for solving the nonlinear residual equations
    * @param lin_opts The linear solver options for solving the linearized Jacobian equations
    * @param timestepping_opts The timestepping options for the solid mechanics time evolution operator
-   * @param geom_nonlin Flag to include geometric nonlinearities
    * @param physics_name A name for the physics module instance
    * @param mesh_tag The tag for the mesh in the StateManager to construct the physics module on
    * @param parameter_names A vector of the names of the requested parameter fields
@@ -136,13 +135,12 @@ public:
    *       writing and reading the needed trainsient states to disk for adjoint solves
    */
   SolidMechanics(const NonlinearSolverOptions nonlinear_opts, const LinearSolverOptions lin_opts,
-                 const serac::TimesteppingOptions timestepping_opts, const GeometricNonlinearities geom_nonlin,
-                 const std::string& physics_name, std::string mesh_tag, std::vector<std::string> parameter_names = {},
-                 int cycle = 0, double time = 0.0, bool checkpoint_to_disk = false, bool use_warm_start = true)
+                 const serac::TimesteppingOptions timestepping_opts, const std::string& physics_name,
+                 std::string mesh_tag, std::vector<std::string> parameter_names = {}, int cycle = 0, double time = 0.0,
+                 bool checkpoint_to_disk = false, bool use_warm_start = true)
       : SolidMechanics(
             std::make_unique<EquationSolver>(nonlinear_opts, lin_opts, StateManager::mesh(mesh_tag).GetComm()),
-            timestepping_opts, geom_nonlin, physics_name, mesh_tag, parameter_names, cycle, time, checkpoint_to_disk,
-            use_warm_start)
+            timestepping_opts, physics_name, mesh_tag, parameter_names, cycle, time, checkpoint_to_disk, use_warm_start)
   {
   }
 
@@ -151,7 +149,6 @@ public:
    *
    * @param solver The nonlinear equation solver for the implicit solid mechanics equations
    * @param timestepping_opts The timestepping options for the solid mechanics time evolution operator
-   * @param geom_nonlin Flag to include geometric nonlinearities
    * @param physics_name A name for the physics module instance
    * @param mesh_tag The tag for the mesh in the StateManager to construct the physics module on
    * @param parameter_names A vector of the names of the requested parameter fields
@@ -165,9 +162,8 @@ public:
    *       writing and reading the needed trainsient states to disk for adjoint solves
    */
   SolidMechanics(std::unique_ptr<serac::EquationSolver> solver, const serac::TimesteppingOptions timestepping_opts,
-                 const GeometricNonlinearities geom_nonlin, const std::string& physics_name, std::string mesh_tag,
-                 std::vector<std::string> parameter_names = {}, int cycle = 0, double time = 0.0,
-                 bool checkpoint_to_disk = false, bool use_warm_start = true)
+                 const std::string& physics_name, std::string mesh_tag, std::vector<std::string> parameter_names = {},
+                 int cycle = 0, double time = 0.0, bool checkpoint_to_disk = false, bool use_warm_start = true)
       : BasePhysics(physics_name, mesh_tag, cycle, time, checkpoint_to_disk),
         displacement_(
             StateManager::newState(H1<order, dim>{}, detail::addPrefix(physics_name, "displacement"), mesh_tag_)),
@@ -187,7 +183,6 @@ public:
         ode2_(displacement_.space().TrueVSize(),
               {.time = time_, .c0 = c0_, .c1 = c1_, .u = u_, .du_dt = v_, .d2u_dt2 = acceleration_}, *nonlin_solver_,
               bcs_),
-        geom_nonlin_(geom_nonlin),
         use_warm_start_(use_warm_start)
   {
     SERAC_MARK_FUNCTION;
@@ -280,8 +275,7 @@ public:
   SolidMechanics(const SolidMechanicsInputOptions& input_options, const std::string& physics_name, std::string mesh_tag,
                  int cycle = 0, double time = 0.0)
       : SolidMechanics(input_options.nonlin_solver_options, input_options.lin_solver_options,
-                       input_options.timestepping_options, input_options.geom_nonlin, physics_name, mesh_tag, {}, cycle,
-                       time)
+                       input_options.timestepping_options, physics_name, mesh_tag, {}, cycle, time)
   {
     for (auto& mat : input_options.materials) {
       if (std::holds_alternative<serac::solid_mechanics::NeoHookean>(mat)) {
@@ -857,13 +851,10 @@ public:
   template <typename Material>
   struct MaterialStressFunctor {
     /// @brief Constructor for the functor
-    MaterialStressFunctor(Material material, GeometricNonlinearities gn) : material_(material), geom_nonlin_(gn) {}
+    MaterialStressFunctor(Material material) : material_(material) {}
 
     /// @brief Material model
     Material material_;
-
-    /// @brief Enum value for geometric nonlinearities
-    GeometricNonlinearities geom_nonlin_;
 
     /**
      * @brief Material stress response call
@@ -889,15 +880,7 @@ public:
 
       auto stress = material_(state, du_dX, params...);
 
-      auto dx_dX = 0.0 * du_dX + I;
-
-      if (geom_nonlin_ == GeometricNonlinearities::On) {
-        dx_dX += du_dX;
-      }
-
-      auto flux = dot(stress, transpose(inv(dx_dX))) * det(dx_dX);
-
-      return serac::tuple{material_.density * d2u_dt2, flux};
+      return serac::tuple{material_.density * d2u_dt2, stress};
     }
   };
 
@@ -932,7 +915,7 @@ public:
   {
     static_assert(std::is_same_v<StateType, Empty> || std::is_same_v<StateType, typename MaterialType::State>,
                   "invalid quadrature data provided in setMaterial()");
-    MaterialStressFunctor<MaterialType> material_functor(material, geom_nonlin_);
+    MaterialStressFunctor<MaterialType> material_functor(material);
     residual_->AddDomainIntegral(
         Dimension<dim>{},
         DependsOn<0, 1,
@@ -1110,7 +1093,7 @@ public:
   }
 
   /**
-   * @brief Set the pressure boundary condition
+   * @brief Apply a pressure-type follower load
    *
    * @tparam PressureType The type of the pressure load
    * @param pressure_function A function describing the pressure applied to a boundary
@@ -1127,7 +1110,8 @@ public:
    *    values will change to `dual` numbers rather than `double`. (e.g. `tensor<double,3>` becomes `tensor<dual<...>,
    * 3>`)
    *
-   * @note This pressure is applied in the deformed (current) configuration if GeometricNonlinearities are on.
+   * @note Pressure is always applied in the deformed (current) configuration, normal to the deformed surface.
+   *   This only makes sense for finite deformations. Use the `setTraction` method for linearized kinematics.
    *
    * @note This method must be called prior to completeSetup()
    */
@@ -1139,14 +1123,9 @@ public:
 
     residual_->AddBoundaryIntegral(
         Dimension<dim - 1>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
-        [pressure_function, geom_nonlin = geom_nonlin_](double t, auto X, auto displacement, auto /* acceleration */,
-                                                        auto... params) {
+        [pressure_function](double t, auto X, auto displacement, auto /* acceleration */, auto... params) {
           // Calculate the position and normal in the shape perturbed deformed configuration
-          auto x = X + 0.0 * displacement;
-
-          if (geom_nonlin == GeometricNonlinearities::On) {
-            x = x + displacement;
-          }
+          auto x = X + displacement;
 
           auto n = cross(get<DERIVATIVE>(x));
 
@@ -1643,9 +1622,6 @@ protected:
   /// @brief End of step time used in reverse mode so that the time can be decremented on reverse steps
   /// @note This time is important to save to evaluate various parameter sensitivities after each reverse step
   double time_end_step_;
-
-  /// @brief A flag denoting whether to compute geometric nonlinearities in the residual
-  GeometricNonlinearities geom_nonlin_;
 
   /// @brief A flag denoting whether to compute the warm start for improved robustness
   bool use_warm_start_;

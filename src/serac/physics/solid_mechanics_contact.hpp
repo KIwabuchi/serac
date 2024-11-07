@@ -45,7 +45,6 @@ public:
    * @param nonlinear_opts The nonlinear solver options for solving the nonlinear residual equations
    * @param lin_opts The linear solver options for solving the linearized Jacobian equations
    * @param timestepping_opts The timestepping options for the solid mechanics time evolution operator
-   * @param geom_nonlin Flag to include geometric nonlinearities
    * @param physics_name A name for the physics module instance
    * @param mesh_tag The tag for the mesh in the StateManager to construct the physics module on
    * @param parameter_names A vector of the names of the requested parameter fields
@@ -56,14 +55,12 @@ public:
    * large deformation problems
    */
   SolidMechanicsContact(const NonlinearSolverOptions nonlinear_opts, const LinearSolverOptions lin_opts,
-                        const serac::TimesteppingOptions timestepping_opts, const GeometricNonlinearities geom_nonlin,
-                        const std::string& physics_name, std::string mesh_tag,
-                        std::vector<std::string> parameter_names = {}, int cycle = 0, double time = 0.0,
-                        bool checkpoint_to_disk = false, bool use_warm_start = true)
+                        const serac::TimesteppingOptions timestepping_opts, const std::string& physics_name,
+                        std::string mesh_tag, std::vector<std::string> parameter_names = {}, int cycle = 0,
+                        double time = 0.0, bool checkpoint_to_disk = false, bool use_warm_start = true)
       : SolidMechanicsContact(
             std::make_unique<EquationSolver>(nonlinear_opts, lin_opts, StateManager::mesh(mesh_tag).GetComm()),
-            timestepping_opts, geom_nonlin, physics_name, mesh_tag, parameter_names, cycle, time, checkpoint_to_disk,
-            use_warm_start)
+            timestepping_opts, physics_name, mesh_tag, parameter_names, cycle, time, checkpoint_to_disk, use_warm_start)
   {
   }
 
@@ -72,7 +69,6 @@ public:
    *
    * @param solver The nonlinear equation solver for the implicit solid mechanics equations
    * @param timestepping_opts The timestepping options for the solid mechanics time evolution operator
-   * @param geom_nonlin Flag to include geometric nonlinearities
    * @param physics_name A name for the physics module instance
    * @param mesh_tag The tag for the mesh in the StateManager to construct the physics module on
    * @param parameter_names A vector of the names of the requested parameter fields
@@ -83,12 +79,11 @@ public:
    * large deformation problems
    */
   SolidMechanicsContact(std::unique_ptr<serac::EquationSolver> solver,
-                        const serac::TimesteppingOptions timestepping_opts, const GeometricNonlinearities geom_nonlin,
-                        const std::string& physics_name, std::string mesh_tag,
-                        std::vector<std::string> parameter_names = {}, int cycle = 0, double time = 0.0,
-                        bool checkpoint_to_disk = false, bool use_warm_start = true)
-      : SolidMechanicsBase(std::move(solver), timestepping_opts, geom_nonlin, physics_name, mesh_tag, parameter_names,
-                           cycle, time, checkpoint_to_disk, use_warm_start),
+                        const serac::TimesteppingOptions timestepping_opts, const std::string& physics_name,
+                        std::string mesh_tag, std::vector<std::string> parameter_names = {}, int cycle = 0,
+                        double time = 0.0, bool checkpoint_to_disk = false, bool use_warm_start = true)
+      : SolidMechanicsBase(std::move(solver), timestepping_opts, physics_name, mesh_tag, parameter_names, cycle, time, 
+                           checkpoint_to_disk, use_warm_start),
         contact_(mesh_),
         forces_(StateManager::newDual(displacement_.space(), detail::addPrefix(physics_name, "contact_forces")))
   {
