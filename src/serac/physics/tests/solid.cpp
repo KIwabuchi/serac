@@ -368,6 +368,71 @@ TEST(SolidMechanics, 3DQuadStaticJ2) { functional_solid_test_static_J2(); }
 
 TEST(SolidMechanics, SpatialBoundaryCondition) { functional_solid_spatial_essential_bc(); }
 
+TEST(SolidMechanics, BrandonBC)
+{
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  constexpr int p                   = 1;
+  constexpr int dim                 = 3;
+  int           serial_refinement   = 1;
+  int           parallel_refinement = 0;
+
+  // Create DataStore
+  axom::sidre::DataStore datastore;
+  serac::StateManager::initialize(datastore, "solid_mechanics_essential_bc");
+
+  // Construct the appropriate dimension mesh and give it to the data store
+  std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex.mesh";
+
+  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
+
+  std::string mesh_tag{"mesh"};
+
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+
+  // Construct a functional-based solid mechanics solver
+  SolidMechanics<p, dim> solid_solver(solid_mechanics::default_nonlinear_options,
+                                      solid_mechanics::direct_linear_options,
+                                      solid_mechanics::default_quasistatic_options, "solid_mechanics", mesh_tag);
+
+  solid_mechanics::LinearIsotropic mat{1.0, 1.0, 1.0};
+  solid_solver.setMaterial(mat);
+
+  // Set up
+  auto zero_vector = [](const mfem::Vector&, double t, mfem::Vector& u) { u = 0.0; };
+
+
+  // We want to test both the scalar displacement functions including the time argument and the scalar displacement
+  // functions without
+  auto zero_scalar   = [](const mfem::Vector&, double) { return 0.0; };
+  auto scalar_offset = [](const mfem::Vector&) { return -0.1; };
+
+  constexpr double node_tol = 1e-6;
+
+  auto is_on_left = [](std::vector<tensor<double, dim>> face_coords, int) {
+    tensor<double, dim> centroid{};
+    for (auto x : face_coords) {
+      centroid += x;
+    }
+    centroid = centroid / double(face_coords.size());
+    return (centroid[0] < node_tol);
+  };
+
+  auto left = Domain::ofBoundaryElements(pmesh, is_on_left);
+
+  solid_solver.setDisplacementBCs(zero_vector, left);
+
+  // Set a zero initial guess
+  //solid_solver.setDisplacement(zero_vector);
+
+  // Finalize the data structures
+  solid_solver.completeSetup();
+
+  // Perform the quasi-static solve
+  solid_solver.advanceTimestep(1.0);
+  solid_solver.outputStateToDisk("my_bc");
+}
+
 }  // namespace serac
 
 int main(int argc, char* argv[])

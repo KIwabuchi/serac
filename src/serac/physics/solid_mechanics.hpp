@@ -22,6 +22,7 @@
 #include "serac/numerics/odes.hpp"
 #include "serac/numerics/stdfunction_operator.hpp"
 #include "serac/numerics/functional/shape_aware_functional.hpp"
+#include "serac/numerics/functional/domain.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/physics/materials/solid_material.hpp"
 
@@ -478,6 +479,18 @@ public:
     component_disp_bdr_coef_ = std::make_shared<mfem::FunctionCoefficient>(disp);
 
     bcs_.addEssential(disp_bdr, component_disp_bdr_coef_, displacement_.space(), component);
+  }
+
+
+
+
+  void setDisplacementBCs(std::function<void(const mfem::Vector&, double, mfem::Vector&)> displacement_function,
+    const Domain& domain)
+  {
+    // Project the coefficient onto the grid function
+    disp_bdr_coef_ = std::make_shared<mfem::VectorFunctionCoefficient>(dim, displacement_function);
+
+    bcs_.addEssential(domain.dof_list(&displacement_.space()), disp_bdr_coef_, displacement_.space());
   }
 
   /**
