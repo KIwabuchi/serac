@@ -483,12 +483,18 @@ public:
 
 
 
-
-  void setDisplacementBCs(std::function<void(const mfem::Vector&, double, mfem::Vector&)> displacement_function,
-    const Domain& domain)
+  template <typename AppliedDisplacementFunction>
+  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain)
   {
+    auto mfem_coefficient_function = [applied_displacement](const mfem::Vector& X_mfem, double t, mfem::Vector& u_mfem) {
+      tensor<double, dim> X;
+      std::copy(X_mfem.begin(), X_mfem.end(), X.data);
+      auto u = applied_displacement(X, t);
+      std::copy(u.data, u.data + dim, u_mfem.begin());
+    };
+
     // Project the coefficient onto the grid function
-    disp_bdr_coef_ = std::make_shared<mfem::VectorFunctionCoefficient>(dim, displacement_function);
+    disp_bdr_coef_ = std::make_shared<mfem::VectorFunctionCoefficient>(dim, mfem_coefficient_function);
 
     auto dof_list = domain.dof_list(&displacement_.space());
     displacement_.space().DofsToVDofs(dof_list);
