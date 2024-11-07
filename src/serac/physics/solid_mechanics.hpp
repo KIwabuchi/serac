@@ -490,7 +490,10 @@ public:
     // Project the coefficient onto the grid function
     disp_bdr_coef_ = std::make_shared<mfem::VectorFunctionCoefficient>(dim, displacement_function);
 
-    bcs_.addEssential(domain.dof_list(&displacement_.space()), disp_bdr_coef_, displacement_.space());
+    auto dof_list = domain.dof_list(&displacement_.space());
+    displacement_.space().DofsToVDofs(dof_list);
+
+    bcs_.addEssential(dof_list, disp_bdr_coef_, displacement_.space());
   }
 
   /**
