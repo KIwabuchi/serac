@@ -82,7 +82,7 @@ public:
                         const serac::TimesteppingOptions timestepping_opts, const std::string& physics_name,
                         std::string mesh_tag, std::vector<std::string> parameter_names = {}, int cycle = 0,
                         double time = 0.0, bool checkpoint_to_disk = false, bool use_warm_start = true)
-      : SolidMechanicsBase(std::move(solver), timestepping_opts, physics_name, mesh_tag, parameter_names, cycle, time, 
+      : SolidMechanicsBase(std::move(solver), timestepping_opts, physics_name, mesh_tag, parameter_names, cycle, time,
                            checkpoint_to_disk, use_warm_start),
         contact_(mesh_),
         forces_(StateManager::newDual(displacement_.space(), detail::addPrefix(physics_name, "contact_forces")))
