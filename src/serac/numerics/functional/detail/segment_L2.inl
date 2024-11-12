@@ -149,8 +149,6 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
     return output;
   }
 
- 
-
   template <int q>
   SERAC_HOST_DEVICE static auto interpolate(const dof_type_if& X, const TensorProductQuadratureRule<q>&)
   {

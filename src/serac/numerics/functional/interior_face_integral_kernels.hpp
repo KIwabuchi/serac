@@ -309,15 +309,22 @@ void element_gradient_kernel([[maybe_unused]] ExecArrayView<double, 3, Execution
   for (uint32_t e = 0; e < num_elements; e++) {
     auto* output_ptr = reinterpret_cast<typename test_element::dof_type_if*>(&dK(e, 0, 0));
 
+    auto* vec_ptr = reinterpret_cast< tensor<double,8> * >(&dK(e, 0, 0));
+
     tensor<derivatives_type, nquad> derivatives{};
     for (int q = 0; q < nquad; q++) {
       derivatives(q) = qf_derivatives[e * nquad + uint32_t(q)];
     }
 
-    for (int J = 0; J < trial_element::ndof; J++) {
+    for (int J = 0; J < 2 * trial_element::ndof; J++) {
       auto source_and_flux = trial_element::batch_apply_shape_fn_interior_face(J, derivatives, rule);
       test_element::integrate(source_and_flux, rule, output_ptr + J, 2 * trial_element::ndof);
-      std::cout << *(output_ptr + J) << std::endl;
+
+      for (int i = 0; i < 8; i++) {
+        std::cout << vec_ptr[i] << std::endl;
+      }
+      std::cout << std::endl;
+
     }
 
   }
