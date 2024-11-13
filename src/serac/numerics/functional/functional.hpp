@@ -381,6 +381,17 @@ public:
     AddBoundaryIntegral(Dimension<2>{}, which_args, integrand, domain);
   }
 
+  void print_vector(const mfem::Vector & v, std::string name) const {
+    std::cout << name << ": {";
+    for (int i = 0; i < v.Size(); i++) {
+      std::cout << v[i];
+      if (i != v.Size() - 1) {
+        std::cout << ",";
+      }
+    }
+    std::cout << "}\n";
+  }
+
   /**
    * @brief this function computes the directional derivative of `serac::Functional::operator()`
    *
@@ -394,12 +405,18 @@ public:
    */
   void ActionOfGradient(const mfem::Vector& input_T, mfem::Vector& output_T, uint32_t which) const
   {
+
+    //print_vector(input_T, "input_T");
+
     P_trial_[which]->Mult(input_T, input_L_[which]);
 
     output_L_ = 0.0;
 
+    //print_vector(input_L_[which], "input_L_[which]");
+
     for (auto& integral : integrals_) {
       Domain & dom = integral.domain_;
+
 
       const serac::BlockElementRestriction & G_trial = dom.get_restriction(trial_function_spaces_[which]);
       input_E_buffer_[which].SetSize(int(G_trial.ESize()));
@@ -409,14 +426,26 @@ public:
       const serac::BlockElementRestriction & G_test = dom.get_restriction(test_function_space_);
       output_E_buffer_.SetSize(int(G_test.ESize()));
       output_E_.Update(output_E_buffer_, G_test.bOffsets());
+
+      //print_vector(input_E_[which], "input_E_[which]");
+      //print_vector(output_E_, "output_E_");
+
       integral.GradientMult(input_E_[which], output_E_, which);
+
+      //print_vector(output_E_, "output_E_");
 
       // scatter-add to compute residuals on the local processor
       G_test.ScatterAdd(output_E_, output_L_);
+
+      //print_vector(output_L_, "output_L_");
+
     }
 
     // scatter-add to compute global residuals
     P_test_->MultTranspose(output_L_, output_T);
+
+    //print_vector(output_T, "output_T");
+
   }
 
   /**

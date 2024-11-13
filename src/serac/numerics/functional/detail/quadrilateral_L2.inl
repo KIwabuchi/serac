@@ -32,7 +32,7 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
       typename std::conditional<components == 1, tensor<double, ndof>, tensor<double, ndof, components> >::type;
 
   using dof_type = tensor<double, c, p + 1, p + 1>;
-  using dof_type_if = tensor<double, c, 2*ndof>;
+  using dof_type_if = tensor<double, c, 2, p + 1, p + 1>;
 
   using value_type = typename std::conditional<components == 1, double, tensor<double, components> >::type;
   using derivative_type =
@@ -188,7 +188,7 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
   }
 
   template <typename T, int q>
-  static auto batch_apply_shape_fn_interior_face(int jx, tensor<T, q*q> input, const TensorProductQuadratureRule<q>&)
+  static auto batch_apply_shape_fn_interior_face(int j, tensor<T, q*q> input, const TensorProductQuadratureRule<q>&)
   {
 
     static constexpr bool apply_weights = false;
@@ -196,23 +196,26 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
 
     using source_t = decltype(get<0>(get<0>(T{})) + get<1>(get<0>(T{})));
 
+    int jx = j % n;
+    int jy = j / n;
+    int s = j / ndof;
+
     tensor<tuple<source_t, source_t>, q*q> output;
-#if 0
-    for (int qx = 0; qx < q; qx++) {
-      int j = jx % ndof;
-      int s = jx / ndof;
 
-      double phi0_j = B(qx, j) * (s == 0);
-      double phi1_j = B(qx, j) * (s == 1);
+    for (int qy = 0; qy < q; qy++) {
+      for (int qx = 0; qx < q; qx++) {
+        double phi0_j = B(qx, jx) * B(qy, jy) * (s == 0);
+        double phi1_j = B(qx, jx) * B(qy, jy) * (s == 1);
 
-      auto& d00 = get<0>(get<0>(input(qx)));
-      auto& d01 = get<1>(get<0>(input(qx)));
-      auto& d10 = get<0>(get<1>(input(qx)));
-      auto& d11 = get<1>(get<1>(input(qx)));
+        int   Q   = qy * q + qx;
+        auto& d00 = get<0>(get<0>(input(Q)));
+        auto& d01 = get<1>(get<0>(input(Q)));
+        auto& d10 = get<0>(get<1>(input(Q)));
+        auto& d11 = get<1>(get<1>(input(Q)));
 
-      output[qx] = {d00 * phi0_j + d01 * phi1_j, d10 * phi0_j + d11 * phi1_j};
+        output[Q] = {d00 * phi0_j + d01 * phi1_j, d10 * phi0_j + d11 * phi1_j};
+      }
     }
-#endif
 
     return output;
   }
@@ -279,27 +282,38 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
   {
     static constexpr bool apply_weights = false;
     static constexpr auto B             = calculate_B<apply_weights, q>();
-    static constexpr auto G             = calculate_G<apply_weights, q>();
 
     tensor< tuple< tensor<double, c>, tensor<double, c> >, q * q> output;
 
-#if 0
     tensor<double, c, q, q> value{};
 
-    // apply the shape functions
+    // side 0
     for (int i = 0; i < c; i++) {
-      auto A0 = contract<1, 1>(X[i], B);
+      auto A0 = contract<1, 1>(X(i, 0), B);
       value(i) = contract<0, 1>(A0, B);
     }
 
     for (int qy = 0; qy < q; qy++) {
       for (int qx = 0; qx < q; qx++) {
         for (int i = 0; i < c; i++) {
-          get<VALUE>(output.two_dimensional(qy, qx))[i] = value(i, qy, qx);
+          get<0>(output[qy * q + qx])[i] = value(i, qy, qx);
         }
       }
     }
-#endif
+
+    // side 1
+    for (int i = 0; i < c; i++) {
+      auto A0 = contract<1, 1>(X(i, 1), B);
+      value(i) = contract<0, 1>(A0, B);
+    }
+
+    for (int qy = 0; qy < q; qy++) {
+      for (int qx = 0; qx < q; qx++) {
+        for (int i = 0; i < c; i++) {
+          get<1>(output[qy * q + qx])[i] = value(i, qy, qx);
+        }
+      }
+    }
 
     return output;
   }
@@ -359,34 +373,43 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
                                           [[maybe_unused]] int step = 1)
   {
 
-#if 0
     constexpr int ntrial = size(T{}) / c;
-
-    std::cout << "ntrial: " << ntrial << std::endl;
-
-    using buffer_type = tensor<double, q>;
-
     static constexpr bool apply_weights = true;
     static constexpr auto B             = calculate_B<apply_weights, q>();
 
     for (int j = 0; j < ntrial; j++) {
       for (int i = 0; i < c; i++) {
-        buffer_type source_0;
-        buffer_type source_1;
+        tensor<double, q, q> source;
 
-        for (int qx = 0; qx < q; qx++) {
-          source_0(qx) = reinterpret_cast<const double*>(&get<0>(qf_output[qx]))[i * ntrial + j];
-          source_1(qx) = reinterpret_cast<const double*>(&get<1>(qf_output[qx]))[i * ntrial + j];
+        // side 0
+        {
+          for (int qy = 0; qy < q; qy++) {
+            for (int qx = 0; qx < q; qx++) {
+              int Q = qy * q + qx;
+              source(qy, qx) = reinterpret_cast<const double*>(&get<0>(qf_output[Q]))[i * ntrial + j];
+            }
+          }
+
+          auto A0 = contract<1, 0>(source, B);
+          element_residual[j * step](i, 0) += contract<0, 0>(A0, B);
         }
 
-        //std::cout << j << " " << i << ": " << std::endl;
-        //std::cout << "  " << element_residual[j * step] << std::endl;
-        element_residual[j * step](i, 0) += dot(source_0, B);
-        //std::cout << "  " << element_residual[j * step] << std::endl;
-        element_residual[j * step](i, 1) += dot(source_1, B);
+        // side 1
+        {
+          for (int qy = 0; qy < q; qy++) {
+            for (int qx = 0; qx < q; qx++) {
+              int Q = qy * q + qx;
+              source(qy, qx) = reinterpret_cast<const double*>(&get<1>(qf_output[Q]))[i * ntrial + j];
+            }
+          }
+
+          auto A0 = contract<1, 0>(source, B);
+          element_residual[j * step](i, 1) += contract<0, 0>(A0, B);
+        }
+
       }
     }
-#endif
+
   }
 
 
