@@ -197,7 +197,7 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
     using source_t = decltype(get<0>(get<0>(T{})) + get<1>(get<0>(T{})));
 
     int jx = j % n;
-    int jy = j / n;
+    int jy = (j % ndof) /  n;
     int s = j / ndof;
 
     tensor<tuple<source_t, source_t>, q*q> output;
