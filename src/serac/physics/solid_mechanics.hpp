@@ -460,8 +460,10 @@ public:
   /**
    * @brief Set essential displacement boundary conditions on one component
    *
-   * @param[in] applied_displacement_component
-   * @param[in] domain Domain to apply the boundary condition to
+   * @param[in] applied_displacement Function specifying the applied displacement vector. 
+   *   Only the value in the component @p component will be used, the others are ignored.
+   * @param[in] domain Domain over which to apply the boundary condition.
+   * @param[in] component Index of the displacement component that will be constrained
    *
    * @note This method must be called prior to completeSetup()
    *
@@ -474,13 +476,12 @@ public:
    *   u, vector of applied displacements
    */
   template <typename AppliedDisplacementFunction>
-  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement_component, const Domain& domain, int component)
+  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain, int component)
   {
-    auto mfem_coefficient_function = [&applied_displacement_component, component](const mfem::Vector& X_mfem, double t, mfem::Vector& u_mfem) {
+    auto mfem_coefficient_function = [&applied_displacement, component](const mfem::Vector& X_mfem, double t, mfem::Vector& u_mfem) {
       tensor<double, dim> X;
       std::copy(X_mfem.begin(), X_mfem.end(), X.data);
-      u_mfem = 0.0;
-      u_mfem(component) = applied_displacement_component(X, t);
+      u_mfem(component) = applied_displacement(X, t)[component];
     };
 
     // Project the coefficient onto the grid function
