@@ -44,6 +44,7 @@ TEST_P(ContactPatchTied, patch)
   auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), 3, 0);
   StateManager::setMesh(std::move(mesh), "patch_mesh");
 
+// TODO: investigate performance with Petsc
 // #ifdef SERAC_USE_PETSC
 //   LinearSolverOptions linear_options{
 //       .linear_solver        = LinearSolver::PetscGMRES,

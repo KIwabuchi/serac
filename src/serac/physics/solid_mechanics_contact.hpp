@@ -118,7 +118,7 @@ public:
       const mfem::Vector res =
           (*residual_)(time_, shape_displacement_, u_blk, acceleration_, *parameters_[parameter_indices].state...);
 
-      // TODO this copy is required as the sundials solvers do not allow move assignments because of their memory
+      // NOTE this copy is required as the sundials solvers do not allow move assignments because of their memory
       // tracking strategy
       // See https://github.com/mfem/mfem/issues/3531
       mfem::Vector r_blk(r, 0, displacement_.Size());
