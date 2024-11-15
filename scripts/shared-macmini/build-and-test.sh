@@ -18,7 +18,7 @@ git pull >> $OUTPUT_LOG 2>&1
 git submodule update --init --recursive >> $OUTPUT_LOG 2>&1
 
 # Clear previous build(s)
-rm -rf _serac_build_and_test*
+rm -rfv _serac_build_and_test* >> $OUTPUT_LOG 2>&1
 
 # Build and test Serac
 ./scripts/llnl/build_src.py --host-config $HOST_CONFIG -v -j16 >> $OUTPUT_LOG 2>&1
