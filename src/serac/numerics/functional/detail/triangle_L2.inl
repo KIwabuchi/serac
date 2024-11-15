@@ -280,10 +280,11 @@ struct finite_element<mfem::Geometry::TRIANGLE, L2<p, c> > {
   {
     constexpr auto xi = GaussLegendreNodes<q, mfem::Geometry::TRIANGLE>();
 
-    using source_t = decltype(get<0>(get<0>(T{})) + get<1>(get<0>(T{})));
+    using source0_t = decltype(get<0>(get<0>(T{})) + get<1>(get<0>(T{})));
+    using source1_t = decltype(get<0>(get<1>(T{})) + get<1>(get<1>(T{})));
 
     static constexpr int              Q = q * (q + 1) / 2;
-    tensor<tuple<source_t, source_t>, Q> output;
+    tensor<tuple<source0_t, source1_t>, Q> output;
 
     for (int i = 0; i < Q; i++) {
       int j = jx % ndof;
@@ -292,10 +293,10 @@ struct finite_element<mfem::Geometry::TRIANGLE, L2<p, c> > {
       double phi0_j = shape_function(xi[i], j) * (s == 0);
       double phi1_j = shape_function(xi[i], j) * (s == 1);
 
-      auto& d00 = get<0>(get<0>(input(i)));
-      auto& d01 = get<1>(get<0>(input(i)));
-      auto& d10 = get<0>(get<1>(input(i)));
-      auto& d11 = get<1>(get<1>(input(i)));
+      const auto & d00 = get<0>(get<0>(input(i)));
+      const auto & d01 = get<1>(get<0>(input(i)));
+      const auto & d10 = get<0>(get<1>(input(i)));
+      const auto & d11 = get<1>(get<1>(input(i)));
 
       output[i] = {d00 * phi0_j + d01 * phi1_j, d10 * phi0_j + d11 * phi1_j};
     }
@@ -404,8 +405,6 @@ struct finite_element<mfem::Geometry::TRIANGLE, L2<p, c> > {
     constexpr int num_quadrature_points = (q * (q + 1)) / 2;
     constexpr auto integration_points   = GaussLegendreNodes<q, mfem::Geometry::TRIANGLE>();
     constexpr auto integration_weights  = GaussLegendreWeights<q, mfem::Geometry::TRIANGLE>();
-
-    std::cout << "ntrial: " << ntrial << std::endl;
 
     for (int j = 0; j < ntrial; j++) {
       for (int i = 0; i < c; i++) {

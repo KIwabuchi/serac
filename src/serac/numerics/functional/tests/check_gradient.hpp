@@ -13,6 +13,44 @@
 #include "serac/numerics/functional/functional.hpp"
 
 template <typename T>
+void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& U, double epsilon = 1.0e-4) {
+
+  mfem::Vector dU(U.Size());
+  dU = 0.0;
+
+  auto [value, dfdU]                                = f(t, serac::differentiate_wrt(U));
+  std::unique_ptr<mfem::HypreParMatrix> dfdU_matrix = assemble(dfdU);
+
+  std::cout << "{";
+  for (int i = 0; i < U.Size(); i++) {
+    dU[i] = 1;
+    mfem::Vector df_jvp = dfdU(dU);  // matrix-free
+
+    std::cout << "{";
+    for (int j = 0; j < df_jvp.Size(); j++) {
+      std::cout << df_jvp[j];
+      if (j != df_jvp.Size() - 1) {
+        std::cout << ",";
+      } else {
+        std::cout << " ";
+      }
+    }
+    std::cout << "}";
+    if (i != U.Size() - 1) {
+      std::cout << ",\n";
+    } else {
+      std::cout << "\n";
+    }
+
+    dU[i] = 0;
+  }
+  std::cout << "}" << std::endl;
+
+  dfdU_matrix->Print("K.mtx");
+
+}
+
+template <typename T>
 void check_gradient(serac::Functional<T>& f, double t, const mfem::Vector& U, double epsilon = 1.0e-4)
 {
   int seed = 42;
@@ -70,32 +108,12 @@ void check_gradient(serac::Functional<T>& f, double t, const mfem::Vector& U, do
   // by about a factor of two for the forward-difference stencil
   double e1 = df1_fd[0].DistanceTo(df_jvp1.GetData()) / denominator;
   double e2 = df1_fd[1].DistanceTo(df_jvp1.GetData()) / denominator;
-
-  df1_fd[0].Print(std::cout);
-  std::cout << std::endl;
-  df1_fd[1].Print(std::cout);
-  std::cout << std::endl;
-  df_jvp1.Print(std::cout);
-  std::cout << std::endl;
-  df_jvp2.Print(std::cout);
-  std::cout << std::endl;
-
-  std::cout << e1 << " " << e2 << std::endl;
   EXPECT_TRUE(fabs(e1 / e2 - 2.0) < 0.1 || fmin(e1, e2) < 1.0e-9);
-
-  df1_cd[0].Print(std::cout);
-  std::cout << std::endl;
-  df1_cd[1].Print(std::cout);
-  std::cout << std::endl;
-  df_jvp1.Print(std::cout);
-
-  std::cout << "denominator: " << denominator << std::endl;
 
   // halving epsilon should make the error decrease
   // by about a factor of four for the center-difference stencil
   double e3 = df1_cd[0].DistanceTo(df_jvp1.GetData()) / denominator;
   double e4 = df1_cd[1].DistanceTo(df_jvp1.GetData()) / denominator;
-  std::cout << e3 << " " << e4 << std::endl;
   EXPECT_TRUE((fabs(e3 / e4 - 4.0) < 0.1) || fmin(e3, e4) < 1.0e-9);
 }
 

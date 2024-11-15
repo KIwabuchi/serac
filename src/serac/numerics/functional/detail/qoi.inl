@@ -19,6 +19,7 @@ struct finite_element<g, QOI> {
   static constexpr int  ndof       = 1;
 
   using dof_type      = double;
+  using dof_type_if   = double;
   using residual_type = double;
 
   SERAC_HOST_DEVICE static constexpr double shape_functions(double /* xi */) { return 1.0; }

@@ -24,43 +24,7 @@
 using namespace serac;
 using namespace serac::profiling;
 
-template <typename T>
-void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& U, double epsilon = 1.0e-4) {
 
-  mfem::Vector dU(U.Size());
-  dU = 0.0;
-
-  auto [value, dfdU]                                = f(t, serac::differentiate_wrt(U));
-  std::unique_ptr<mfem::HypreParMatrix> dfdU_matrix = assemble(dfdU);
-
-  std::cout << "{";
-  for (int i = 0; i < U.Size(); i++) {
-    dU[i] = 1;
-    mfem::Vector df_jvp = dfdU(dU);  // matrix-free
-
-    std::cout << "{";
-    for (int j = 0; j < df_jvp.Size(); j++) {
-      std::cout << df_jvp[j];
-      if (j != df_jvp.Size() - 1) {
-        std::cout << ",";
-      } else {
-        std::cout << " ";
-      }
-    }
-    std::cout << "}";
-    if (i != U.Size() - 1) {
-      std::cout << ",\n";
-    } else {
-      std::cout << "\n";
-    }
-
-    dU[i] = 0;
-  }
-  std::cout << "}" << std::endl;
-
-  dfdU_matrix->Print("K.mtx");
-
-}
 
 template <int dim, int p>
 void L2_test(std::string meshfile)
@@ -86,7 +50,6 @@ void L2_test(std::string meshfile)
   residual.AddInteriorFaceIntegral(
       Dimension<dim-1>{}, DependsOn<0>{},
       [=](double /*t*/, auto X, auto velocity) {
-#if 1
         // compute the surface normal
         auto dX_dxi = get<DERIVATIVE>(X);
         auto n = normalize(cross(dX_dxi));
@@ -101,26 +64,75 @@ void L2_test(std::string meshfile)
         auto f_1 = u_1 * a;
         auto f_2 = u_2 * a;
         return serac::tuple{f_1, f_2};
-#else
-        return velocity;
-#endif
       }, interior_faces);
 
   double t = 0.0;
   check_gradient(residual, t, U);
 
-  debug_sparse_matrix(residual, t, U);
+}
+
+TEST(basic, L2_test_tris_and_quads_linear) { L2_test<2, 1>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }
+TEST(basic, L2_test_tris_and_quads_quadratic) { L2_test<2, 2>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }
+
+TEST(basic, L2_test_tets_linear) { L2_test<3, 1>(SERAC_REPO_DIR "/data/meshes/patch3D_tets.mesh"); }
+TEST(basic, L2_test_tets_quadratic) { L2_test<3, 2>(SERAC_REPO_DIR "/data/meshes/patch3D_tets.mesh"); }
+
+TEST(basic, L2_test_hexes_linear) { L2_test<3, 1>(SERAC_REPO_DIR "/data/meshes/patch3D_hexes.mesh"); }
+TEST(basic, L2_test_hexes_quadratic) { L2_test<3, 2>(SERAC_REPO_DIR "/data/meshes/patch3D_hexes.mesh"); }
+
+template <int dim, int p>
+void L2_qoi_test(std::string meshfile)
+{
+  using trial_space = L2<p, dim>;
+
+  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(meshfile), 0);
+
+  auto fec = mfem::L2_FECollection(p, dim, mfem::BasisType::GaussLobatto);
+  mfem::ParFiniteElementSpace fespace(mesh.get(), &fec, dim, serac::ordering);
+
+  int seed = 0;
+  mfem::HypreParVector U = *fespace.NewTrueDofVector();
+  U.Randomize(seed);
+
+  // Construct the new functional object using the specified test and trial spaces
+  Functional<double(trial_space)> qoi({&fespace});
+
+  constexpr int DERIVATIVE = 1;
+
+  Domain interior_faces = InteriorFaces(*mesh);
+
+  qoi.AddInteriorFaceIntegral(
+      Dimension<dim-1>{}, DependsOn<0>{},
+      [=](double /*t*/, auto X, auto velocity) {
+        // compute the unit surface normal
+        auto dX_dxi = get<DERIVATIVE>(X);
+        auto n = normalize(cross(dX_dxi));
+
+        // extract the velocity values from each side of the interface
+        // note: the orientation convention is such that the normal 
+        //       computed as above will point from from side 1->2
+        auto [u_1, u_2] = velocity; 
+
+        auto a = dot(u_2 - u_1, n);
+
+        auto f_1 = u_1 * a;
+        auto f_2 = u_2 * a;
+        return dot(f_1, f_2);
+      }, interior_faces);
+
+  double t = 0.0;
+  check_gradient(qoi, t, U);
 
 }
 
-//TEST(basic, L2_test_edges_linear) { L2_test<2, 1>(SERAC_REPO_DIR "/data/meshes/patch2D.mesh"); }
-//TEST(basic, L2_test_edges_quadratic) { L2_test<2, 2>(SERAC_REPO_DIR "/data/meshes/patch2D.mesh"); }
-//
-//TEST(basic, L2_test_tets_linear) { L2_test<3, 1>(SERAC_REPO_DIR "/data/meshes/patch3D_tets.mesh"); }
-//TEST(basic, L2_test_tets_quadratic) { L2_test<3, 2>(SERAC_REPO_DIR "/data/meshes/patch3D_tets.mesh"); }
-//
-TEST(basic, L2_test_hexes_linear) { L2_test<3, 1>(SERAC_REPO_DIR "/data/meshes/patch3D_hexes.mesh"); }
-TEST(basic, L2_test_hexes_quadratic) { L2_test<3, 2>(SERAC_REPO_DIR "/data/meshes/patch3D_hexes.mesh"); }
+TEST(basic, L2_qoi_test_tri_and_quads_linear) { L2_qoi_test<2, 1>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }
+TEST(basic, L2_qoi_test_tri_and_quads_quadratic) { L2_qoi_test<2, 2>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }
+
+TEST(basic, L2_qoi_test_tets_linear) { L2_qoi_test<3, 1>(SERAC_REPO_DIR "/data/meshes/patch3D_tets.mesh"); }
+TEST(basic, L2_qoi_test_tets_quadratic) { L2_qoi_test<3, 2>(SERAC_REPO_DIR "/data/meshes/patch3D_tets.mesh"); }
+
+TEST(basic, L2_qoi_test_hexes_linear) { L2_qoi_test<3, 1>(SERAC_REPO_DIR "/data/meshes/patch3D_hexes.mesh"); }
+TEST(basic, L2_qoi_test_hexes_quadratic) { L2_qoi_test<3, 2>(SERAC_REPO_DIR "/data/meshes/patch3D_hexes.mesh"); }
 
 int main(int argc, char* argv[])
 {

@@ -151,6 +151,27 @@ struct Domain {
     exit(1);
   }
 
+  int total_elements() const {
+    return int(vertex_ids_.size() + edge_ids_.size() + tri_ids_.size() + quad_ids_.size() + tet_ids_.size() + hex_ids_.size());
+  }
+
+  mfem::Array<int> bOffsets() const {
+    mfem::Array<int> offsets(mfem::Geometry::NUM_GEOMETRIES + 1);
+
+    int total = 0;
+    offsets[mfem::Geometry::POINT] = total;       total += vertex_ids_.size();
+    offsets[mfem::Geometry::SEGMENT] = total;     total += edge_ids_.size();
+    offsets[mfem::Geometry::TRIANGLE] = total;    total += tri_ids_.size();
+    offsets[mfem::Geometry::SQUARE] = total;      total += quad_ids_.size();
+    offsets[mfem::Geometry::TETRAHEDRON] = total; total += tet_ids_.size();
+    offsets[mfem::Geometry::CUBE] = total;        total += hex_ids_.size();
+    offsets[mfem::Geometry::PRISM] = total;
+    offsets[mfem::Geometry::PYRAMID] = total;
+    offsets[mfem::Geometry::NUM_GEOMETRIES] = total;
+
+    return offsets;
+  }
+
   /// @brief get mfem degree of freedom list for a given FiniteElementSpace
   mfem::Array<int> dof_list(mfem::FiniteElementSpace* fes) const;
 

@@ -175,10 +175,10 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
         tensor<double, dim> dphi_j_dxi = {G(qx, jx) * B(qy, jy), B(qx, jx) * G(qy, jy)};
 
         int   Q   = qy * q + qx;
-        auto& d00 = get<0>(get<0>(input(Q)));
-        auto& d01 = get<1>(get<0>(input(Q)));
-        auto& d10 = get<0>(get<1>(input(Q)));
-        auto& d11 = get<1>(get<1>(input(Q)));
+        const auto & d00 = get<0>(get<0>(input(Q)));
+        const auto & d01 = get<1>(get<0>(input(Q)));
+        const auto & d10 = get<0>(get<1>(input(Q)));
+        const auto & d11 = get<1>(get<1>(input(Q)));
 
         output[Q] = {d00 * phi_j + dot(d01, dphi_j_dxi), d10 * phi_j + dot(d11, dphi_j_dxi)};
       }
@@ -194,13 +194,14 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
     static constexpr bool apply_weights = false;
     static constexpr auto B             = calculate_B<apply_weights, q>();
 
-    using source_t = decltype(get<0>(get<0>(T{})) + get<1>(get<0>(T{})));
+    using source0_t = decltype(get<0>(get<0>(T{})) + get<1>(get<0>(T{})));
+    using source1_t = decltype(get<0>(get<1>(T{})) + get<1>(get<1>(T{})));
 
     int jx = j % n;
     int jy = (j % ndof) /  n;
     int s = j / ndof;
 
-    tensor<tuple<source_t, source_t>, q*q> output;
+    tensor<tuple<source0_t, source1_t>, q*q> output;
 
     for (int qy = 0; qy < q; qy++) {
       for (int qx = 0; qx < q; qx++) {
@@ -208,10 +209,10 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
         double phi1_j = B(qx, jx) * B(qy, jy) * (s == 1);
 
         int   Q   = qy * q + qx;
-        auto& d00 = get<0>(get<0>(input(Q)));
-        auto& d01 = get<1>(get<0>(input(Q)));
-        auto& d10 = get<0>(get<1>(input(Q)));
-        auto& d11 = get<1>(get<1>(input(Q)));
+        const auto & d00 = get<0>(get<0>(input(Q)));
+        const auto & d01 = get<1>(get<0>(input(Q)));
+        const auto & d10 = get<0>(get<1>(input(Q)));
+        const auto & d11 = get<1>(get<1>(input(Q)));
 
         output[Q] = {d00 * phi0_j + d01 * phi1_j, d10 * phi0_j + d11 * phi1_j};
       }
