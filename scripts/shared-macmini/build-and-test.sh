@@ -7,7 +7,7 @@ CI_ROOT_DIR="/Users/chapman39/dev/serac/ci"
 PROJECT_DIR="$CI_ROOT_DIR/repo"
 OUTPUT_LOG="$CI_ROOT_DIR/logs/macmini-build-and-test-$(date +"%Y_%m_%d_%H_%M_%S").log"
 HOST_CONFIG="$CI_ROOT_DIR/host-configs/firion-darwin-sonoma-aarch64-clang@14.0.6.cmake"
-RECIPIENTS="chapman39@llnl.gov" #,white238@llnl.gov,talamini1@llnl.gov"
+RECIPIENTS="chapman39@llnl.gov,white238@llnl.gov,talamini1@llnl.gov"
 
 # Go to project directory
 cd $PROJECT_DIR
@@ -30,4 +30,4 @@ EMAIL_SUBJECT="$EMAIL_SUBJECT MacMini build and test report $(date)"
 EMAIL_BODY="This is automatic weekly report of Serac's MacMini build. See attached for log."
 
 # Send report via email
-echo $EMAIL_BODY | mutt -a $OUTPUT_LOG -s $EMAIL_SUBJECT -- $RECIPIENTS
+echo "$EMAIL_BODY" | mutt -a "$OUTPUT_LOG" -s "$EMAIL_SUBJECT" -- "$RECIPIENTS"
