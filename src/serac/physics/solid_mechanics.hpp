@@ -417,7 +417,7 @@ public:
   template <typename T>
   qdata_type<T> createQuadratureDataBuffer(T initial_state, const std::optional<Domain>& optional_domain = std::nullopt)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireDomain(mesh_);
+    Domain domain = (optional_domain) ? *optional_domain : EntireDomain<dim>(mesh_);
     return StateManager::newQuadratureDataBuffer(domain, order, dim, initial_state);
   }
 
@@ -705,7 +705,7 @@ public:
   void addCustomBoundaryIntegral(DependsOn<active_parameters...>, callable qfunction,
                                  const std::optional<Domain>& optional_domain = std::nullopt)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary(mesh_);
+    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary<dim>(mesh_);
 
     residual_->AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
                                    qfunction, domain);
@@ -902,7 +902,7 @@ public:
   void setMaterial(DependsOn<active_parameters...>, const MaterialType& material,
                    qdata_type<StateType> qdata = EmptyQData)
   {
-    setMaterial(DependsOn<active_parameters...>{}, material, EntireDomain(mesh_), qdata);
+    setMaterial(DependsOn<active_parameters...>{}, material, EntireDomain<dim>(mesh_), qdata);
   }
 
   /// @overload
@@ -917,7 +917,7 @@ public:
   template <typename MaterialType, typename StateType = Empty>
   void setMaterial(const MaterialType& material, std::shared_ptr<QuadratureData<StateType>> qdata = EmptyQData)
   {
-    setMaterial(DependsOn<>{}, material, EntireDomain(mesh_), qdata);
+    setMaterial(DependsOn<>{}, material, EntireDomain<dim>(mesh_), qdata);
   }
 
   /**
@@ -1005,7 +1005,7 @@ public:
   void addBodyForce(DependsOn<active_parameters...>, BodyForceType body_force,
                     const std::optional<Domain>& optional_domain = std::nullopt)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireDomain(mesh_);
+    Domain domain = (optional_domain) ? *optional_domain : EntireDomain<dim>(mesh_);
     residual_->AddDomainIntegral(Dimension<dim>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
                                  BodyForceIntegrand<BodyForceType>(body_force), domain);
   }
@@ -1044,7 +1044,7 @@ public:
   void setTraction(DependsOn<active_parameters...>, TractionType traction_function,
                    const std::optional<Domain>& optional_domain = std::nullopt)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary(mesh_);
+    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary<dim>(mesh_);
 
     residual_->AddBoundaryIntegral(
         Dimension<dim - 1>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
@@ -1090,7 +1090,7 @@ public:
   void setPressure(DependsOn<active_parameters...>, PressureType pressure_function,
                    const std::optional<Domain>& optional_domain = std::nullopt)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary(mesh_);
+    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary<dim>(mesh_);
 
     residual_->AddBoundaryIntegral(
         Dimension<dim - 1>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
