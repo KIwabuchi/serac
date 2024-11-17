@@ -38,6 +38,15 @@ void BoundaryConditionManager::addEssential(const mfem::Array<int>&             
   all_dofs_valid_ = false;
 }
 
+void BoundaryConditionManager::addEssential(const mfem::Array<int>& true_dofs, 
+                                            std::shared_ptr<mfem::Coefficient> ess_bdr_coef,
+                                            mfem::ParFiniteElementSpace& space, 
+                                            std::optional<int> component)
+{
+  ess_bdr_.emplace_back(ess_bdr_coef, component, space, true_dofs);
+  all_dofs_valid_ = false;
+}
+
 void BoundaryConditionManager::updateAllDofs() const
 {
   all_true_dofs_.DeleteAll();

@@ -442,19 +442,18 @@ public:
   template <typename AppliedDisplacementFunction>
   void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain, int component)
   {
-    auto mfem_coefficient_function = [&applied_displacement, component](const mfem::Vector& X_mfem, double t, mfem::Vector& u_mfem) {
-      tensor<double, dim> X;
-      std::copy(X_mfem.begin(), X_mfem.end(), X.data);
-      u_mfem(component) = applied_displacement(X, t)[component];
+    auto mfem_coefficient_function = [applied_displacement, component](const mfem::Vector& X_mfem, double t) {
+      auto X = make_tensor<dim>([&X_mfem](int i) { return X_mfem[i]; });
+      return applied_displacement(X, t)[component];
     };
 
     // Project the coefficient onto the grid function
-    disp_bdr_coef_ = std::make_shared<mfem::VectorFunctionCoefficient>(dim, mfem_coefficient_function);
+    component_disp_bdr_coef_ = std::make_shared<mfem::FunctionCoefficient>(mfem_coefficient_function);
 
     auto dof_list = domain.dof_list(&displacement_.space());
     displacement_.space().DofsToVDofs(component, dof_list);
 
-    bcs_.addEssential(dof_list, disp_bdr_coef_, displacement_.space());
+    bcs_.addEssential(dof_list, component_disp_bdr_coef_, displacement_.space(), component);
   }
 
   /**
