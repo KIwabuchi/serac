@@ -389,9 +389,10 @@ double pressure_error()
 
   static_assert(dim == 2 || dim == 3, "Dimension must be 2 or 3 for solid test");
 
-  auto exact_uniaxial_strain = [](const mfem::Vector& X, mfem::Vector& u) {
-    u = 0.0;
-    u(0) = -0.1 * X(0);
+  auto exact_uniaxial_strain = [](tensor<double, dim> X, double /* t */) {
+    tensor<double, dim> u{};
+    u[0] = -0.1 * X[0];
+    return u;
   };
 
   std::string meshdir = std::string(SERAC_REPO_DIR) + "/data/meshes/";
@@ -442,18 +443,45 @@ double pressure_error()
 
   // Define the essential boundary conditions corresponding to 10% uniaxial strain everywhere
   // except the pressure loaded surface
-  if (dim == 2) {
+  if constexpr (dim == 2) {
+    using FaceVertices = std::vector<vec2>;
     if (element_type::geometry == mfem::Geometry::TRIANGLE) {
-      solid.setDisplacementBCs({4}, exact_uniaxial_strain);
-      solid.setDisplacementBCs({1,3}, [](auto&){return 0.0; }, 1);
+
+      Domain boundaryA = Domain::ofBoundaryElements(pmesh, 
+        [](FaceVertices, int attr) { return attr == 4; });
+      solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 0);
+      solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 1);
+
+      Domain boundaryB = Domain::ofBoundaryElements(pmesh, 
+        [](FaceVertices, int attr) { return (attr == 1) || (attr == 3); });
+      solid.setDisplacementBCs([](auto X, auto){ return 0.0*X; }, boundaryB, 1);
+
     } else if (element_type::geometry == mfem::Geometry::SQUARE) {
-      solid.setDisplacementBCs({1}, exact_uniaxial_strain);
-      solid.setDisplacementBCs({2,4}, [](auto&){return 0.0; }, 1);
+      Domain boundaryA = Domain::ofBoundaryElements(pmesh, 
+        [](FaceVertices, int attr) { return attr == 1; });
+      solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 0);
+      solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 1);
+
+      Domain boundaryB = Domain::ofBoundaryElements(pmesh, 
+        [](FaceVertices, int attr) { return (attr == 2) || (attr == 4); });
+      solid.setDisplacementBCs([](auto X, auto){ return 0.0*X; }, boundaryB, 1);
     }
-  } else if (dim == 3) {
-    solid.setDisplacementBCs({1}, exact_uniaxial_strain);
-    solid.setDisplacementBCs({2,5}, [](auto&){return 0.0; }, 1);
-    solid.setDisplacementBCs({3,6}, [](auto&){return 0.0; }, 2);
+  } else {
+    using FaceVertices = std::vector<vec3>;
+
+    Domain boundaryA = Domain::ofBoundaryElements(pmesh, 
+        [](FaceVertices, int attr) { return attr == 1; });
+    solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 0);
+    solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 1);
+    solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 2);
+
+    Domain boundaryB = Domain::ofBoundaryElements(pmesh, 
+        [](FaceVertices, int attr) { return (attr == 2) || (attr == 5); });
+    solid.setDisplacementBCs([](auto X, auto){ return 0.0*X; }, boundaryB, 1);
+
+    Domain boundaryC = Domain::ofBoundaryElements(pmesh,
+        [](FaceVertices, int attr) { return (attr == 3) || (attr == 6); });
+    solid.setDisplacementBCs([](auto X, auto){ return 0.0*X; }, boundaryC, 2);
   }
 
   // Finalize the data structures
@@ -472,7 +500,12 @@ double pressure_error()
   // solid_functional.reactions().Print();
 
   // Compute norm of error
-  mfem::VectorFunctionCoefficient exact_solution_coef(dim, exact_uniaxial_strain);
+  auto mfem_coefficient_function = [exact_uniaxial_strain](const mfem::Vector& X, mfem::Vector& u) {
+    auto Xt = make_tensor<dim>([&X](int i) { return X[i]; });
+    auto ut = exact_uniaxial_strain(Xt, 0.0);
+    for (int i = 0; i < dim; i++) u[i] = ut[i];
+  };
+  mfem::VectorFunctionCoefficient exact_solution_coef(dim, mfem_coefficient_function);
   return computeL2Error(solid.displacement(), exact_solution_coef);
 }
 
@@ -617,25 +650,25 @@ TEST(SolidMechanics, PatchTest3dQ3EssentialAndNaturalBcs)
   EXPECT_LT(hex_error, tol);
 }
 
-// TEST(SolidMechanics, PatchTest2dQ1Pressure){
-//   using triangle = finite_element< mfem::Geometry::TRIANGLE, H1< LINEAR > >;
-//   double tri_error = pressure_error< triangle >();
-//   EXPECT_LT(tri_error, tol);
+TEST(SolidMechanics, PatchTest2dQ1Pressure){
+  using triangle = finite_element< mfem::Geometry::TRIANGLE, H1< LINEAR > >;
+  double tri_error = pressure_error< triangle >();
+  EXPECT_LT(tri_error, tol);
 
-//   using quadrilateral = finite_element< mfem::Geometry::SQUARE, H1< LINEAR > >;
-//   double quad_error = pressure_error< quadrilateral >();
-//   EXPECT_LT(quad_error, tol);
-// }
+  using quadrilateral = finite_element< mfem::Geometry::SQUARE, H1< LINEAR > >;
+  double quad_error = pressure_error< quadrilateral >();
+  EXPECT_LT(quad_error, tol);
+}
 
-// TEST(SolidMechanics, PatchTest3dQ1Pressure){
-//   using tetrahedron = finite_element< mfem::Geometry::TETRAHEDRON, H1< LINEAR > >;
-//   double tet_error = pressure_error< tetrahedron >();
-//   EXPECT_LT(tet_error, tol);
+TEST(SolidMechanics, PatchTest3dQ1Pressure){
+  using tetrahedron = finite_element< mfem::Geometry::TETRAHEDRON, H1< LINEAR > >;
+  double tet_error = pressure_error< tetrahedron >();
+  EXPECT_LT(tet_error, tol);
 
-//   using hexahedron = finite_element< mfem::Geometry::CUBE, H1< LINEAR > >;
-//   double hex_error = pressure_error< hexahedron >();
-//   EXPECT_LT(hex_error, tol);
-// }
+  using hexahedron = finite_element< mfem::Geometry::CUBE, H1< LINEAR > >;
+  double hex_error = pressure_error< hexahedron >();
+  EXPECT_LT(hex_error, tol);
+}
 
 }  // namespace serac
 
