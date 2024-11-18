@@ -40,7 +40,6 @@ public:
    * @param solid_nonlin_opts The options for solving the nonlinear solid mechanics residual equations
    * @param solid_lin_opts The options for solving the linearized Jacobian solid mechanics equations
    * @param solid_timestepping The timestepping options for the solid solver
-   * @param geom_nonlin Flag to include geometric nonlinearities
    * @param physics_name A name for the physics module instance
    * @param mesh_tag The tag for the mesh in the StateManager to construct the physics module on
    * @param cycle The simulation cycle (i.e. timestep iteration) to intialize the physics module to
@@ -49,14 +48,13 @@ public:
   Thermomechanics(const NonlinearSolverOptions thermal_nonlin_opts, const LinearSolverOptions thermal_lin_opts,
                   TimesteppingOptions thermal_timestepping, const NonlinearSolverOptions solid_nonlin_opts,
                   const LinearSolverOptions solid_lin_opts, TimesteppingOptions solid_timestepping,
-                  GeometricNonlinearities geom_nonlin, const std::string& physics_name, std::string mesh_tag,
-                  int cycle = 0, double time = 0.0)
+                  const std::string& physics_name, std::string mesh_tag, int cycle = 0, double time = 0.0)
       : Thermomechanics(
             std::make_unique<EquationSolver>(thermal_nonlin_opts, thermal_lin_opts,
                                              StateManager::mesh(mesh_tag).GetComm()),
             thermal_timestepping,
             std::make_unique<EquationSolver>(solid_nonlin_opts, solid_lin_opts, StateManager::mesh(mesh_tag).GetComm()),
-            solid_timestepping, geom_nonlin, physics_name, mesh_tag, cycle, time)
+            solid_timestepping, physics_name, mesh_tag, cycle, time)
   {
   }
 
@@ -67,7 +65,6 @@ public:
    * @param thermal_timestepping The timestepping options for the thermal solver
    * @param solid_solver The nonlinear equation solver for the solid mechanics equations
    * @param solid_timestepping The timestepping options for the solid solver
-   * @param geom_nonlin Flag to include geometric nonlinearities
    * @param physics_name A name for the physics module instance
    * @param mesh_tag The tag for the mesh in the StateManager to construct the physics module on
    * @param cycle The simulation cycle (i.e. timestep iteration) to intialize the physics module to
@@ -75,13 +72,12 @@ public:
    */
   Thermomechanics(std::unique_ptr<EquationSolver> thermal_solver, TimesteppingOptions thermal_timestepping,
                   std::unique_ptr<EquationSolver> solid_solver, TimesteppingOptions solid_timestepping,
-                  GeometricNonlinearities geom_nonlin, const std::string& physics_name, std::string mesh_tag,
-                  int cycle = 0, double time = 0.0)
+                  const std::string& physics_name, std::string mesh_tag, int cycle = 0, double time = 0.0)
       : BasePhysics(physics_name, mesh_tag),
         thermal_(std::move(thermal_solver), thermal_timestepping, physics_name + "thermal", mesh_tag, {"displacement"},
                  cycle, time),
-        solid_(std::move(solid_solver), solid_timestepping, geom_nonlin, physics_name + "mechanical", mesh_tag,
-               {"temperature"}, cycle, time)
+        solid_(std::move(solid_solver), solid_timestepping, physics_name + "mechanical", mesh_tag, {"temperature"},
+               cycle, time)
   {
     SLIC_ERROR_ROOT_IF(mesh_.Dimension() != dim,
                        axom::fmt::format("Compile time dimension and runtime mesh dimension mismatch"));
@@ -105,8 +101,8 @@ public:
                   const std::string& physics_name, std::string mesh_tag, int cycle = 0, double time = 0.0)
       : Thermomechanics(thermal_options.nonlin_solver_options, thermal_options.lin_solver_options,
                         thermal_options.timestepping_options, solid_options.nonlin_solver_options,
-                        solid_options.lin_solver_options, solid_options.timestepping_options, solid_options.geom_nonlin,
-                        physics_name, mesh_tag, cycle, time)
+                        solid_options.lin_solver_options, solid_options.timestepping_options, physics_name, mesh_tag,
+                        cycle, time)
   {
   }
 

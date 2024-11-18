@@ -56,6 +56,7 @@ TEST_P(ContactTest, patch)
   // #ifdef MFEM_USE_STRUMPACK
   LinearSolverOptions linear_options{.linear_solver = LinearSolver::Strumpack, .print_level = 1};
 #else
+  LinearSolverOptions linear_options{};
   SLIC_INFO_ROOT("Contact requires MFEM built with strumpack.");
   return;
 #endif
@@ -72,8 +73,7 @@ TEST_P(ContactTest, patch)
                                  .penalty     = 1.0e4};
 
   SolidMechanicsContact<p, dim> solid_solver(nonlinear_options, linear_options,
-                                             solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On,
-                                             name, "patch_mesh");
+                                             solid_mechanics::default_quasistatic_options, name, "patch_mesh");
 
   double                      K = 10.0;
   double                      G = 0.25;

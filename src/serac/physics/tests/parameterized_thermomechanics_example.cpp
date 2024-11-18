@@ -47,7 +47,7 @@ struct ParameterizedThermoelasticMaterial {
   double theta_ref;  ///< datum temperature for thermal expansion
 
   template <typename T1, typename T2, typename T3>
-  auto operator()(State& /*state*/, const tensor<T1, 3, 3>& grad_u, T2 temperature,
+  auto operator()(const State& /*state*/, const tensor<T1, 3, 3>& grad_u, T2 temperature,
                   T3 coefficient_of_thermal_expansion) const
   {
     auto theta = get<VALUE>(temperature);
@@ -109,8 +109,8 @@ TEST(Thermomechanics, ParameterizedMaterial)
 #endif
 
   SolidMechanics<p, dim, Parameters<H1<p>, H1<p>>> simulation(
-      nonlinear_opts, linear_opts, solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On,
-      "thermomechanics_simulation", mesh_tag, {"theta", "alpha"});
+      nonlinear_opts, linear_opts, solid_mechanics::default_quasistatic_options, "thermomechanics_simulation", mesh_tag,
+      {"theta", "alpha"});
 
   double density   = 1.0;     ///< density
   double E         = 1000.0;  ///< Young's modulus
