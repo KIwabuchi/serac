@@ -225,4 +225,14 @@ inline std::array<uint32_t, mfem::Geometry::NUM_GEOMETRIES> geometry_counts(cons
   return counts;
 }
 
+template <int dim>
+inline tensor<double, dim> average(std::vector<tensor<double, dim> >& positions)
+{
+  tensor<double, dim> total{};
+  for (auto x : positions) {
+    total += x;
+  }
+  return total / double(positions.size());
+}
+
 }  // namespace serac

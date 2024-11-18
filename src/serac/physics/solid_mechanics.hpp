@@ -1017,18 +1017,17 @@ public:
    */
   template <int... active_parameters, typename BodyForceType>
   void addBodyForce(DependsOn<active_parameters...>, BodyForceType body_force,
-                    const std::optional<Domain>& optional_domain = std::nullopt)
+                    Domain& domain)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireDomain(mesh_);
     residual_->AddDomainIntegral(Dimension<dim>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
                                  BodyForceIntegrand<BodyForceType>(body_force), domain);
   }
 
   /// @overload
   template <typename BodyForceType>
-  void addBodyForce(BodyForceType body_force, const std::optional<Domain>& optional_domain = std::nullopt)
+  void addBodyForce(BodyForceType body_force, Domain & domain)
   {
-    addBodyForce(DependsOn<>{}, body_force, optional_domain);
+    addBodyForce(DependsOn<>{}, body_force, domain);
   }
 
   /**
@@ -1056,10 +1055,8 @@ public:
    */
   template <int... active_parameters, typename TractionType>
   void setTraction(DependsOn<active_parameters...>, TractionType traction_function,
-                   const std::optional<Domain>& optional_domain = std::nullopt)
+                   Domain & domain)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary(mesh_);
-
     residual_->AddBoundaryIntegral(
         Dimension<dim - 1>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
         [traction_function](double t, auto X, auto /* displacement */, auto /* acceleration */, auto... params) {
@@ -1072,9 +1069,9 @@ public:
 
   /// @overload
   template <typename TractionType>
-  void setTraction(TractionType traction_function, const std::optional<Domain>& optional_domain = std::nullopt)
+  void setTraction(TractionType traction_function, Domain & domain)
   {
-    setTraction(DependsOn<>{}, traction_function, optional_domain);
+    setTraction(DependsOn<>{}, traction_function, domain);
   }
 
   /**

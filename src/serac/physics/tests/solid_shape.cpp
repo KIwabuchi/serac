@@ -120,9 +120,10 @@ void shape_test()
 
     solid_solver.setShapeDisplacement(user_defined_shape_displacement);
 
-    solid_solver.setMaterial(mat);
+    Domain whole_mesh = EntireDomain(StateManager::mesh(mesh_tag));
 
-    solid_solver.addBodyForce(force, EntireDomain(StateManager::mesh(mesh_tag)));
+    solid_solver.setMaterial(mat, whole_mesh);
+    solid_solver.addBodyForce(force, whole_mesh);
 
     // Finalize the data structures
     solid_solver.completeSetup();
@@ -167,9 +168,10 @@ void shape_test()
     solid_solver_no_shape.setDisplacementBCs(ess_bdr, bc_pure);
     solid_solver_no_shape.setDisplacement(bc_pure);
 
-    solid_solver_no_shape.setMaterial(mat);
+    Domain whole_mesh = EntireDomain(StateManager::mesh(new_mesh_tag));
 
-    solid_solver_no_shape.addBodyForce(force, EntireDomain(StateManager::mesh(new_mesh_tag)));
+    solid_solver_no_shape.setMaterial(mat, whole_mesh);
+    solid_solver_no_shape.addBodyForce(force, whole_mesh);
 
     // Finalize the data structures
     solid_solver_no_shape.completeSetup();
