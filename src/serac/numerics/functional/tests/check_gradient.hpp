@@ -51,8 +51,6 @@ void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& 
 
 }
 
-template <typename T>
-void check_gradient(serac::Functional<T>& f, double t, const mfem::Vector& U, double epsilon = 1.0e-4)
 template <typename T, serac::ExecutionSpace exec = serac::ExecutionSpace::CPU>
 void check_gradient(serac::Functional<T, exec>& f, double t, mfem::Vector& U, double epsilon = 1.0e-4)
 {

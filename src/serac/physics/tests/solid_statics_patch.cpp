@@ -324,7 +324,8 @@ double solution_error(PatchBoundaryCondition bc)
   SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, "solid", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density=1.0, .K=1.0, .G=1.0};
-  solid.setMaterial(mat);
+  Domain material_block = EntireDomain(pmesh);
+  solid.setMaterial(mat, material_block);
 
   exact_displacement.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc));
 
@@ -399,7 +400,8 @@ double pressure_error()
   SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, "solid", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density=1.0, .K=1.0, .G=1.0};
-  solid.setMaterial(mat);
+  Domain material_block = EntireDomain(pmesh);
+  solid.setMaterial(mat, material_block);
 
   typename solid_mechanics::NeoHookean::State state;
   auto H = make_tensor<dim, dim>([](int i, int j) {

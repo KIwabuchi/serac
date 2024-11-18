@@ -300,7 +300,7 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Construct a functional-based solid mechanics solver
   serac::NonlinearSolverOptions nonlin_opts{.relative_tol = 1.0e-13, .absolute_tol = 1.0e-13};
@@ -310,7 +310,8 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
                                "solid_dynamics", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = 1.0, .G = 1.0};
-  solid.setMaterial(mat);
+  Domain material_block = EntireDomain(pmesh);
+  solid.setMaterial(mat, material_block);
 
   // initial conditions
   solid.setVelocity([exact_solution](const mfem::Vector& x, mfem::Vector& v) { exact_solution.velocity(x, 0.0, v); });
