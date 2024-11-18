@@ -362,7 +362,6 @@ public:
    * @tparam dim The dimension of the element (2 for quad, 3 for hex, etc)
    * @tparam args The type of the trial function input arguments
    * @tparam lambda The type of the integrand functor: must implement operator() with an appropriate function signature
-   * @tparam domain_type The type of the integration domain (either serac::Domain or mfem::Mesh)
    * @tparam qpt_data_type The type of the data to store for each quadrature point
    *
    * @param[in] integrand The user-provided quadrature function, see @p Integral
@@ -372,8 +371,8 @@ public:
    * @note The @p Dimension parameters are used to assist in the deduction of the @a geometry_dim
    * and @a spatial_dim template parameter
    */
-  template <int dim, int... args, typename lambda, typename domain_type, typename qpt_data_type = Nothing>
-  void AddDomainIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, domain_type& domain,
+  template <int dim, int... args, typename lambda, typename qpt_data_type = Nothing>
+  void AddDomainIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, Domain & domain,
                          std::shared_ptr<QuadratureData<qpt_data_type>> qdata = NoQData)
   {
     if constexpr (std::is_same_v<qpt_data_type, Nothing>) {
@@ -423,8 +422,8 @@ public:
    * @note The @p Dimension parameters are used to assist in the deduction of the @a geometry_dim
    * and @a spatial_dim template parameter
    */
-  template <int dim, int... args, typename lambda, typename domain_type>
-  void AddBoundaryIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, domain_type& domain)
+  template <int dim, int... args, typename lambda>
+  void AddBoundaryIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, Domain & domain)
   {
     functional_->AddBoundaryIntegral(
         Dimension<dim>{}, DependsOn<0, (args + 1)...>{},

@@ -13,7 +13,7 @@
 #include "serac/numerics/functional/functional.hpp"
 
 template <typename T>
-void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& U, double epsilon = 1.0e-4) {
+void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& U, [[maybe_unused]] double epsilon = 1.0e-4) {
 
   mfem::Vector dU(U.Size());
   dU = 0.0;

@@ -20,6 +20,16 @@
 
 using namespace serac;
 
+template <int dim>
+tensor<double, dim> average(std::vector<tensor<double, dim> >& positions)
+{
+  tensor<double, dim> total{};
+  for (auto x : positions) {
+    total += x;
+  }
+  return total / double(positions.size());
+}
+
 template <typename T>
 auto greenStrain(const tensor<T, 3, 3>& grad_u)
 {
@@ -150,8 +160,13 @@ TEST(Thermomechanics, ParameterizedMaterial)
 
   simulation.outputStateToDisk("paraview");
 
-  // define quantities of interest
+  // create Domains to integrate over
+  Domain top_surface = Domain::ofBoundaryElements(pmesh, [=](std::vector<vec3> vertices, int /* attr */) {
+    // select the faces whose "average" z coordinate is close to the top of the mesh
+    return average(vertices)[2] > 0.99 * height;
+  });
 
+  // define quantities of interest
   Functional<double(H1<p, dim>)> qoi({&simulation.displacement().space()});
   qoi.AddSurfaceIntegral(
       DependsOn<0>{},
@@ -159,9 +174,10 @@ TEST(Thermomechanics, ParameterizedMaterial)
         auto [X, dX_dxi] = position;
         auto [u, du_dxi] = displacement;
         auto n           = normalize(cross(dX_dxi));
-        return dot(u, n) * ((X[2] > 0.99 * height) ? 1.0 : 0.0);
+        return dot(u, n);
       },
-      pmesh);
+      top_surface
+  );
 
   double initial_qoi = qoi(time, simulation.displacement());
   SLIC_INFO_ROOT(axom::fmt::format("vertical displacement integrated over the top surface: {}", initial_qoi));
@@ -170,11 +186,9 @@ TEST(Thermomechanics, ParameterizedMaterial)
   Functional<double(H1<p, dim>)> area({&simulation.displacement().space()});
   area.AddSurfaceIntegral(
       DependsOn<>{},
-      [=](double /*t*/, auto position) {
-        auto [X, dX_dxi] = position;
-        return (X[2] > 0.99 * height) ? 1.0 : 0.0;
-      },
-      pmesh);
+      [=](double /*t*/, auto /*position*/) { return 1.0; }, 
+      top_surface
+  );
 
   double top_area = area(time, simulation.displacement());
 

@@ -214,7 +214,7 @@ public:
    * @brief Adds an area integral, i.e., over 2D elements in R^2
    */
   template <int... args, typename lambda, typename qpt_data_type = Nothing>
-  void AddAreaIntegral(DependsOn<args...> which_args, const lambda& integrand, mfem::Mesh& domain,
+  void AddAreaIntegral(DependsOn<args...> which_args, const lambda& integrand, Domain & domain,
                        std::shared_ptr<QuadratureData<qpt_data_type>>& data = NoQData)
   {
     AddDomainIntegral(Dimension<2>{}, which_args, integrand, domain, data);
@@ -231,7 +231,7 @@ public:
    * @brief Adds a volume integral, i.e., over 3D elements in R^3
    */
   template <int... args, typename lambda, typename qpt_data_type = Nothing>
-  void AddVolumeIntegral(DependsOn<args...> which_args, const lambda& integrand, mfem::Mesh& domain,
+  void AddVolumeIntegral(DependsOn<args...> which_args, const lambda& integrand, Domain & domain,
                          std::shared_ptr<QuadratureData<qpt_data_type>>& data = NoQData)
   {
     AddDomainIntegral(Dimension<3>{}, which_args, integrand, domain, data);
@@ -239,7 +239,7 @@ public:
 
   /// @brief alias for Functional::AddBoundaryIntegral(Dimension<2>{}, integrand, domain);
   template <int... args, typename lambda>
-  void AddSurfaceIntegral(DependsOn<args...> which_args, const lambda& integrand, mfem::Mesh& domain)
+  void AddSurfaceIntegral(DependsOn<args...> which_args, const lambda& integrand, Domain & domain)
   {
     AddBoundaryIntegral(Dimension<2>{}, which_args, integrand, domain);
   }
