@@ -165,12 +165,7 @@ void L2_scalar_valued_test(std::string meshfile)
       Dimension<dim-1>{}, DependsOn<0, 1>{},
       [=](double /*t*/, auto X, auto rho, auto u) {
 
-        // area in reference configuration
-        auto dA = norm(cross(get<DERIVATIVE>(X))); 
-
-        // area-weighted surface normal in current configuration
-        // n = \hat{n} * da
-        auto n = cross(get<DERIVATIVE>(X) + get<DERIVATIVE>(u)); 
+        auto n = normalize(cross(get<DERIVATIVE>(X))); 
 
         auto [rho0, rho1] = rho;
         auto uTn = dot(get<VALUE>(u), n);
@@ -179,7 +174,7 @@ void L2_scalar_valued_test(std::string meshfile)
         return serac::tuple{
           uTn * ((      s) * rho0 + (1.0 - s) * rho1), 
           uTn * ((1.0 - s) * rho0 + (      s) * rho1)
-        } / dA;
+        };
 
       }, interior_faces);
 
