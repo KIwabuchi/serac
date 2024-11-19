@@ -284,7 +284,7 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
     static constexpr bool apply_weights = false;
     static constexpr auto B             = calculate_B<apply_weights, q>();
 
-    tensor< tuple< tensor<double, c>, tensor<double, c> >, q * q> output;
+    tensor< tuple< value_type, value_type >, q * q> output;
 
     tensor<double, c, q, q> value{};
 
@@ -296,8 +296,12 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
 
     for (int qy = 0; qy < q; qy++) {
       for (int qx = 0; qx < q; qx++) {
-        for (int i = 0; i < c; i++) {
-          get<0>(output[qy * q + qx])[i] = value(i, qy, qx);
+        if constexpr (c == 1) {
+          get<0>(output[qy * q + qx]) = value(0, qy, qx);
+        } else {
+          for (int i = 0; i < c; i++) {
+            get<0>(output[qy * q + qx])[i] = value(i, qy, qx);
+          }
         }
       }
     }
@@ -310,8 +314,12 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
 
     for (int qy = 0; qy < q; qy++) {
       for (int qx = 0; qx < q; qx++) {
-        for (int i = 0; i < c; i++) {
-          get<1>(output[qy * q + qx])[i] = value(i, qy, qx);
+        if constexpr (c == 1) {
+          get<1>(output[qy * q + qx]) = value(0, qy, qx);
+        } else {
+          for (int i = 0; i < c; i++) {
+            get<1>(output[qy * q + qx])[i] = value(i, qy, qx);
+          }
         }
       }
     }

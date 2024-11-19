@@ -158,18 +158,26 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
 
     tensor<double, q> values{};
 
-    tensor< tuple< tensor<double, c>, tensor<double, c> >, q> output;
+    tensor< tuple< value_type, value_type >, q > output{};
 
     // apply the shape functions
     for (int i = 0; i < c; i++) {
       values = dot(X[i][0], BT);
       for (int qx = 0; qx < q; qx++) {
-        get<0>(output[qx])[i] = values[qx];
+        if constexpr (c == 1) {
+          get<0>(output[qx]) = values[qx];
+        } else {
+          get<0>(output[qx])[i] = values[qx];
+        }
       }
 
       values = dot(X[i][1], BT);
       for (int qx = 0; qx < q; qx++) {
-        get<1>(output[qx])[i] = values[qx];
+        if constexpr (c == 1) {
+          get<1>(output[qx]) = values[qx];
+        } else {
+          get<1>(output[qx])[i] = values[qx];
+        }
       }
     }
 

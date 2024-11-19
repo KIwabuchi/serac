@@ -335,14 +335,19 @@ struct finite_element<mfem::Geometry::TRIANGLE, L2<p, c> > {
     constexpr auto       xi                    = GaussLegendreNodes<q, mfem::Geometry::TRIANGLE>();
     static constexpr int num_quadrature_points = q * (q + 1) / 2;
 
-    tensor< tuple< tensor<double, c>, tensor<double, c> >, num_quadrature_points > output{};
+    tensor< tuple< value_type, value_type >, num_quadrature_points > output{};
 
     // apply the shape functions
     for (int i = 0; i < c; i++) {
       for (int j = 0; j < num_quadrature_points; j++) {
         for (int k = 0; k < ndof; k++) {
-          get<0>(output[j])[i] += X[i][0][k] * shape_function(xi[j], k);
-          get<1>(output[j])[i] += X[i][1][k] * shape_function(xi[j], k);
+          if constexpr (c == 1) {
+            get<0>(output[j]) += X[i][0][k] * shape_function(xi[j], k);
+            get<1>(output[j]) += X[i][1][k] * shape_function(xi[j], k);
+          } else {
+            get<0>(output[j])[i] += X[i][0][k] * shape_function(xi[j], k);
+            get<1>(output[j])[i] += X[i][1][k] * shape_function(xi[j], k);
+          }
         }
       }
     }

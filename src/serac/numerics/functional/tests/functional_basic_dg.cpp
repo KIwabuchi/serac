@@ -184,7 +184,9 @@ void L2_scalar_valued_test(std::string meshfile)
 
 }
 
-TEST(basic, L2_scalar_test_tris_and_quads_linear) { L2_scalar_valued_test<2, 1>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }
+TEST(basic, L2_mixed_scalar_test_tris_and_quads_linear) { L2_scalar_valued_test<2, 1>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }
+
+TEST(basic, L2_mixed_scalar_test_tets_and_hexes_linear) { L2_scalar_valued_test<3, 1>(SERAC_REPO_DIR "/data/meshes/patch3D_tets_and_hexes.mesh"); }
 
 int main(int argc, char* argv[])
 {
