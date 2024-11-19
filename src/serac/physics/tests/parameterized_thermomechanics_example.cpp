@@ -20,16 +20,6 @@
 
 using namespace serac;
 
-template <int dim>
-tensor<double, dim> average(std::vector<tensor<double, dim> >& positions)
-{
-  tensor<double, dim> total{};
-  for (auto x : positions) {
-    total += x;
-  }
-  return total / double(positions.size());
-}
-
 template <typename T>
 auto greenStrain(const tensor<T, 3, 3>& grad_u)
 {
@@ -118,8 +108,8 @@ TEST(Thermomechanics, ParameterizedMaterial)
   double theta_ref = 0.0;     ///< datum temperature for thermal expansion
 
   ParameterizedThermoelasticMaterial material{density, E, nu, theta_ref};
-
-  simulation.setMaterial(DependsOn<0, 1>{}, material);
+  Domain material_block = EntireDomain(pmesh);
+  simulation.setMaterial(DependsOn<0, 1>{}, material, material_block);
 
   double             deltaT = 1.0;
   FiniteElementState temperature(pmesh, H1<p>{}, "theta");

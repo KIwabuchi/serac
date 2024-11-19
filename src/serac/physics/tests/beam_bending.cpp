@@ -40,7 +40,7 @@ TEST(BeamBending, TwoDimensional)
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   serac::LinearSolverOptions linear_options{.linear_solver  = LinearSolver::GMRES,
                                             .preconditioner = Preconditioner::HypreAMG,
@@ -69,7 +69,8 @@ TEST(BeamBending, TwoDimensional)
   double                             K = 1.91666666666667;
   double                             G = 1.0;
   solid_mechanics::StVenantKirchhoff mat{1.0, K, G};
-  solid_solver.setMaterial(mat);
+  Domain material_block = EntireDomain(pmesh);
+  solid_solver.setMaterial(mat, material_block);
 
   // Define the function for the initial displacement and boundary condition
   auto bc = [](const mfem::Vector&, mfem::Vector& bc_vec) -> void { bc_vec = 0.0; };
@@ -79,8 +80,12 @@ TEST(BeamBending, TwoDimensional)
   solid_solver.setDisplacementBCs(ess_bdr, bc);
   solid_solver.setDisplacement(bc);
 
-  solid_solver.setTraction([](const auto& x, const auto& n, const double) { return -0.01 * n * (x[1] > 0.99); },
-                           EntireBoundary(StateManager::mesh(mesh_tag)));
+
+  Domain top_face = Domain::ofBoundaryElements(pmesh, [](std::vector<vec2> vertices, int/*attr*/) {
+    return (average(vertices)[1] > 0.99);
+  });
+
+  solid_solver.setTraction([](auto /*x*/, auto n, auto /*t*/) { return -0.01 * n; }, top_face);
 
   // Finalize the data structures
   solid_solver.completeSetup();

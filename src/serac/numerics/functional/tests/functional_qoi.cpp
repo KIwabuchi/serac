@@ -363,8 +363,10 @@ TEST(QoI, DependsOnVectorValuedInput)
   mfem::HypreParVector  U   = *tmp;
   U_gf.GetTrueDofs(U);
 
+  Domain whole_mesh = EntireDomain(mesh);
+
   Functional<double(trial_space)> f({fespace.get()});
-  f.AddVolumeIntegral(DependsOn<0>{}, GetNormZeroIntegrator{}, mesh);
+  f.AddVolumeIntegral(DependsOn<0>{}, GetNormZeroIntegrator{}, whole_mesh);
 
   double exact_answer   = 141.3333333333333;
   double relative_error = (f(t, U) - exact_answer) / exact_answer;
@@ -393,7 +395,9 @@ TEST(QoI, AddAreaIntegral)
   U_gf.GetTrueDofs(U);
 
   Functional<double(trial_space)> measure({fespace.get()});
-  measure.AddAreaIntegral(DependsOn<>{}, TrivialIntegrator{}, mesh);
+
+  Domain whole_mesh = EntireDomain(mesh);
+  measure.AddAreaIntegral(DependsOn<>{}, TrivialIntegrator{}, whole_mesh);
   double relative_error = (measure(t, U) - measure_mfem(mesh)) / measure(t, U);
   EXPECT_NEAR(0.0, relative_error, 1.0e-10);
 
@@ -421,7 +425,9 @@ TEST(QoI, AddVolumeIntegral)
   U_gf.GetTrueDofs(U);
 
   Functional<double(trial_space)> measure({fespace.get()});
-  measure.AddVolumeIntegral(DependsOn<>{}, TrivialIntegrator{}, mesh);
+
+  Domain whole_mesh = EntireDomain(mesh);
+  measure.AddVolumeIntegral(DependsOn<>{}, TrivialIntegrator{}, whole_mesh);
   double relative_error = (measure(t, U) - measure_mfem(mesh)) / measure(t, U);
   EXPECT_NEAR(0.0, relative_error, 1.0e-10);
 
@@ -451,8 +457,11 @@ TEST(QoI, UsingL2)
   // this tests a fix for the QoI constructor segfaulting when using L2 spaces
   Functional<double(trial_space_0, trial_space_1)> f({fespace_0.get(), fespace_1.get()});
 
-  f.AddVolumeIntegral(DependsOn<1>{}, TrivialVariadicIntegrator{}, mesh);
-  f.AddSurfaceIntegral(DependsOn<0>{}, TrivialVariadicIntegrator{}, mesh);
+  Domain whole_mesh = EntireDomain(mesh);
+  Domain whole_boundary = EntireBoundary(mesh);
+
+  f.AddVolumeIntegral(DependsOn<1>{}, TrivialVariadicIntegrator{}, whole_mesh);
+  f.AddSurfaceIntegral(DependsOn<0>{}, TrivialVariadicIntegrator{}, whole_boundary);
 
   check_gradient(f, t, *U0, *U1);
 }

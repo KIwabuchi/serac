@@ -120,6 +120,19 @@ struct Integral {
       }
     }
   }
+  
+  /**
+   * @brief returns whether or not this integral depends on argument `which` 
+   * 
+   * @param which an argument index
+   * @return true when if this Integral object was created with a DependsOn<...> statement that includes `i` 
+   */
+  bool DependsOn(uint32_t which) const {
+    for (uint32_t i : active_trial_spaces_) {
+      if (which == i) return true;
+    }
+    return false;
+  }
 
   /// @brief information about which elements to integrate over
   Domain domain_;
