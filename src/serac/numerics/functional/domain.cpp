@@ -460,71 +460,32 @@ mfem::Array<int> Domain::dof_list(mfem::FiniteElementSpace* fes) const
 
 Domain EntireDomain(const mfem::Mesh& mesh)
 {
-  Domain output{mesh, mesh.SpaceDimension() /* elems can be 2 or 3 dimensional */};
-
-  int tri_id  = 0;
-  int quad_id = 0;
-  int tet_id  = 0;
-  int hex_id  = 0;
-
-  // faces that satisfy the predicate are added to the domain
-  int num_elems = mesh.GetNE();
-  for (int i = 0; i < num_elems; i++) {
-    auto geom = mesh.GetElementGeometry(i);
-
-    switch (geom) {
-      case mfem::Geometry::TRIANGLE:
-        output.tri_ids_.push_back(tri_id++);
-        break;
-      case mfem::Geometry::SQUARE:
-        output.quad_ids_.push_back(quad_id++);
-        break;
-      case mfem::Geometry::TETRAHEDRON:
-        output.tet_ids_.push_back(tet_id++);
-        break;
-      case mfem::Geometry::CUBE:
-        output.hex_ids_.push_back(hex_id++);
-        break;
-      default:
-        SLIC_ERROR("unsupported element type");
-        break;
-    }
+  switch (mesh.SpaceDimension()) {
+    case 2: 
+      return Domain::ofElements(mesh, [](std::vector<vec2>, int) {  return true; });
+      break;
+    case 3: 
+      return Domain::ofElements(mesh, [](std::vector<vec3>, int) {  return true; });
+      break;
+    default:
+      SLIC_ERROR("In valid spatial dimension. Domains may only be created on 2D or 3D meshes.");
+      exit(-1);
   }
-
-  return output;
 }
 
 Domain EntireBoundary(const mfem::Mesh& mesh)
 {
-  Domain output{mesh, mesh.SpaceDimension() - 1, Domain::Type::BoundaryElements};
-
-  int edge_id = 0;
-  int tri_id  = 0;
-  int quad_id = 0;
-
-  for (int f = 0; f < mesh.GetNumFaces(); f++) {
-    // discard faces with the wrong type
-    if (mesh.GetFaceInformation(f).IsInterior()) continue;
-
-    auto geom = mesh.GetFaceGeometry(f);
-
-    switch (geom) {
-      case mfem::Geometry::SEGMENT:
-        output.edge_ids_.push_back(edge_id++);
-        break;
-      case mfem::Geometry::TRIANGLE:
-        output.tri_ids_.push_back(tri_id++);
-        break;
-      case mfem::Geometry::SQUARE:
-        output.quad_ids_.push_back(quad_id++);
-        break;
-      default:
-        SLIC_ERROR("unsupported element type");
-        break;
-    }
+  switch (mesh.SpaceDimension()) {
+    case 2: 
+      return Domain::ofBoundaryElements(mesh, [](std::vector<vec2>, int) {  return true; });
+      break;
+    case 3: 
+      return Domain::ofBoundaryElements(mesh, [](std::vector<vec3>, int) {  return true; });
+      break;
+    default:
+      SLIC_ERROR("In valid spatial dimension. Domains may only be created on 2D or 3D meshes.");
+      exit(-1);
   }
-
-  return output;
 }
 
 /// @cond
