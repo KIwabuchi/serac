@@ -40,7 +40,7 @@ TEST_P(ContactTest, beam)
   std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex-with-contact-block.mesh";
 
   auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), 1, 0);
-  StateManager::setMesh(std::move(mesh), "beam_mesh");
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "beam_mesh");
 
   LinearSolverOptions linear_options{.linear_solver = LinearSolver::Strumpack, .print_level = 1};
 #ifndef MFEM_USE_STRUMPACK
@@ -71,7 +71,8 @@ TEST_P(ContactTest, beam)
   double                      K = 10.0;
   double                      G = 0.25;
   solid_mechanics::NeoHookean mat{1.0, K, G};
-  solid_solver.setMaterial(mat);
+  Domain material_block = EntireDomain(pmesh);
+  solid_solver.setMaterial(mat, material_block);
 
   // Pass the BC information to the solver object
   solid_solver.setDisplacementBCs({1}, [](const mfem::Vector&, mfem::Vector& u) {

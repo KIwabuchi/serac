@@ -73,16 +73,6 @@ struct TrivialIntegrator {
   }
 };
 
-template <int dim>
-tensor<double, dim> average(std::vector<tensor<double, dim>>& positions)
-{
-  tensor<double, dim> total{};
-  for (auto x : positions) {
-    total += x;
-  }
-  return total / double(positions.size());
-}
-
 template <int ptest, int ptrial, int dim>
 void whole_mesh_comparison_test_impl(std::unique_ptr<mfem::ParMesh>& mesh)
 {
