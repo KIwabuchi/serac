@@ -65,9 +65,20 @@ TEST(Thermal, FiniteDifference)
 
   thermal_solver.setParameter(0, user_defined_conductivity);
 
+  Domain whole_domain = EntireDomain(pmesh);
+  Domain whole_boundary = EntireBoundary(pmesh);
+
   // Construct a potentially user-defined parameterized material and send it to the thermal module
   heat_transfer::ParameterizedLinearIsotropicConductor mat;
-  thermal_solver.setMaterial(DependsOn<0>{}, mat);
+  thermal_solver.setMaterial(DependsOn<0>{}, mat, whole_domain);
+
+  // Define a constant source term
+  heat_transfer::ConstantSource source{1.0};
+  thermal_solver.setSource(source, whole_domain);
+
+  // Set the flux term to zero for testing code paths
+  heat_transfer::ConstantFlux flux_bc{0.0};
+  thermal_solver.setFluxBCs(flux_bc, whole_boundary);
 
   // Define the function for the initial temperature and boundary condition
   auto bdr_temp = [](const mfem::Vector& x, double) -> double { return (x[0] < 0.5 || x[1] < 0.5) ? 1.0 : 0.0; };
@@ -75,14 +86,6 @@ TEST(Thermal, FiniteDifference)
   // Set the initial temperature and boundary condition
   thermal_solver.setTemperatureBCs(ess_bdr, bdr_temp);
   thermal_solver.setTemperature(bdr_temp);
-
-  // Define a constant source term
-  heat_transfer::ConstantSource source{1.0};
-  thermal_solver.setSource(source, EntireDomain(pmesh));
-
-  // Set the flux term to zero for testing code paths
-  heat_transfer::ConstantFlux flux_bc{0.0};
-  thermal_solver.setFluxBCs(flux_bc, EntireBoundary(pmesh));
 
   // Finalize the data structures
   thermal_solver.completeSetup();
@@ -190,7 +193,12 @@ TEST(HeatTransfer, FiniteDifferenceShape)
 
   heat_transfer::LinearIsotropicConductor mat(1.0, 1.0, 1.0);
 
-  thermal_solver.setMaterial(mat);
+  Domain whole_domain = EntireDomain(pmesh);
+
+  thermal_solver.setMaterial(mat, whole_domain);
+
+  heat_transfer::ConstantSource source{1.0};
+  thermal_solver.setSource(source, whole_domain);
 
   FiniteElementState shape_displacement(pmesh, H1<SHAPE_ORDER, dim>{});
 
@@ -203,9 +211,6 @@ TEST(HeatTransfer, FiniteDifferenceShape)
   // Set the initial displacement and boundary condition
   thermal_solver.setTemperatureBCs(ess_bdr, one);
   thermal_solver.setTemperature(one);
-
-  heat_transfer::ConstantSource source{1.0};
-  thermal_solver.setSource(source, EntireDomain(pmesh));
 
   // Finalize the data structures
   thermal_solver.completeSetup();

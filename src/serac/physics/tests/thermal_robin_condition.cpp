@@ -41,7 +41,7 @@ void functional_thermal_test_robin_condition()
   std::string mesh_tag{"mesh"};
 
   auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // _solver_params_start
   serac::NonlinearSolverOptions nonlinear_options{.nonlin_solver  = NonlinearSolver::Newton,
@@ -60,24 +60,29 @@ void functional_thermal_test_robin_condition()
       1.0   // isotropic thermal conductivity
   };
 
-  thermal_solver.setMaterial(mat);
+  Domain whole_domain = EntireDomain(pmesh);
+  Domain whole_boundary = EntireBoundary(pmesh);
+
+  thermal_solver.setMaterial(mat, whole_domain);
+
+  // set heat source
+  thermal_solver.setSource([](auto, auto, auto, auto) { return 2.0; }, whole_domain);
+
+  // clang-format off
+  thermal_solver.addCustomBoundaryIntegral(DependsOn<>{}, 
+    [](double /* t */, auto /*position*/, auto temperature, auto /*temperature_rate*/) {
+      auto [T, dT_dxi] = temperature;
+      auto q           = 5.0*(T-25.0);
+      return q;  // define a convective (temperature-proportional) heat flux
+    },
+    whole_boundary
+  );
+  // clang-format on
 
   // prescribe zero temperature at one end of the beam
   std::set<int> support = {1};
   auto          zero    = [](const mfem::Vector&, double) -> double { return 0.0; };
   thermal_solver.setTemperatureBCs(support, zero);
-
-  // clang-format off
-  thermal_solver.addCustomBoundaryIntegral(DependsOn<>{}, 
-      [](double /* t */, auto /*position*/, auto temperature, auto /*temperature_rate*/) {
-        auto [T, dT_dxi] = temperature;
-        auto q           = 5.0*(T-25.0);
-        return q;  // define a convective (temperature-proportional) heat flux
-      });
-  // clang-format on
-
-  // set heat source
-  thermal_solver.setSource([](auto, auto, auto, auto) { return 2.0; });
 
   // Finalize the data structures
   thermal_solver.completeSetup();

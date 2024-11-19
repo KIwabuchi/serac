@@ -429,17 +429,17 @@ public:
    * @note This method must be called prior to completeSetup()
    */
   template <int... active_parameters, typename MaterialType>
-  void setMaterial(DependsOn<active_parameters...>, const MaterialType& material)
+  void setMaterial(DependsOn<active_parameters...>, const MaterialType& material, Domain & domain)
   {
     residual_->AddDomainIntegral(Dimension<dim>{}, DependsOn<0, 1, NUM_STATE_VARS + active_parameters...>{},
-                                 ThermalMaterialIntegrand<MaterialType>(material), mesh_);
+                                 ThermalMaterialIntegrand<MaterialType>(material), domain);
   }
 
   /// @overload
   template <typename MaterialType>
-  void setMaterial(const MaterialType& material)
+  void setMaterial(const MaterialType& material, Domain & domain)
   {
-    setMaterial(DependsOn<>{}, material);
+    setMaterial(DependsOn<>{}, material, domain);
   }
 
   /**
@@ -486,10 +486,8 @@ public:
    */
   template <int... active_parameters, typename SourceType>
   void setSource(DependsOn<active_parameters...>, SourceType source_function,
-                 const std::optional<Domain>& optional_domain = std::nullopt)
+                 Domain & domain)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireDomain(mesh_);
-
     residual_->AddDomainIntegral(
         Dimension<dim>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
         [source_function](double t, auto x, auto temperature, auto /* dtemp_dt */, auto... params) {
@@ -506,9 +504,9 @@ public:
 
   /// @overload
   template <typename SourceType>
-  void setSource(SourceType source_function, const std::optional<Domain>& optional_domain = std::nullopt)
+  void setSource(SourceType source_function, Domain & domain)
   {
-    setSource(DependsOn<>{}, source_function, optional_domain);
+    setSource(DependsOn<>{}, source_function, domain);
   }
 
   /**
@@ -536,10 +534,8 @@ public:
    */
   template <int... active_parameters, typename FluxType>
   void setFluxBCs(DependsOn<active_parameters...>, FluxType flux_function,
-                  const std::optional<Domain>& optional_domain = std::nullopt)
+                  Domain & domain)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary(mesh_);
-
     residual_->AddBoundaryIntegral(
         Dimension<dim - 1>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
         [flux_function](double t, auto X, auto u, auto /* dtemp_dt */, auto... params) {
@@ -553,9 +549,9 @@ public:
 
   /// @overload
   template <typename FluxType>
-  void setFluxBCs(FluxType flux_function, const std::optional<Domain>& optional_domain = std::nullopt)
+  void setFluxBCs(FluxType flux_function, Domain & domain)
   {
-    setFluxBCs(DependsOn<>{}, flux_function, optional_domain);
+    setFluxBCs(DependsOn<>{}, flux_function, domain);
   }
 
   /**
@@ -651,17 +647,19 @@ public:
    *
    * @tparam active_parameters a list of indices, describing which parameters to pass to the q-function
    * @param qfunction a callable that returns the normal heat flux on a boundary surface
-   * @param optional_domain The domain over which the integral is computed
+   * @param domain The domain over which the integral is computed
    *
    * ~~~ {.cpp}
    *
    *  heat_transfer.addCustomBoundaryIntegral(
-   *     DependsOn<>{},
-   *     [](double t, auto position, auto temperature, auto temperature_rate) {
-   *         auto [T, dT_dxi] = temperature;
-   *         auto q           = 5.0*(T-25.0);
-   *         return q;  // define a temperature-proportional heat-flux
-   *  });
+   *    DependsOn<>{},
+   *    [](double t, auto position, auto temperature, auto temperature_rate) {
+   *      auto [T, dT_dxi] = temperature;
+   *      auto q           = 5.0*(T-25.0);
+   *      return q;  // define a temperature-proportional heat-flux
+   *    },
+   *    domain
+   *  );
    *
    * ~~~
    *
@@ -669,10 +667,8 @@ public:
    */
   template <int... active_parameters, typename callable>
   void addCustomBoundaryIntegral(DependsOn<active_parameters...>, callable qfunction,
-                                 const std::optional<Domain>& optional_domain = std::nullopt)
+                                 Domain & domain)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary(mesh_);
-
     residual_->AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
                                    qfunction, domain);
   }

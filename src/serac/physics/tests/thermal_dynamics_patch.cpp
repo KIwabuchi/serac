@@ -99,12 +99,10 @@ double dynamic_solution_error(const ExactSolution& exact_solution, PatchBoundary
 
   static_assert(dim == 2 || dim == 3, "Dimension must be 2 or 3 for heat transfer test");
 
+  std::string mesh_tag{"mesh"};
   std::string filename = std::string(SERAC_REPO_DIR) + "/data/meshes/patch" + std::to_string(dim) + "D.mesh";
   auto        mesh     = mesh::refineAndDistribute(buildMeshFromFile(filename));
-
-  std::string mesh_tag{"mesh"};
-
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Construct a heat transfer solver
   NonlinearSolverOptions nonlinear_opts{.relative_tol = 5.0e-13, .absolute_tol = 5.0e-13};
@@ -114,14 +112,17 @@ double dynamic_solution_error(const ExactSolution& exact_solution, PatchBoundary
 
   HeatTransfer<p, dim> thermal(nonlinear_opts, heat_transfer::direct_linear_options, dyn_opts, "thermal", mesh_tag);
 
+  Domain whole_domain = EntireDomain(pmesh);
+  Domain whole_boundary = EntireBoundary(pmesh);
+
   heat_transfer::LinearIsotropicConductor mat(1.0, 1.0, 1.0);
-  thermal.setMaterial(mat);
+  thermal.setMaterial(mat, whole_domain);
 
   // initial conditions
   thermal.setTemperature([exact_solution](const mfem::Vector& x, double) { return exact_solution(x, 0.0); });
 
   // forcing terms
-  exact_solution.applyLoads(mat, thermal, essentialBoundaryAttributes<dim>(bc));
+  exact_solution.applyLoads(mat, thermal, whole_domain, whole_boundary, essentialBoundaryAttributes<dim>(bc));
 
   // Finalize the data structures
   thermal.completeSetup();
@@ -190,7 +191,7 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <int p, typename Material>
-  void applyLoads(const Material& material, HeatTransfer<p, dim>& thermal, std::set<int> essential_boundaries) const
+  void applyLoads(const Material& material, HeatTransfer<p, dim>& thermal, Domain & dom, Domain & bdr, std::set<int> essential_boundaries) const
   {
     // essential BCs
     auto ebc_func = [*this](const auto& X, double t) { return this->operator()(X, t); };
@@ -205,13 +206,13 @@ public:
 
       return dot(flux, n0);
     };
-    thermal.setFluxBCs(flux_function, EntireBoundary(thermal.mesh()));
+    thermal.setFluxBCs(flux_function, bdr);
 
     // volumetric source
     auto source_function = [temp_rate_grad](auto position, auto /* time */, auto /* u */, auto /* du_dx */) {
       return dot(get<VALUE>(position), temp_rate_grad);
     };
-    thermal.setSource(source_function, EntireDomain(thermal.mesh()));
+    thermal.setSource(source_function, dom);
   }
 
 private:
