@@ -67,7 +67,9 @@ void stress_extrapolation_test()
       50.0    // shear modulus
   };
 
-  solid_solver.setMaterial(mat);
+  Domain whole_domain = EntireDomain(pmesh);
+
+  solid_solver.setMaterial(mat, whole_domain);
 
   // prescribe small displacement at each hole, pulling the plate apart
   std::set<int> top_hole = {2};
@@ -99,7 +101,7 @@ void stress_extrapolation_test()
         auto stress = mat(internal_variables, du_dx);
         return tuple{I2(dev(stress)), zero{}};
       },
-      pmesh, u);
+      whole_domain, u);
 
   solid_solver.setParameter(0, sigma_J2);
 

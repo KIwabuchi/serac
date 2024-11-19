@@ -177,7 +177,7 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <typename material_type, int p>
-  void applyLoads(const material_type & material, SolidMechanics<p, dim>& sf, std::set<int> essential_boundaries) const
+  void applyLoads(const material_type & material, SolidMechanics<p, dim>& sf, std::set<int> essential_boundaries, Domain & domain, Domain & boundary) const
   {
     // essential BCs
     auto ebc_func = [*this](const auto& X, auto& u){ this->operator()(X, u); };
@@ -191,7 +191,7 @@ public:
       return dot(P, n0);
     };
 
-    sf.setTraction(traction, EntireBoundary(sf.mesh()));
+    sf.setTraction(traction, boundary);
 
     auto bf = [=](auto X, auto) {
       auto X_val = get_value(X);
@@ -206,7 +206,7 @@ public:
       return divP;
     };
 
-    sf.addBodyForce(DependsOn<>{}, bf, EntireDomain(sf.mesh()));
+    sf.addBodyForce(DependsOn<>{}, bf, domain);
 
   }
 
@@ -324,10 +324,11 @@ double solution_error(PatchBoundaryCondition bc)
   SolidMechanics<p, dim> solid(std::move(equation_solver), solid_mechanics::default_quasistatic_options, "solid", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density=1.0, .K=1.0, .G=1.0};
-  Domain material_block = EntireDomain(pmesh);
-  solid.setMaterial(mat, material_block);
+  Domain domain = EntireDomain(pmesh);
+  Domain boundary = EntireBoundary(pmesh);
+  solid.setMaterial(mat, domain);
 
-  exact_displacement.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc));
+  exact_displacement.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc), domain, boundary);
 
   // Finalize the data structures
   solid.completeSetup();
