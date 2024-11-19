@@ -182,7 +182,7 @@ public:
     }
 
     using signature = test(decltype(serac::type<args>(trial_spaces))...);
-    integrals_.push_back(MakeBoundaryIntegral<signature, Q, dim>(domain, integrand, std::vector<uint32_t>{args...}));
+    integrals_.push_back(MakeBoundaryIntegral<signature, Q, dim>(domain, integrand, arg_vec));
   }
 
   /**
@@ -200,7 +200,7 @@ public:
 
     using signature = test(decltype(serac::type<args>(trial_spaces))...);
     integrals_.push_back(
-        MakeInteriorFaceIntegral<signature, Q, dim>(domain, integrand, std::vector<uint32_t>{args...}));
+        MakeInteriorFaceIntegral<signature, Q, dim>(domain, integrand, arg_vec));
   }
 
   /**
@@ -261,20 +261,24 @@ public:
     output_L_ = 0.0;
 
     for (auto& integral : integrals_) {
-      Domain & dom = integral.domain_;
 
-      const serac::BlockElementRestriction & G_trial = dom.get_restriction(trial_function_spaces_[which]);
-      input_E_buffer_[which].SetSize(int(G_trial.ESize()));
-      input_E_[which].Update(input_E_buffer_[which], G_trial.bOffsets());
-      G_trial.Gather(input_L_[which], input_E_[which]);
+      if (integral.DependsOn(which)) {
+        Domain & dom = integral.domain_;
 
-      output_E_buffer_.SetSize(dom.total_elements());
-      output_E_.Update(output_E_buffer_, dom.bOffsets());
+        const serac::BlockElementRestriction & G_trial = dom.get_restriction(trial_function_spaces_[which]);
+        input_E_buffer_[which].SetSize(int(G_trial.ESize()));
+        input_E_[which].Update(input_E_buffer_[which], G_trial.bOffsets());
+        G_trial.Gather(input_L_[which], input_E_[which]);
 
-      integral.GradientMult(input_E_[which], output_E_, which);
+        output_E_buffer_.SetSize(dom.total_elements());
+        output_E_.Update(output_E_buffer_, dom.bOffsets());
 
-      // scatter-add to compute QoI value for the local processor
-      G_test_.ScatterAdd(output_E_, output_L_);
+        integral.GradientMult(input_E_[which], output_E_, which);
+
+        // scatter-add to compute QoI value for the local processor
+        G_test_.ScatterAdd(output_E_, output_L_);
+      }
+
     }
 
     // compute global QoI value by summing values from different processors
@@ -395,12 +399,14 @@ private:
     uint64_t max_buffer_size() {
       uint64_t max_entries = 0;
       for (auto & integral : form_.integrals_) {
-        Domain & dom = integral.domain_;
-        const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
-        for (const auto& [geom, test_restriction] : G_trial.restrictions) {
-          const auto& trial_restriction = G_trial.restrictions.at(geom);
-          uint64_t entries_per_element = trial_restriction.nodes_per_elem * trial_restriction.components;
-          max_entries = std::max(max_entries, trial_restriction.num_elements * entries_per_element);
+        if (integral.DependsOn(which_argument)) {
+          Domain & dom = integral.domain_;
+          const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
+          for (const auto& [geom, test_restriction] : G_trial.restrictions) {
+            const auto& trial_restriction = G_trial.restrictions.at(geom);
+            uint64_t entries_per_element = trial_restriction.nodes_per_elem * trial_restriction.components;
+            max_entries = std::max(max_entries, trial_restriction.num_elements * entries_per_element);
+          }
         }
       }
       return max_entries;

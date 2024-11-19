@@ -399,21 +399,25 @@ public:
     output_L_ = 0.0;
 
     for (auto& integral : integrals_) {
-      Domain & dom = integral.domain_;
 
-      const serac::BlockElementRestriction & G_trial = dom.get_restriction(trial_function_spaces_[which]);
-      input_E_buffer_[which].SetSize(int(G_trial.ESize()));
-      input_E_[which].Update(input_E_buffer_[which], G_trial.bOffsets());
-      G_trial.Gather(input_L_[which], input_E_[which]);
+      if (integral.DependsOn(which)) {
+        Domain & dom = integral.domain_;
 
-      const serac::BlockElementRestriction & G_test = dom.get_restriction(test_function_space_);
-      output_E_buffer_.SetSize(int(G_test.ESize()));
-      output_E_.Update(output_E_buffer_, G_test.bOffsets());
+        const serac::BlockElementRestriction & G_trial = dom.get_restriction(trial_function_spaces_[which]);
+        input_E_buffer_[which].SetSize(int(G_trial.ESize()));
+        input_E_[which].Update(input_E_buffer_[which], G_trial.bOffsets());
+        G_trial.Gather(input_L_[which], input_E_[which]);
 
-      integral.GradientMult(input_E_[which], output_E_, which);
+        const serac::BlockElementRestriction & G_test = dom.get_restriction(test_function_space_);
+        output_E_buffer_.SetSize(int(G_test.ESize()));
+        output_E_.Update(output_E_buffer_, G_test.bOffsets());
 
-      // scatter-add to compute residuals on the local processor
-      G_test.ScatterAdd(output_E_, output_L_);
+        integral.GradientMult(input_E_[which], output_E_, which);
+
+        // scatter-add to compute residuals on the local processor
+        G_test.ScatterAdd(output_E_, output_L_);
+      }
+
     }
 
     // scatter-add to compute global residuals
