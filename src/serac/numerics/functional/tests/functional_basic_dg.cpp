@@ -156,27 +156,31 @@ void L2_scalar_valued_test(std::string meshfile)
   // Construct the new functional object using the specified test and trial spaces
   Functional<test_space(trial_space_0, trial_space_1)> residual(&fespace_0, {&fespace_0, &fespace_1});
 
+  constexpr int VALUE = 0;
   constexpr int DERIVATIVE = 1;
 
   Domain interior_faces = InteriorFaces(*mesh);
 
   residual.AddInteriorFaceIntegral(
-      Dimension<dim-1>{}, DependsOn<0>{},
-      [=](double /*t*/, auto X, auto velocity) {
-        // compute the surface normal
-        auto dX_dxi = get<DERIVATIVE>(X);
-        [[maybe_unused]] auto n = normalize(cross(dX_dxi));
+      Dimension<dim-1>{}, DependsOn<0, 1>{},
+      [=](double /*t*/, auto X, auto rho, auto u) {
 
-        // extract the velocity values from each side of the interface
-        // note: the orientation convention is such that the normal 
-        //       computed as above will point from from side 1->2
-        auto [u_1, u_2] = velocity; 
+        // area in reference configuration
+        auto dA = norm(cross(get<DERIVATIVE>(X))); 
 
-        auto a = u_2 - u_1;
+        // area-weighted surface normal in current configuration
+        // n = \hat{n} * da
+        auto n = cross(get<DERIVATIVE>(X) + get<DERIVATIVE>(u)); 
 
-        auto f_1 = u_1 * a;
-        auto f_2 = u_2 * a;
-        return serac::tuple{f_1, f_2};
+        auto [rho0, rho1] = rho;
+        auto uTn = dot(get<VALUE>(u), n);
+        auto s = uTn > 0;
+
+        return serac::tuple{
+          uTn * ((      s) * rho0 + (1.0 - s) * rho1), 
+          uTn * ((1.0 - s) * rho0 + (      s) * rho1)
+        } / dA;
+
       }, interior_faces);
 
   double t = 0.0;
