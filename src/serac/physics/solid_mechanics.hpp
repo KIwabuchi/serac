@@ -837,11 +837,11 @@ public:
    * @note This method must be called prior to completeSetup()
    */
   template <int... active_parameters, typename callable, typename StateType = Nothing>
-  void addCustomDomainIntegral(DependsOn<active_parameters...>, callable qfunction,
+  void addCustomDomainIntegral(DependsOn<active_parameters...>, callable qfunction, Domain & domain,
                                qdata_type<StateType> qdata = NoQData)
   {
     residual_->AddDomainIntegral(Dimension<dim>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{}, qfunction,
-                                 mesh_, qdata);
+                                 domain, qdata);
   }
 
   /**
