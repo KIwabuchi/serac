@@ -157,10 +157,10 @@ struct finite_element<mfem::Geometry::CUBE, L2<p, c> > {
                                             B(qx, jx) * B(qy, jy) * G(qz, jz)};
 
           int   Q   = (qz * q + qy) * q + qx;
-          auto& d00 = get<0>(get<0>(input(Q)));
-          auto& d01 = get<1>(get<0>(input(Q)));
-          auto& d10 = get<0>(get<1>(input(Q)));
-          auto& d11 = get<1>(get<1>(input(Q)));
+          const auto& d00 = get<0>(get<0>(input(Q)));
+          const auto& d01 = get<1>(get<0>(input(Q)));
+          const auto& d10 = get<0>(get<1>(input(Q)));
+          const auto& d11 = get<1>(get<1>(input(Q)));
 
           output[Q] = {d00 * phi_j + dot(d01, dphi_j_dxi), d10 * phi_j + dot(d11, dphi_j_dxi)};
         }

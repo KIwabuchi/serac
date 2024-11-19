@@ -273,10 +273,10 @@ struct finite_element<mfem::Geometry::SQUARE, Hcurl<p> > {
         double curl_phi_j = (dir == 0) * -B1(qx, jx) * G2(qy, jy) + (dir == 1) * B1(qy, jy) * G2(qx, jx);
 
         int   Q   = qy * q + qx;
-        auto& d00 = get<0>(get<0>(input(Q)));
-        auto& d01 = get<1>(get<0>(input(Q)));
-        auto& d10 = get<0>(get<1>(input(Q)));
-        auto& d11 = get<1>(get<1>(input(Q)));
+        const auto& d00 = get<0>(get<0>(input(Q)));
+        const auto& d01 = get<1>(get<0>(input(Q)));
+        const auto& d10 = get<0>(get<1>(input(Q)));
+        const auto& d11 = get<1>(get<1>(input(Q)));
 
         output[Q] = {dot(d00, phi_j) + d01 * curl_phi_j, dot(d10, phi_j) + d11 * curl_phi_j};
       }

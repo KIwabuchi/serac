@@ -255,10 +255,10 @@ struct finite_element<mfem::Geometry::TRIANGLE, H1<p, c> > {
       double              phi_j      = shape_function(xi[i], j);
       tensor<double, dim> dphi_j_dxi = shape_function_gradient(xi[i], j);
 
-      auto& d00 = get<0>(get<0>(input(i)));
-      auto& d01 = get<1>(get<0>(input(i)));
-      auto& d10 = get<0>(get<1>(input(i)));
-      auto& d11 = get<1>(get<1>(input(i)));
+      const auto& d00 = get<0>(get<0>(input(i)));
+      const auto& d01 = get<1>(get<0>(input(i)));
+      const auto& d10 = get<0>(get<1>(input(i)));
+      const auto& d11 = get<1>(get<1>(input(i)));
 
       output[i] = {d00 * phi_j + dot(d01, dphi_j_dxi), d10 * phi_j + dot(d11, dphi_j_dxi)};
     }

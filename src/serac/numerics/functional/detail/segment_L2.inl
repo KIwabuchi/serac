@@ -139,10 +139,10 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
       double phi0_j = B(qx, j) * (s == 0);
       double phi1_j = B(qx, j) * (s == 1);
 
-      auto& d00 = get<0>(get<0>(input(qx)));
-      auto& d01 = get<1>(get<0>(input(qx)));
-      auto& d10 = get<0>(get<1>(input(qx)));
-      auto& d11 = get<1>(get<1>(input(qx)));
+      const auto& d00 = get<0>(get<0>(input(qx)));
+      const auto& d01 = get<1>(get<0>(input(qx)));
+      const auto& d10 = get<0>(get<1>(input(qx)));
+      const auto& d11 = get<1>(get<1>(input(qx)));
 
       output[qx] = {d00 * phi0_j + d01 * phi1_j, d10 * phi0_j + d11 * phi1_j};
     }
