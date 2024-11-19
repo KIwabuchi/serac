@@ -568,36 +568,38 @@ private:
       std::set< row_col > nonzero_entries;
 
       for (auto& integral : form_.integrals_) {
-        Domain & dom = integral.domain_;
-        const auto& G_test  = dom.get_restriction(form_.test_function_space_);
-        const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
-        for (const auto& [geom, test_restriction] : G_test.restrictions) {
-          const auto& trial_restriction = G_trial.restrictions.at(geom);
+        if (integral.DependsOn(which_argument)) {
+          Domain & dom = integral.domain_;
+          const auto& G_test  = dom.get_restriction(form_.test_function_space_);
+          const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
+          for (const auto& [geom, test_restriction] : G_test.restrictions) {
+            const auto& trial_restriction = G_trial.restrictions.at(geom);
 
-          // the degrees of freedom associated with the rows/columns of the e^th element stiffness matrix
-          std::vector<int> test_vdofs(test_restriction.nodes_per_elem * test_restriction.components);
-          std::vector<int> trial_vdofs(trial_restriction.nodes_per_elem * trial_restriction.components);
+            // the degrees of freedom associated with the rows/columns of the e^th element stiffness matrix
+            std::vector<int> test_vdofs(test_restriction.nodes_per_elem * test_restriction.components);
+            std::vector<int> trial_vdofs(trial_restriction.nodes_per_elem * trial_restriction.components);
 
-          auto num_elements = static_cast<uint32_t>(test_restriction.num_elements);
-          for (uint32_t e = 0; e < num_elements; e++) {
+            auto num_elements = static_cast<uint32_t>(test_restriction.num_elements);
+            for (uint32_t e = 0; e < num_elements; e++) {
 
-            for (uint32_t i = 0; i < test_restriction.nodes_per_elem; i++) {
-              auto test_dof = test_restriction.dof_info(e, i);
-              for (uint32_t j = 0; j < test_restriction.components; j++) {
-                test_vdofs[i * test_restriction.components + j] = int(test_restriction.GetVDof(test_dof, j).index());
+              for (uint32_t i = 0; i < test_restriction.nodes_per_elem; i++) {
+                auto test_dof = test_restriction.dof_info(e, i);
+                for (uint32_t j = 0; j < test_restriction.components; j++) {
+                  test_vdofs[i * test_restriction.components + j] = int(test_restriction.GetVDof(test_dof, j).index());
+                }
               }
-            }
 
-            for (uint32_t i = 0; i < trial_restriction.nodes_per_elem; i++) {
-              auto trial_dof = trial_restriction.dof_info(e, i);
-              for (uint32_t j = 0; j < trial_restriction.components; j++) {
-                trial_vdofs[i * trial_restriction.components + j] = int(trial_restriction.GetVDof(trial_dof, j).index());
+              for (uint32_t i = 0; i < trial_restriction.nodes_per_elem; i++) {
+                auto trial_dof = trial_restriction.dof_info(e, i);
+                for (uint32_t j = 0; j < trial_restriction.components; j++) {
+                  trial_vdofs[i * trial_restriction.components + j] = int(trial_restriction.GetVDof(trial_dof, j).index());
+                }
               }
-            }
 
-            for (int row : test_vdofs) {
-              for (int col : trial_vdofs) {
-                nonzero_entries.insert({row, col});
+              for (int row : test_vdofs) {
+                for (int col : trial_vdofs) {
+                  nonzero_entries.insert({row, col});
+                }
               }
             }
           }
@@ -624,16 +626,18 @@ private:
     uint64_t max_buffer_size() {
       uint64_t max_entries = 0;
       for (auto & integral : form_.integrals_) {
-        Domain & dom = integral.domain_;
-        const auto& G_test  = dom.get_restriction(form_.test_function_space_);
-        const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
-        for (const auto& [geom, test_restriction] : G_test.restrictions) {
-          const auto& trial_restriction = G_trial.restrictions.at(geom);
-          uint64_t nrows_per_element = test_restriction.nodes_per_elem * test_restriction.components;
-          uint64_t ncols_per_element = trial_restriction.nodes_per_elem * trial_restriction.components;
-          uint64_t entries_per_element = nrows_per_element * ncols_per_element;
-          uint64_t entries_needed = test_restriction.num_elements * entries_per_element;
-          max_entries = std::max(entries_needed, max_entries);
+        if (integral.DependsOn(which_argument)) {
+          Domain & dom = integral.domain_;
+          const auto& G_test  = dom.get_restriction(form_.test_function_space_);
+          const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
+          for (const auto& [geom, test_restriction] : G_test.restrictions) {
+            const auto& trial_restriction = G_trial.restrictions.at(geom);
+            uint64_t nrows_per_element = test_restriction.nodes_per_elem * test_restriction.components;
+            uint64_t ncols_per_element = trial_restriction.nodes_per_elem * trial_restriction.components;
+            uint64_t entries_per_element = nrows_per_element * ncols_per_element;
+            uint64_t entries_needed = test_restriction.num_elements * entries_per_element;
+            max_entries = std::max(entries_needed, max_entries);
+          }
         }
       }
       return max_entries;
@@ -672,10 +676,9 @@ private:
 
       for (auto & integral : form_.integrals_) {
 
-        Domain & dom = integral.domain_;
-
         // if this integral's derivative isn't identically zero
         if (integral.functional_to_integral_index_.count(which_argument) > 0) {
+          Domain & dom = integral.domain_;
 
           uint32_t id = integral.functional_to_integral_index_.at(which_argument);
           const auto& G_test  = dom.get_restriction(form_.test_function_space_);

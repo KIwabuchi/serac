@@ -136,7 +136,7 @@ void check_gradient(serac::Functional<T>& f, double t, const mfem::Vector& U, co
   mfem::Vector dU(U.Size());
   dU.Randomize(seed);
 
-  mfem::Vector ddU_dt(U.Size());
+  mfem::Vector ddU_dt(dU_dt.Size());
   ddU_dt.Randomize(seed + 1);
 
   {
@@ -149,9 +149,12 @@ void check_gradient(serac::Functional<T>& f, double t, const mfem::Vector& U, co
     mfem::Vector df_jvp2(df_jvp1.Size());
     dfdU_matrix->Mult(dU, df_jvp2);  // sparse matvec
 
-    if (df_jvp1.Norml2() != 0) {
+    if (df_jvp1.Norml2() < 1.0e-13) {
+      double absolute_error = df_jvp1.DistanceTo(df_jvp2.GetData());
+      EXPECT_NEAR(0., absolute_error, 5.e-14);
+    } else {
       double relative_error = df_jvp1.DistanceTo(df_jvp2.GetData()) / df_jvp1.Norml2();
-      EXPECT_NEAR(0., relative_error, 5.e-6);
+      EXPECT_NEAR(0., relative_error, 5.e-14);
     }
 
     // {f(x - 2 * h), f(x - h), f(x), f(x + h), f(x + 2 * h)}
@@ -209,8 +212,13 @@ void check_gradient(serac::Functional<T>& f, double t, const mfem::Vector& U, co
     mfem::Vector df_jvp2(df_jvp1.Size());
     df_ddU_dt_matrix->Mult(ddU_dt, df_jvp2);  // sparse matvec
 
-    double relative_error = df_jvp1.DistanceTo(df_jvp2.GetData()) / df_jvp1.Norml2();
-    EXPECT_NEAR(0., relative_error, 5.e-14);
+    if (df_jvp1.Norml2() < 1.0e-13) {
+      double absolute_error = df_jvp1.DistanceTo(df_jvp2.GetData());
+      EXPECT_NEAR(0., absolute_error, 5.e-14);
+    } else {
+      double relative_error = df_jvp1.DistanceTo(df_jvp2.GetData()) / df_jvp1.Norml2();
+      EXPECT_NEAR(0., relative_error, 5.e-14);
+    }
 
     // {f(x - 2 * h), f(x - h), f(x), f(x + h), f(x + 2 * h)}
     mfem::Vector f_values[5];

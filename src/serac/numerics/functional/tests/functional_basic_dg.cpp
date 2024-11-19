@@ -132,6 +132,60 @@ TEST(basic, L2_qoi_test_tets_quadratic) { L2_qoi_test<3, 2>(SERAC_REPO_DIR "/dat
 TEST(basic, L2_qoi_test_hexes_linear) { L2_qoi_test<3, 1>(SERAC_REPO_DIR "/data/meshes/patch3D_hexes.mesh"); }
 TEST(basic, L2_qoi_test_hexes_quadratic) { L2_qoi_test<3, 2>(SERAC_REPO_DIR "/data/meshes/patch3D_hexes.mesh"); }
 
+template <int dim, int p>
+void L2_scalar_valued_test(std::string meshfile)
+{
+  using test_space  = L2<p>;
+  using trial_space_0 = L2<p>;
+  using trial_space_1 = H1<p, dim>;
+
+  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(meshfile), 0);
+
+  auto L2fec = mfem::L2_FECollection(p, dim, mfem::BasisType::GaussLobatto);
+  mfem::ParFiniteElementSpace fespace_0(mesh.get(), &L2fec, 1, serac::ordering);
+
+  auto H1fec = mfem::H1_FECollection(p, dim);
+  mfem::ParFiniteElementSpace fespace_1(mesh.get(), &H1fec, dim, serac::ordering);
+
+  mfem::Vector U0(fespace_0.TrueVSize());
+  U0.Randomize();
+
+  mfem::Vector U1(fespace_1.TrueVSize());
+  U1.Randomize();
+
+  // Construct the new functional object using the specified test and trial spaces
+  Functional<test_space(trial_space_0, trial_space_1)> residual(&fespace_0, {&fespace_0, &fespace_1});
+
+  constexpr int DERIVATIVE = 1;
+
+  Domain interior_faces = InteriorFaces(*mesh);
+
+  residual.AddInteriorFaceIntegral(
+      Dimension<dim-1>{}, DependsOn<0>{},
+      [=](double /*t*/, auto X, auto velocity) {
+        // compute the surface normal
+        auto dX_dxi = get<DERIVATIVE>(X);
+        [[maybe_unused]] auto n = normalize(cross(dX_dxi));
+
+        // extract the velocity values from each side of the interface
+        // note: the orientation convention is such that the normal 
+        //       computed as above will point from from side 1->2
+        auto [u_1, u_2] = velocity; 
+
+        auto a = u_2 - u_1;
+
+        auto f_1 = u_1 * a;
+        auto f_2 = u_2 * a;
+        return serac::tuple{f_1, f_2};
+      }, interior_faces);
+
+  double t = 0.0;
+  check_gradient(residual, t, U0, U1);
+
+}
+
+TEST(basic, L2_scalar_test_tris_and_quads_linear) { L2_scalar_valued_test<2, 1>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }
+
 int main(int argc, char* argv[])
 {
   int num_procs, myid;
