@@ -321,13 +321,15 @@ void element_gradient_kernel([[maybe_unused]] ExecArrayView<double, 3, Execution
       }
     }
 
-    for (int J = 0; J < 2 * trial_element::ndof; J++) {
-      if constexpr (trial::family == Family::L2) {
+    if constexpr (trial::family == Family::L2) {
+      for (int J = 0; J < 2 * trial_element::ndof; J++) {
         auto source_and_flux = trial_element::batch_apply_shape_fn_interior_face(J, derivatives, rule);
         test_element::integrate(source_and_flux, rule, output_ptr + J, 2 * trial_element::ndof);
-      } else {
+      }
+    } else {
+      for (int J = 0; J < trial_element::ndof; J++) {
         auto source_and_flux = trial_element::batch_apply_shape_fn(J, derivatives, rule);
-        test_element::integrate(source_and_flux, rule, output_ptr + J, 2 * trial_element::ndof);
+        test_element::integrate(source_and_flux, rule, output_ptr + J, trial_element::ndof);
       }
     }
 

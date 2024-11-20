@@ -371,22 +371,21 @@ public:
    * and thermal flux when operator() is called with the arguments listed above.
    */
   template <int... active_parameters, typename MaterialType, typename StateType>
-  void setMaterial(DependsOn<active_parameters...>, const MaterialType& material,
+  void setMaterial(DependsOn<active_parameters...>, const MaterialType& material, Domain & domain,
                    std::shared_ptr<QuadratureData<StateType>> qdata)
   {
     // note: these parameter indices are offset by 1 since, internally, this module uses the first parameter
     // to communicate the temperature and displacement field information to the other physics module
     //
-    thermal_.setMaterial(DependsOn<0, active_parameters + 1 ...>{}, ThermalMaterialInterface<MaterialType>{material});
-    solid_.setMaterial(DependsOn<0, active_parameters + 1 ...>{}, MechanicalMaterialInterface<MaterialType>{material},
-                       qdata);
+    thermal_.setMaterial(DependsOn<0, active_parameters + 1 ...>{}, ThermalMaterialInterface<MaterialType>{material}, domain);
+    solid_.setMaterial(DependsOn<0, active_parameters + 1 ...>{}, MechanicalMaterialInterface<MaterialType>{material}, domain, qdata);
   }
 
   /// @overload
   template <typename MaterialType, typename StateType = Empty>
-  void setMaterial(const MaterialType& material, std::shared_ptr<QuadratureData<StateType>> qdata = EmptyQData)
+  void setMaterial(const MaterialType& material, Domain& domain, std::shared_ptr<QuadratureData<StateType>> qdata = EmptyQData)
   {
-    setMaterial(DependsOn<>{}, material, qdata);
+    setMaterial(DependsOn<>{}, material, domain, qdata);
   }
 
   /**

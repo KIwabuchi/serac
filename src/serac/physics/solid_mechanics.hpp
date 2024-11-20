@@ -263,6 +263,7 @@ public:
     initializeSolidMechanicsStates();
   }
 
+#if 0
   /**
    * @brief Construct a new Nonlinear SolidMechanics Solver object
    *
@@ -352,6 +353,7 @@ public:
       }
     }
   }
+#endif
 
   /// @brief Destroy the SolidMechanics Functional object
   virtual ~SolidMechanics() {}

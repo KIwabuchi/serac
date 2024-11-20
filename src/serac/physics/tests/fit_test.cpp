@@ -101,7 +101,7 @@ void stress_extrapolation_test()
         auto stress = mat(internal_variables, du_dx);
         return tuple{I2(dev(stress)), zero{}};
       },
-      whole_domain, u);
+      pmesh, u);
 
   solid_solver.setParameter(0, sigma_J2);
 
