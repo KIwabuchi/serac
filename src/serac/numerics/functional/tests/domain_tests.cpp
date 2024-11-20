@@ -336,6 +336,75 @@ TEST(domain, of_elements)
   }
 }
 
+TEST(domain, entireDomain2d)
+{
+    constexpr int dim  = 2;
+    constexpr int p = 1;
+    auto          mesh = import_mesh("patch2D_tris_and_quads.mesh");
+
+    Domain d0 = EntireDomain(mesh);
+
+    EXPECT_EQ(d0.dim_, 2);
+    EXPECT_EQ(d0.tri_ids_.size(), 2);
+    EXPECT_EQ(d0.quad_ids_.size(), 4);
+
+    auto fec = mfem::H1_FECollection(p, dim);
+    auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+    mfem::Array<int> dof_indices = d0.dof_list(&fes);
+    EXPECT_EQ(dof_indices.Size(), 8);
+}
+
+TEST(domain, entireDomain3d)
+{
+    constexpr int dim  = 3;
+    constexpr int p = 1;
+    auto          mesh = import_mesh("patch3D_tets_and_hexes.mesh");
+
+    Domain d0 = EntireDomain(mesh);
+
+    EXPECT_EQ(d0.dim_, 3);
+    EXPECT_EQ(d0.tet_ids_.size(), 12);
+    EXPECT_EQ(d0.hex_ids_.size(), 7);
+
+    auto fec = mfem::H1_FECollection(p, dim);
+    auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+    mfem::Array<int> dof_indices = d0.dof_list(&fes);
+    EXPECT_EQ(dof_indices.Size(), 25);
+}
+
+TEST(domain, ofElements2dFindsDofs)
+{
+    constexpr int dim  = 2;
+    constexpr int p = 2;
+    auto          mesh = import_mesh("patch2D_tris_and_quads.mesh");
+    
+    auto find_element_0 = [](std::vector<vec2> vertices, int /* attr */) {
+      auto centroid = average(vertices);
+      return (centroid[0] < 0.5) && (centroid[1] < 0.25);
+    };
+
+    Domain d0 = Domain::ofElements(mesh, find_element_0);
+
+    auto fec = mfem::H1_FECollection(p, dim);
+    auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+    mfem::Array<int> dof_indices = d0.dof_list(&fes);
+    EXPECT_EQ(dof_indices.Size(), 9);
+
+    auto find_element_1 = [](std::vector<vec2> vertices, int /* attr */) {
+      auto centroid = average(vertices);
+      return (centroid[0] < 0.5) && (centroid[1] < 0.25);
+    };
+    Domain d1 = Domain::ofElements(mesh, find_element_1);
+
+    Domain elements_0_and_1 = d0 | d1;
+
+    dof_indices = elements_0_and_1.dof_list(&fes);
+    EXPECT_EQ(dof_indices.Size(), 15);
+}
+
 int main(int argc, char* argv[])
 {
   int num_procs, myid;
