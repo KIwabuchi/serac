@@ -595,54 +595,104 @@ Domain InteriorFaces(const mesh_t & mesh) {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 /// @cond
-using c_iter = std::vector<int>::const_iterator;
-using b_iter = std::back_insert_iterator<std::vector<int>>;
-using set_op = std::function<b_iter(c_iter, c_iter, c_iter, c_iter, b_iter)>;
-
-set_op union_op        = std::set_union<c_iter, c_iter, b_iter>;
-set_op intersection_op = std::set_intersection<c_iter, c_iter, b_iter>;
-set_op difference_op   = std::set_difference<c_iter, c_iter, b_iter>;
+using int2 = std::tuple<int, int>;
+enum SET_OPERATION { UNION, INTERSECTION, DIFFERENCE };
 /// @endcond
 
+/// @brief combine a pair of arrays of ints into a single array of `int2`, see also: unzip()
+void zip(std::vector< int2 > & ab, const std::vector<int>& a, const std::vector<int>& b) {
+  ab.resize(a.size());
+  for (uint32_t i = 0; i < a.size(); i++) {
+    ab[i] = {a[i], b[i]};
+  }
+}
+
+/// @brief split an array of `int2` into a pair of arrays of ints, see also: zip()
+void unzip(const std::vector< int2 > & ab, std::vector<int>& a, std::vector<int>& b) {
+  a.resize(ab.size());
+  b.resize(ab.size());
+  for (uint32_t i = 0; i < ab.size(); i++) {
+    auto ab_i = ab[i];
+    a[i] = std::get<0>(ab_i);
+    b[i] = std::get<1>(ab_i);
+  }
+}
+
 /// @brief return a std::vector that is the result of applying (a op b)
-std::vector<int> set_operation(set_op op, const std::vector<int>& a, const std::vector<int>& b)
+template < typename T >
+std::vector<T> set_operation(SET_OPERATION op, const std::vector<T>& a, const std::vector<T>& b)
 {
-  std::vector<int> output;
-  op(a.begin(), a.end(), b.begin(), b.end(), back_inserter(output));
-  return output;
+  using c_iter = typename std::vector<T>::const_iterator;
+  using b_iter = std::back_insert_iterator<std::vector<T>>;
+  using set_op = std::function<b_iter(c_iter, c_iter, c_iter, c_iter, b_iter)>;
+
+  set_op combine;
+  if (op == SET_OPERATION::UNION) { 
+    combine = std::set_union<c_iter, c_iter, b_iter>; 
+  }
+  if (op == SET_OPERATION::INTERSECTION) { 
+    combine = std::set_intersection<c_iter, c_iter, b_iter>; 
+  }
+  if (op == SET_OPERATION::DIFFERENCE) { 
+    combine = std::set_difference<c_iter, c_iter, b_iter>; 
+  }
+
+  std::vector<T> combined;
+  combine(a.begin(), a.end(), b.begin(), b.end(), back_inserter(combined));
+  return combined;
 }
 
 /// @brief return a Domain that is the result of applying (a op b)
-Domain set_operation(set_op op, const Domain& a, const Domain& b)
+Domain set_operation(SET_OPERATION op, const Domain& a, const Domain& b)
 {
   assert(&a.mesh_ == &b.mesh_);
   assert(a.dim_ == b.dim_);
 
-  Domain output{a.mesh_, a.dim_};
+  Domain combined{a.mesh_, a.dim_};
 
-  if (output.dim_ == 0) {
-    output.vertex_ids_ = set_operation(op, a.vertex_ids_, b.vertex_ids_);
+  if (combined.dim_ == 0) {
+    combined.vertex_ids_ = set_operation(op, a.vertex_ids_, b.vertex_ids_);
   }
 
-  if (output.dim_ == 1) {
-    output.edge_ids_ = set_operation(op, a.edge_ids_, b.edge_ids_);
+  if (combined.dim_ == 1) {
+    std::vector<int2> a_zipped_ids, b_zipped_ids;
+    zip(a_zipped_ids, a.edge_ids_, a.mfem_edge_ids_);
+    zip(b_zipped_ids, b.edge_ids_, b.mfem_edge_ids_);
+    std::vector<int2> combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
+    unzip(combined_zipped_ids, combined.edge_ids_, combined.mfem_edge_ids_);
   }
 
-  if (output.dim_ == 2) {
-    output.tri_ids_  = set_operation(op, a.tri_ids_, b.tri_ids_);
-    output.quad_ids_ = set_operation(op, a.quad_ids_, b.quad_ids_);
+  if (combined.dim_ == 2) {
+    std::vector<int2> a_zipped_ids, b_zipped_ids;
+    zip(a_zipped_ids, a.tri_ids_, a.mfem_tri_ids_);
+    zip(b_zipped_ids, b.tri_ids_, b.mfem_tri_ids_);
+    std::vector<int2> combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
+    unzip(combined_zipped_ids, combined.tri_ids_, combined.mfem_tri_ids_);
+ 
+    zip(a_zipped_ids, a.quad_ids_, a.mfem_quad_ids_);
+    zip(b_zipped_ids, b.quad_ids_, b.mfem_quad_ids_);
+    combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
+    unzip(combined_zipped_ids, combined.quad_ids_, combined.mfem_quad_ids_);
   }
 
-  if (output.dim_ == 3) {
-    output.tet_ids_ = set_operation(op, a.tet_ids_, b.tet_ids_);
-    output.hex_ids_ = set_operation(op, a.hex_ids_, b.hex_ids_);
+  if (combined.dim_ == 3) {
+    std::vector<int2> a_zipped_ids, b_zipped_ids;
+    zip(a_zipped_ids, a.tet_ids_, a.mfem_tet_ids_);
+    zip(b_zipped_ids, b.tet_ids_, b.mfem_tet_ids_);
+    std::vector<int2> combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
+    unzip(combined_zipped_ids, combined.tet_ids_, combined.mfem_tet_ids_);
+ 
+    zip(a_zipped_ids, a.hex_ids_, a.mfem_hex_ids_);
+    zip(b_zipped_ids, b.hex_ids_, b.mfem_hex_ids_);
+    combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
+    unzip(combined_zipped_ids, combined.hex_ids_, combined.mfem_hex_ids_);
   }
 
-  return output;
+  return combined;
 }
 
-Domain operator|(const Domain& a, const Domain& b) { return set_operation(union_op, a, b); }
-Domain operator&(const Domain& a, const Domain& b) { return set_operation(intersection_op, a, b); }
-Domain operator-(const Domain& a, const Domain& b) { return set_operation(difference_op, a, b); }
+Domain operator|(const Domain& a, const Domain& b) { return set_operation(SET_OPERATION::UNION, a, b); }
+Domain operator&(const Domain& a, const Domain& b) { return set_operation(SET_OPERATION::INTERSECTION, a, b); }
+Domain operator-(const Domain& a, const Domain& b) { return set_operation(SET_OPERATION::DIFFERENCE, a, b); }
 
 }  // namespace serac
