@@ -362,22 +362,19 @@ static Domain domain_of_boundary_elems(const mfem::Mesh&                        
     switch (geom) {
       case mfem::Geometry::SEGMENT:
         if (add) {
-          output.edge_ids_.push_back(edge_id);
-          output.mfem_edge_ids_.push_back(f);
+          output.addBoundaryElement(edge_id, f, geom);
         }
         edge_id++;
         break;
       case mfem::Geometry::TRIANGLE:
         if (add) {
-          output.tri_ids_.push_back(tri_id);
-          output.mfem_tri_ids_.push_back(f);
+          output.addBoundaryElement(edge_id, f, geom);
         }
         tri_id++;
         break;
       case mfem::Geometry::SQUARE:
         if (add) {
-          output.quad_ids_.push_back(quad_id);
-          output.mfem_quad_ids_.push_back(f);
+          output.addBoundaryElement(edge_id, f, geom);
         }
         quad_id++;
         break;
@@ -398,6 +395,22 @@ Domain Domain::ofBoundaryElements(const mfem::Mesh& mesh, std::function<bool(std
 Domain Domain::ofBoundaryElements(const mfem::Mesh& mesh, std::function<bool(std::vector<vec3>, int)> func)
 {
   return domain_of_boundary_elems<3>(mesh, func);
+}
+
+void Domain::addBoundaryElement(int geom_id, int elem_id, mfem::Geometry::Type element_geometry)
+{
+  if (element_geometry == mfem::Geometry::SEGMENT) {
+    edge_ids_.push_back(geom_id);
+    mfem_edge_ids_.push_back(elem_id);
+  } else if (element_geometry == mfem::Geometry::TRIANGLE) {
+    tri_ids_.push_back(geom_id);
+    mfem_tri_ids_.push_back(elem_id);
+  } else if (element_geometry == mfem::Geometry::SQUARE) {
+    quad_ids_.push_back(geom_id);
+    mfem_quad_ids_.push_back(elem_id);
+  } else {
+    SLIC_ERROR("unsupported boundary element type");
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
