@@ -130,6 +130,8 @@ struct Domain {
     exit(1);
   }
 
+  void addElement(int geom_id, int elem_id, mfem::Geometry::Type element_geometry);
+
   /// @brief get mfem degree of freedom list for a given FiniteElementSpace
   mfem::Array<int> dof_list(mfem::FiniteElementSpace* fes) const;
 };

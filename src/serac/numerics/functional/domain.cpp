@@ -258,31 +258,27 @@ static Domain domain_of_elems(const mfem::Mesh&                                 
     switch (x.size()) {
       case 3:
         if (add) {
-          output.tri_ids_.push_back(tri_id);
-          output.mfem_tri_ids_.push_back(i);
+          output.addElement(tri_id, i, mfem::Geometry::TRIANGLE);
         }
         tri_id++;
         break;
       case 4:
         if constexpr (d == 2) {
           if (add) {
-            output.quad_ids_.push_back(quad_id);
-            output.mfem_quad_ids_.push_back(i);
+            output.addElement(quad_id, i, mfem::Geometry::SQUARE);
           }
           quad_id++;
         }
         if constexpr (d == 3) {
           if (add) {
-            output.tet_ids_.push_back(tet_id);
-            output.mfem_tet_ids_.push_back(i);
+            output.addElement(tet_id, i, mfem::Geometry::TETRAHEDRON);
           }
           tet_id++;
         }
         break;
       case 8:
         if (add) {
-          output.hex_ids_.push_back(hex_id);
-          output.mfem_hex_ids_.push_back(i);
+          output.addElement(hex_id, i, mfem::Geometry::CUBE);
         }
         hex_id++;
         break;
@@ -303,6 +299,25 @@ Domain Domain::ofElements(const mfem::Mesh& mesh, std::function<bool(std::vector
 Domain Domain::ofElements(const mfem::Mesh& mesh, std::function<bool(std::vector<vec3>, int)> func)
 {
   return domain_of_elems<3>(mesh, func);
+}
+
+void Domain::addElement(int geom_id, int elem_id, mfem::Geometry::Type element_geometry)
+{
+  if (element_geometry == mfem::Geometry::TRIANGLE) {
+    tri_ids_.push_back(geom_id);
+    mfem_tri_ids_.push_back(elem_id);
+  } else if (element_geometry == mfem::Geometry::SQUARE) {
+    quad_ids_.push_back(geom_id);
+    mfem_quad_ids_.push_back(elem_id);
+  } else if (element_geometry == mfem::Geometry::TETRAHEDRON) {
+    tet_ids_.push_back(geom_id);
+    mfem_tet_ids_.push_back(elem_id);
+  } else if (element_geometry == mfem::Geometry::CUBE) {
+    hex_ids_.push_back(geom_id);
+    mfem_hex_ids_.push_back(elem_id);
+  } else {
+    SLIC_ERROR("unsupported element type");
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -384,6 +399,9 @@ Domain Domain::ofBoundaryElements(const mfem::Mesh& mesh, std::function<bool(std
 {
   return domain_of_boundary_elems<3>(mesh, func);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 
 mfem::Array<int> Domain::dof_list(mfem::FiniteElementSpace* fes) const
 {
