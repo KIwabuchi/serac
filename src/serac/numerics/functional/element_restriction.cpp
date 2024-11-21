@@ -485,11 +485,11 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes
 
   for (int f : mfem_face_ids) {
 
+    mfem::Mesh::FaceInformation info = mesh->GetFaceInformation(f);
+
     if (mesh->GetFaceGeometry(f) != face_geom) { 
       SLIC_ERROR("encountered incorrect face geometry type");
     }
-
-    //mfem::Mesh::FaceInformation info = mesh->GetFaceInformation(f);
 
     // mfem doesn't provide this connectivity info for DG spaces directly (?),
     // so we have to get at it indirectly in several steps:
@@ -554,7 +554,7 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes
         // to get a consistent winding.
         //
         // In 3D, mfem does use a consistently CCW winding for boundary faces (I think).
-        int orientation = (mesh->Dimension() == 2) ? 0 : orientations[i];
+        int orientation = (mesh->Dimension() == 2 && info.IsBoundary()) ? 0 : orientations[i];
 
         // 4. extract only the dofs that correspond to side `i`
         for (auto k : face_perm(orientation)) {

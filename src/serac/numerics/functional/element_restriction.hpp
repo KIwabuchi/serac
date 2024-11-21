@@ -255,3 +255,6 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const serac::fes_t* 
  * @param type whether the face is of interior or boundary type
  */
 axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom, FaceType type);
+
+/// @overload
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom, const std::vector<int> & mfem_face_ids);
