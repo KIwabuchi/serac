@@ -125,6 +125,7 @@ void check_gradient(serac::Functional<T, exec>& f, double t, mfem::Vector& U, do
   double e3 = df1_cd[0].DistanceTo(df_jvp1.GetData()) / denominator;
   double e4 = df1_cd[1].DistanceTo(df_jvp1.GetData()) / denominator;
   EXPECT_TRUE((fabs(e3 / e4 - 4.0) < 0.1) || fmin(e3, e4) < 1.0e-9);
+
 }
 
 template <typename T>

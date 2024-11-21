@@ -159,7 +159,7 @@ public:
    * @tparam dim The dimension of the boundary element (1 for line, 2 for quad, etc)
    * @tparam lambda the type of the integrand functor: must implement operator() with an appropriate function signature
    * @param[in] integrand The user-provided quadrature function, see @p Integral
-   * @param[in] mesh The domain on which to evaluate the integral
+   * @param[in] domain which elements make up the domain of integration
    *
    * @brief Adds a boundary integral term to the Functional object
    *

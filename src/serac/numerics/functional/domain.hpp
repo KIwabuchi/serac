@@ -13,6 +13,7 @@
 #include "serac/numerics/functional/tensor.hpp"
 #include "serac/numerics/functional/finite_element.hpp"
 #include "serac/numerics/functional/element_restriction.hpp"
+#include "serac/numerics/functional/typedefs.hpp"
 
 namespace serac {
 
@@ -36,7 +37,7 @@ struct Domain {
   static constexpr int num_types = 3;  ///< the number of entries in the Type enum
 
   /// @brief the underyling mesh for this domain
-  const mfem::Mesh& mesh_;
+  const mesh_t& mesh_;
 
   /// @brief the geometric dimension of the domain
   int dim_;
@@ -67,7 +68,10 @@ struct Domain {
 
   std::map< FunctionSpace, BlockElementRestriction > restriction_operators;
 
-  Domain(const mfem::Mesh& m, int d, Type type = Domain::Type::Elements) : mesh_(m), dim_(d), type_(type) {}
+  /**
+   * @brief empty Domain constructor, with connectivity info to be populated later
+   */
+  Domain(const mesh_t& m, int d, Type type = Domain::Type::Elements) : mesh_(m), dim_(d), type_(type) {}
 
   /**
    * @brief create a domain from some subset of the vertices in an mfem::Mesh
@@ -75,10 +79,10 @@ struct Domain {
    * @param func predicate function for determining which vertices will be
    * included in this domain. The function's argument is the spatial position of the vertex.
    */
-  static Domain ofVertices(const mfem::Mesh& mesh, std::function<bool(vec2)> func);
+  static Domain ofVertices(const mesh_t& mesh, std::function<bool(vec2)> func);
 
   /// @overload
-  static Domain ofVertices(const mfem::Mesh& mesh, std::function<bool(vec3)> func);
+  static Domain ofVertices(const mesh_t& mesh, std::function<bool(vec3)> func);
 
   /**
    * @brief create a domain from some subset of the edges in an mfem::Mesh
@@ -87,10 +91,10 @@ struct Domain {
    * included in this domain. The function's arguments are the list of vertex coordinates and
    * an attribute index (if appropriate).
    */
-  static Domain ofEdges(const mfem::Mesh& mesh, std::function<bool(std::vector<vec2>, int)> func);
+  static Domain ofEdges(const mesh_t& mesh, std::function<bool(std::vector<vec2>, int)> func);
 
   /// @overload
-  static Domain ofEdges(const mfem::Mesh& mesh, std::function<bool(std::vector<vec3>)> func);
+  static Domain ofEdges(const mesh_t& mesh, std::function<bool(std::vector<vec3>)> func);
 
   /**
    * @brief create a domain from some subset of the faces in an mfem::Mesh
@@ -99,10 +103,10 @@ struct Domain {
    * included in this domain. The function's arguments are the list of vertex coordinates and
    * an attribute index (if appropriate).
    */
-  static Domain ofFaces(const mfem::Mesh& mesh, std::function<bool(std::vector<vec2>, int)> func);
+  static Domain ofFaces(const mesh_t& mesh, std::function<bool(std::vector<vec2>, int)> func);
 
   /// @overload
-  static Domain ofFaces(const mfem::Mesh& mesh, std::function<bool(std::vector<vec3>, int)> func);
+  static Domain ofFaces(const mesh_t& mesh, std::function<bool(std::vector<vec3>, int)> func);
 
   /**
    * @brief create a domain from some subset of the elements (spatial dim == geometry dim) in an mfem::Mesh
@@ -111,20 +115,20 @@ struct Domain {
    * included in this domain. The function's arguments are the list of vertex coordinates and
    * an attribute index (if appropriate).
    */
-  static Domain ofElements(const mfem::Mesh& mesh, std::function<bool(std::vector<vec2>, int)> func);
+  static Domain ofElements(const mesh_t& mesh, std::function<bool(std::vector<vec2>, int)> func);
 
   /// @overload
-  static Domain ofElements(const mfem::Mesh& mesh, std::function<bool(std::vector<vec3>, int)> func);
+  static Domain ofElements(const mesh_t& mesh, std::function<bool(std::vector<vec3>, int)> func);
 
   /**
    * @brief create a domain from some subset of the boundary elements (spatial dim == geometry dim + 1) in an mfem::Mesh
    * @param mesh the entire mesh
    * @param func predicate function for determining which boundary elements will be included in this domain
    */
-  static Domain ofBoundaryElements(const mfem::Mesh& mesh, std::function<bool(std::vector<vec2>, int)> func);
+  static Domain ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::vector<vec2>, int)> func);
 
   /// @overload
-  static Domain ofBoundaryElements(const mfem::Mesh& mesh, std::function<bool(std::vector<vec3>, int)> func);
+  static Domain ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::vector<vec3>, int)> func);
 
   /// @brief get elements by geometry type
   const std::vector<int>& get(mfem::Geometry::Type geom) const
@@ -151,10 +155,17 @@ struct Domain {
     exit(1);
   }
 
+  /**
+   * @brief returns how many elements of any type belong to this domain 
+   */
   int total_elements() const {
     return int(vertex_ids_.size() + edge_ids_.size() + tri_ids_.size() + quad_ids_.size() + tet_ids_.size() + hex_ids_.size());
   }
 
+  /**
+   * @brief returns an array of the prefix sum of element counts belonging to this domain. 
+   *        Primarily intended to be used in mfem::BlockVector::Update(double * data, mfem::Array<int> bOffsets);
+   */
   mfem::Array<int> bOffsets() const {
     mfem::Array<int> offsets(mfem::Geometry::NUM_GEOMETRIES + 1);
 
@@ -173,10 +184,10 @@ struct Domain {
   }
 
   /// @brief get mfem degree of freedom list for a given FiniteElementSpace
-  mfem::Array<int> dof_list(mfem::FiniteElementSpace* fes) const;
+  mfem::Array<int> dof_list(const fes_t* fes) const;
 
   /// @brief TODO
-  void insert_restriction(const mfem::FiniteElementSpace * fes, FunctionSpace space);
+  void insert_restriction(const fes_t * fes, FunctionSpace space);
 
   /// @brief TODO
   const BlockElementRestriction & get_restriction(FunctionSpace space);
@@ -184,13 +195,13 @@ struct Domain {
 };
 
 /// @brief constructs a domain from all the elements in a mesh
-Domain EntireDomain(const mfem::Mesh& mesh);
+Domain EntireDomain(const mesh_t& mesh);
 
 /// @brief constructs a domain from all the boundary elements in a mesh
-Domain EntireBoundary(const mfem::Mesh& mesh);
+Domain EntireBoundary(const mesh_t& mesh);
 
 /// @brief constructs a domain from all the interior face elements in a mesh
-Domain InteriorFaces(const mfem::Mesh& mesh);
+Domain InteriorFaces(const mesh_t& mesh);
 
 /// @brief create a new domain that is the union of `a` and `b`
 Domain operator|(const Domain& a, const Domain& b);
@@ -225,6 +236,9 @@ inline std::array<uint32_t, mfem::Geometry::NUM_GEOMETRIES> geometry_counts(cons
   return counts;
 }
 
+/**
+ * @brief convenience function for computing the arithmetic mean of some list of vectors
+ */
 template <int dim>
 inline tensor<double, dim> average(std::vector<tensor<double, dim> >& positions)
 {

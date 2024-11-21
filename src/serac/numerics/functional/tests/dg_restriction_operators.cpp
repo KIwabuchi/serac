@@ -24,13 +24,13 @@ int possible_permutations(mfem::Geometry::Type geom) {
   return -1;
 }
 
-template < int n >
+template < uint32_t n >
 std::array< int, n > apply_permutation(const int (&arr)[n], const int (&p)[n]) {
-    std::array<int, n> permuted_arr{};
-    for (int i = 0; i < n; i++) {
-        permuted_arr[i] = arr[p[i]];
-    }
-    return permuted_arr;
+  std::array<int, n> permuted_arr{};
+  for (uint32_t i = 0; i < n; i++) {
+    permuted_arr[i] = arr[p[i]];
+  }
+  return permuted_arr;
 }
 
 mfem::Mesh generate_permuted_mesh(mfem::Geometry::Type geom, int i) {

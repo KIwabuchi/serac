@@ -402,6 +402,7 @@ double pressure_error()
 
   solid_mechanics::NeoHookean mat{.density=1.0, .K=1.0, .G=1.0};
   Domain material_block = EntireDomain(pmesh);
+  Domain boundary = EntireBoundary(pmesh);
   solid.setMaterial(mat, material_block);
 
   typename solid_mechanics::NeoHookean::State state;
@@ -419,7 +420,7 @@ double pressure_error()
   // Set the pressure corresponding to 10% uniaxial strain
   solid.setPressure([pressure](auto&, double) {
     return pressure;
-  });
+  }, boundary);
 
   // Define the essential boundary conditions corresponding to 10% uniaxial strain everywhere
   // except the pressure loaded surface

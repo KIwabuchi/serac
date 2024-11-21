@@ -7,6 +7,8 @@
 #include "geometry.hpp"
 #include "domain.hpp"
 
+#include "serac/numerics/functional/typedefs.hpp"
+
 inline bool isH1(const mfem::FiniteElementSpace& fes)
 {
   return (fes.FEColl()->GetContType() == mfem::FiniteElementCollection::CONTINUOUS);
@@ -150,7 +152,8 @@ struct ElementRestriction {
   /// default ctor leaves this object uninitialized
   ElementRestriction() {}
 
-  ElementRestriction(const mfem::FiniteElementSpace* fes, mfem::Geometry::Type elem_geom, const std::vector<int> & domain_elements);
+  /// ctor from a list of elements (e.g. from a serac::Domain)
+  ElementRestriction(const fes_t* fes, mfem::Geometry::Type elem_geom, const std::vector<int> & domain_elements);
 
   /// the size of the "E-vector" associated with this restriction operator
   uint64_t ESize() const;
@@ -213,7 +216,7 @@ struct BlockElementRestriction {
   BlockElementRestriction() {}
 
   /// create a BlockElementRestriction for the elements in a given domain
-  BlockElementRestriction(const mfem::FiniteElementSpace* fes, const Domain & domain);
+  BlockElementRestriction(const fes_t* fes, const Domain & domain);
 
   /// the size of the "E-vector" associated with this restriction operator
   uint64_t ESize() const;
@@ -242,13 +245,13 @@ struct BlockElementRestriction {
  * @param fes the finite element space containing the dof information
  * @param geom the kind of element geometry
  */
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const mfem::FiniteElementSpace* fes, mfem::Geometry::Type geom);
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const serac::fes_t* fes, mfem::Geometry::Type geom);
 
 /**
- * @brief Get the list of dofs for each face element (of the specified geometry) from the mfem::FiniteElementSpace
+ * @brief Get the list of dofs for each face element (of the specified geometry) from the fes_t
  *
  * @param fes the finite element space containing the dof information
  * @param geom the kind of element geometry
  * @param type whether the face is of interior or boundary type
  */
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const mfem::FiniteElementSpace* fes, mfem::Geometry::Type face_geom, FaceType type);
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom, FaceType type);

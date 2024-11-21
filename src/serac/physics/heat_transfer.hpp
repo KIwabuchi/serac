@@ -410,6 +410,7 @@ public:
    *
    * @tparam MaterialType The thermal material type
    * @param material A material containing heat capacity and thermal flux evaluation information
+   * @param domain which elements in the mesh are described by the specified material
    *
    * @pre material must be a object that can be called with the following arguments:
    *    1. `tensor<T,dim> x` the spatial position of the material evaluation call
@@ -466,8 +467,7 @@ public:
    *
    * @tparam SourceType The type of the source function
    * @param source_function A source function for a prescribed thermal load
-   * @param optional_domain The domain over which the source is applied. If nothing is supplied the entire domain is
-   * used.
+   * @param domain The domain over which the source is applied. 
    *
    * @pre source_function must be a object that can be called with the following arguments:
    *    1. `tensor<T,dim> x` the spatial coordinates for the quadrature point
@@ -514,8 +514,7 @@ public:
    *
    * @tparam FluxType The type of the thermal flux object
    * @param flux_function A function describing the flux applied to a boundary
-   * @param optional_domain The domain over which the flux is applied. If nothing is supplied the entire boundary is
-   * used.
+   * @param domain The domain over which the flux is applied
    *
    * @pre FluxType must be a object that can be called with the following arguments:
    *    1. `tensor<T,dim> x` the spatial coordinates for the quadrature point

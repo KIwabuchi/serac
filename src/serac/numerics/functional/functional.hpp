@@ -444,7 +444,36 @@ public:
 
     // get the values for each local processor
     for (uint32_t i = 0; i < num_trial_spaces; i++) {
+    #if 0
+      if (trial_function_spaces_[i].family == Family::L2) {
+
+        // make a PGF on the fly
+        // TODO: don't allocate/deallocate this data every invocation
+        mfem::ParGridFunction X;
+        X.MakeRef(trial_space_[i], input_L_[i].GetData());
+
+        // call exchange face nbr
+        X.ExchangeFaceNbrData();
+
+        // copy input_L[i] and facenbrdata [i] into a common array like:
+        //          first part        second part
+        //    [   ---   L    ---   |  ---  FND ---  ]
+        mfem::Vector first_part;
+        first_part.MakeRef(input_L_[i], 0);
+        P_trial_[i]->Mult(*input_T[i], first_part);
+
+        mfem::Vector second_part;
+        second_part.MakeRef(input_L_[i], first_part.Size());
+        second_part = X.FaceNbrData();
+
+      } else {
+
+        P_trial_[i]->Mult(*input_T[i], input_L_[i]);
+
+      }
+    #else
       P_trial_[i]->Mult(*input_T[i], input_L_[i]);
+    #endif
     }
 
     output_L_ = 0.0;
@@ -453,10 +482,12 @@ public:
       Domain & dom = integral.domain_;
 
       const serac::BlockElementRestriction & G_test = dom.get_restriction(test_function_space_);
+      mpi::out << "G_test.ESize() " << G_test.ESize() << std::endl;
 
       for (auto i : integral.active_trial_spaces_) {
         const serac::BlockElementRestriction & G_trial = dom.get_restriction(trial_function_spaces_[i]);
         input_E_buffer_[i].SetSize(int(G_trial.ESize()));
+        mpi::out << "G_trial.ESize() " << G_trial.ESize() << std::endl;
         input_E_[i].Update(input_E_buffer_[i], G_trial.bOffsets());
         G_trial.Gather(input_L_[i], input_E_[i]);
       }

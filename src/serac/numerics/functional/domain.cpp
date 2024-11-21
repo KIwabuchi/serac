@@ -8,7 +8,7 @@
  * @file domain.hpp
  *
  * @brief many of the functions in this file amount to extracting
- *        element indices from an mfem::Mesh like
+ *        element indices from an mesh_t like
  *
  *    | mfem::Geometry | mfem element id | tri id | quad id |
  *    | -------------- | --------------- | ------ | ------- |
@@ -28,6 +28,8 @@
 #include "serac/numerics/functional/domain.hpp"
 
 namespace serac {
+
+using mesh_t = mfem::Mesh;
 
 /**
  * @brief gather vertex coordinates for a list of vertices
@@ -49,7 +51,7 @@ std::vector<tensor<double, d>> gather(const mfem::Vector& coordinates, mfem::Arr
 }
 
 template <int d>
-static Domain domain_of_vertices(const mfem::Mesh& mesh, std::function<bool(tensor<double, d>)> predicate)
+static Domain domain_of_vertices(const mesh_t& mesh, std::function<bool(tensor<double, d>)> predicate)
 {
   assert(mesh.SpaceDimension() == d);
 
@@ -76,12 +78,12 @@ static Domain domain_of_vertices(const mfem::Mesh& mesh, std::function<bool(tens
   return output;
 }
 
-Domain Domain::ofVertices(const mfem::Mesh& mesh, std::function<bool(vec2)> func)
+Domain Domain::ofVertices(const mesh_t& mesh, std::function<bool(vec2)> func)
 {
   return domain_of_vertices(mesh, func);
 }
 
-Domain Domain::ofVertices(const mfem::Mesh& mesh, std::function<bool(vec3)> func)
+Domain Domain::ofVertices(const mesh_t& mesh, std::function<bool(vec3)> func)
 {
   return domain_of_vertices(mesh, func);
 }
@@ -90,7 +92,7 @@ Domain Domain::ofVertices(const mfem::Mesh& mesh, std::function<bool(vec3)> func
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <int d, typename T>
-static Domain domain_of_edges(const mfem::Mesh& mesh, std::function<T> predicate)
+static Domain domain_of_edges(const mesh_t& mesh, std::function<T> predicate)
 {
   assert(mesh.SpaceDimension() == d);
 
@@ -131,12 +133,12 @@ static Domain domain_of_edges(const mfem::Mesh& mesh, std::function<T> predicate
   return output;
 }
 
-Domain Domain::ofEdges(const mfem::Mesh& mesh, std::function<bool(std::vector<vec2>, int)> func)
+Domain Domain::ofEdges(const mesh_t& mesh, std::function<bool(std::vector<vec2>, int)> func)
 {
   return domain_of_edges<2>(mesh, func);
 }
 
-Domain Domain::ofEdges(const mfem::Mesh& mesh, std::function<bool(std::vector<vec3>)> func)
+Domain Domain::ofEdges(const mesh_t& mesh, std::function<bool(std::vector<vec3>)> func)
 {
   return domain_of_edges<3>(mesh, func);
 }
@@ -145,7 +147,7 @@ Domain Domain::ofEdges(const mfem::Mesh& mesh, std::function<bool(std::vector<ve
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <int d>
-static Domain domain_of_faces(const mfem::Mesh&                                        mesh,
+static Domain domain_of_faces(const mesh_t&                                        mesh,
                               std::function<bool(std::vector<tensor<double, d>>, int)> predicate)
 {
   assert(mesh.SpaceDimension() == d);
@@ -214,12 +216,12 @@ static Domain domain_of_faces(const mfem::Mesh&                                 
   return output;
 }
 
-Domain Domain::ofFaces(const mfem::Mesh& mesh, std::function<bool(std::vector<vec2>, int)> func)
+Domain Domain::ofFaces(const mesh_t& mesh, std::function<bool(std::vector<vec2>, int)> func)
 {
   return domain_of_faces(mesh, func);
 }
 
-Domain Domain::ofFaces(const mfem::Mesh& mesh, std::function<bool(std::vector<vec3>, int)> func)
+Domain Domain::ofFaces(const mesh_t& mesh, std::function<bool(std::vector<vec3>, int)> func)
 {
   return domain_of_faces(mesh, func);
 }
@@ -228,7 +230,7 @@ Domain Domain::ofFaces(const mfem::Mesh& mesh, std::function<bool(std::vector<ve
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <int d>
-static Domain domain_of_elems(const mfem::Mesh&                                        mesh,
+static Domain domain_of_elems(const mesh_t&                                        mesh,
                               std::function<bool(std::vector<tensor<double, d>>, int)> predicate)
 {
   assert(mesh.SpaceDimension() == d);
@@ -295,12 +297,12 @@ static Domain domain_of_elems(const mfem::Mesh&                                 
   return output;
 }
 
-Domain Domain::ofElements(const mfem::Mesh& mesh, std::function<bool(std::vector<vec2>, int)> func)
+Domain Domain::ofElements(const mesh_t& mesh, std::function<bool(std::vector<vec2>, int)> func)
 {
   return domain_of_elems<2>(mesh, func);
 }
 
-Domain Domain::ofElements(const mfem::Mesh& mesh, std::function<bool(std::vector<vec3>, int)> func)
+Domain Domain::ofElements(const mesh_t& mesh, std::function<bool(std::vector<vec3>, int)> func)
 {
   return domain_of_elems<3>(mesh, func);
 }
@@ -309,7 +311,7 @@ Domain Domain::ofElements(const mfem::Mesh& mesh, std::function<bool(std::vector
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <int d>
-static Domain domain_of_boundary_elems(const mfem::Mesh&                                        mesh,
+static Domain domain_of_boundary_elems(const mesh_t&                                        mesh,
                                        std::function<bool(std::vector<tensor<double, d>>, int)> predicate)
 {
   assert(mesh.SpaceDimension() == d);
@@ -375,17 +377,17 @@ static Domain domain_of_boundary_elems(const mfem::Mesh&                        
   return output;
 }
 
-Domain Domain::ofBoundaryElements(const mfem::Mesh& mesh, std::function<bool(std::vector<vec2>, int)> func)
+Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::vector<vec2>, int)> func)
 {
   return domain_of_boundary_elems<2>(mesh, func);
 }
 
-Domain Domain::ofBoundaryElements(const mfem::Mesh& mesh, std::function<bool(std::vector<vec3>, int)> func)
+Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::vector<vec3>, int)> func)
 {
   return domain_of_boundary_elems<3>(mesh, func);
 }
 
-mfem::Array<int> Domain::dof_list(mfem::FiniteElementSpace* fes) const
+mfem::Array<int> Domain::dof_list(const serac::fes_t * fes) const
 {
   std::set<int>    dof_ids;
   mfem::Array<int> elem_dofs;
@@ -453,7 +455,7 @@ mfem::Array<int> Domain::dof_list(mfem::FiniteElementSpace* fes) const
   return uniq_dof_ids;
 }
 
-void Domain::insert_restriction(const mfem::FiniteElementSpace * fes, FunctionSpace space) {
+void Domain::insert_restriction(const serac::fes_t * fes, FunctionSpace space) {
 
   // if we don't already have a BlockElementRestriction for this FunctionSpace, make one
   if (restriction_operators.count(space) == 0) {
@@ -472,7 +474,7 @@ const BlockElementRestriction & Domain::get_restriction(FunctionSpace space) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 
-Domain EntireDomain(const mfem::Mesh& mesh)
+Domain EntireDomain(const mesh_t& mesh)
 {
   Domain output{mesh, mesh.SpaceDimension() /* elems can be 2 or 3 dimensional */};
 
@@ -512,7 +514,7 @@ Domain EntireDomain(const mfem::Mesh& mesh)
   return output;
 }
 
-Domain EntireBoundary(const mfem::Mesh& mesh)
+Domain EntireBoundary(const mesh_t& mesh)
 {
   Domain output{mesh, mesh.SpaceDimension() - 1, Domain::Type::BoundaryElements};
 
@@ -549,7 +551,7 @@ Domain EntireBoundary(const mfem::Mesh& mesh)
 }
 
 /// @brief constructs a domain from all the interior face elements in a mesh
-Domain InteriorFaces(const mfem::Mesh& mesh) {
+Domain InteriorFaces(const mesh_t & mesh) {
 
   Domain output{mesh, mesh.SpaceDimension() - 1, Domain::Type::InteriorFaces};
 

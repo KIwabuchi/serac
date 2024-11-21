@@ -4,6 +4,9 @@
 
 #include "serac/numerics/functional/geometry.hpp"
 
+// TODO REMOVE AFTER DEBUGGING
+#include "serac/infrastructure/mpi_fstream.hpp"
+
 std::vector<std::vector<int> > lexicographic_permutations(int p)
 {
   // p == 0 is admissible for L2 spaces, but lexicographic permutations
@@ -213,7 +216,7 @@ std::vector<Array2D<int> > geom_local_face_dofs(int p)
   return output;
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementRestriction(const mfem::FiniteElementSpace* fes,
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementRestriction(const serac::fes_t* fes,
                                                                    mfem::Geometry::Type            geom)
 {
   std::vector<DoF> elem_dofs{};
@@ -276,7 +279,7 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementRestriction(const mfem::F
   }
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const mfem::FiniteElementSpace* fes,
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const serac::fes_t* fes,
                                                             mfem::Geometry::Type            geom,
                                                             const std::vector< int > & mfem_elem_ids)
 
@@ -344,7 +347,7 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const mfem::FiniteEl
   }
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const mfem::FiniteElementSpace* fes,
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes,
                                                          mfem::Geometry::Type face_geom, FaceType type)
 {
   std::vector<DoF> face_dofs;
@@ -459,7 +462,7 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const mfem::FiniteEleme
   }
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const mfem::FiniteElementSpace* fes,
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes,
                                                          mfem::Geometry::Type face_geom,
                                                          const std::vector<int> & mfem_face_ids) 
 {
@@ -473,6 +476,11 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const mfem::FiniteEleme
   std::vector<Array2D<int> >     local_face_dofs = geom_local_face_dofs(p);
   std::vector<std::vector<int> > lex_perm        = lexicographic_permutations(p);
 
+  //int components_per_node = fes->GetVDim();
+  //bool by_vdim = fes->GetOrdering() == mfem::Ordering::byVDIM;
+  //fes->ExchangeFaceNbrData();
+  //int LSize = fes->GetProlongationMatrix()->Height();
+
   uint64_t n = 0;
 
   for (int f : mfem_face_ids) {
@@ -481,12 +489,33 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const mfem::FiniteEleme
       SLIC_ERROR("encountered incorrect face geometry type");
     }
 
-    // mfem doesn't provide this connectivity info for DG spaces directly,
+    //mfem::Mesh::FaceInformation info = mesh->GetFaceInformation(f);
+
+    // mfem doesn't provide this connectivity info for DG spaces directly (?),
     // so we have to get at it indirectly in several steps:
     if (isDG(*fes)) {
+
       // 1. find the element(s) that this face belongs to
       mfem::Array<int> elem_ids;
       face_to_elem->GetRow(f, elem_ids);
+
+#if 0
+      mpi::out << f << " elem ids: ";
+      for (auto elem : elem_ids) {
+        mpi::out << elem << " ";
+      }
+      mpi::out << std::endl;
+
+      mfem::Array<int> test_dofs;
+      fes->GetFaceDofs(f, test_dofs);
+
+      mpi::out << " dofs (sz = " << test_dofs.Size() << "): ";
+      for (int z = 0; z < test_dofs.Size(); z++) {
+        mpi::out << test_dofs[z] << " ";
+      }
+      mpi::out << std::endl;
+      mpi::out << std::endl;
+#endif
 
       for (auto elem : elem_ids) {
         // 2a. get the list of faces (and their orientations) that belong to that element ...
@@ -532,6 +561,35 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const mfem::FiniteEleme
           face_dofs.push_back(uint64_t(elem_dof_ids[local_face_dofs[uint32_t(elem_geom)](i, k)]));
         }
 
+#if 0
+        // (5. optional) add remaining dofs that were omitted on shared faces
+        if (info.IsShared()) {
+
+          mfem::Array<int> shared_elem_vdof_ids;
+
+          //                on my processor
+          //                    VVVVVVV     
+          // dofs for the face [0 1 3 4 | 5 8 12 13]
+          //                              ^^^^^^^^^
+          //                         on the other processor
+          int other_element_id = info.element[1].index;
+          fes->GetFaceNbrElementVDofs(other_element_id, shared_elem_vdof_ids); // indices into vector from FaceNbrData
+
+          mpi::out << " this face is also shared so it has additional dofs: ";
+          int dofs_per_face = shared_elem_vdof_ids.Size() / components_per_node;
+          int stride = (by_vdim) ? components_per_node : 1;
+
+          // sam: is this right?
+          // byVDIM == x y z x y z x y z x y z
+          // byNODES == x x x x y y y y z z z z
+          for (int k = 0; k < dofs_per_face; k++) {
+            face_dofs.push_back(uint64_t(fes->VDofToDof(shared_elem_vdof_ids[k * stride]) + LSize));
+            mpi::out << face_dofs.back().index() << " ";
+          }
+          mpi::out << std::endl;
+        }
+#endif
+
       }
 
       // H1 and Hcurl spaces are more straight-forward, since
@@ -573,7 +631,7 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const mfem::FiniteEleme
 
 namespace serac {
 
-ElementRestriction::ElementRestriction(const mfem::FiniteElementSpace* fes, mfem::Geometry::Type elem_geom, const std::vector< int > & elem_ids) {
+ElementRestriction::ElementRestriction(const fes_t* fes, mfem::Geometry::Type elem_geom, const std::vector< int > & elem_ids) {
 
   int sdim = fes->GetMesh()->Dimension();
   int gdim = dimension_of(elem_geom);
@@ -649,7 +707,7 @@ void ElementRestriction::ScatterAdd(const mfem::Vector& E_vector, mfem::Vector& 
 ////////////////////////////////////////////////////////////////////////
 
 /// create a BlockElementRestriction for the elements in a given domain
-BlockElementRestriction::BlockElementRestriction(const mfem::FiniteElementSpace* fes, const Domain & domain) {
+BlockElementRestriction::BlockElementRestriction(const fes_t* fes, const Domain & domain) {
 
   // TODO: changing the mfem_XXX_ids arrays to mfem_ids[XXX] would simplify this
   if (domain.mfem_edge_ids_.size() > 0) {

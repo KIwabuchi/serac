@@ -815,6 +815,7 @@ public:
    * @tparam active_parameters a list of indices, describing which parameters to pass to the q-function
    * @tparam StateType the type that contains the internal variables (if any) for q-function
    * @param qfunction a callable that returns a tuple of body-force and stress
+   * @param domain which elements should evaluate the provided qfunction
    * @param qdata the buffer of material internal variables at each quadrature point
    *
    * ~~~ {.cpp}
@@ -1003,8 +1004,8 @@ public:
    *
    * @tparam BodyForceType The type of the body force load
    * @param body_force A function describing the body force applied
-   * @param optional_domain The domain over which the body force is applied. If nothing is supplied the entire domain is
-   * used.
+   * @param domain which part of the mesh to apply the body force to
+   * 
    * @pre body_force must be a object that can be called with the following arguments:
    *    1. `tensor<T,dim> x` the spatial coordinates for the quadrature point
    *    2. `double t` the time (note: time will be handled differently in the future)
@@ -1037,8 +1038,8 @@ public:
    *
    * @tparam TractionType The type of the traction load
    * @param traction_function A function describing the traction applied to a boundary
-   * @param optional_domain The domain over which the traction is applied. If nothing is supplied the entire boundary is
-   * used.
+   * @param domain The domain over which the traction is applied. 
+   * 
    * @pre TractionType must be a object that can be called with the following arguments:
    *    1. `tensor<T,dim> x` the spatial coordinates for the quadrature point
    *    2. `tensor<T,dim> n` the outward-facing unit normal for the quadrature point
@@ -1081,8 +1082,8 @@ public:
    *
    * @tparam PressureType The type of the pressure load
    * @param pressure_function A function describing the pressure applied to a boundary
-   * @param optional_domain The domain over which the pressure is applied. If nothing is supplied the entire boundary is
-   * used.
+   * @param domain The domain over which the pressure is applied. 
+   * 
    * @pre PressureType must be a object that can be called with the following arguments:
    *    1. `tensor<T,dim> x` the reference configuration spatial coordinates for the quadrature point
    *    2. `double t` the time (note: time will be handled differently in the future)
@@ -1100,11 +1101,8 @@ public:
    * @note This method must be called prior to completeSetup()
    */
   template <int... active_parameters, typename PressureType>
-  void setPressure(DependsOn<active_parameters...>, PressureType pressure_function,
-                   const std::optional<Domain>& optional_domain = std::nullopt)
+  void setPressure(DependsOn<active_parameters...>, PressureType pressure_function, Domain &domain)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary(mesh_);
-
     residual_->AddBoundaryIntegral(
         Dimension<dim - 1>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
         [pressure_function](double t, auto X, auto displacement, auto /* acceleration */, auto... params) {
@@ -1132,9 +1130,9 @@ public:
 
   /// @overload
   template <typename PressureType>
-  void setPressure(PressureType pressure_function, const std::optional<Domain>& optional_domain = std::nullopt)
+  void setPressure(PressureType pressure_function, Domain & domain)
   {
-    setPressure(DependsOn<>{}, pressure_function, optional_domain);
+    setPressure(DependsOn<>{}, pressure_function, domain);
   }
 
   /// @brief Build the quasi-static operator corresponding to the total Lagrangian formulation

@@ -19,6 +19,9 @@
 #include "serac/numerics/functional/interior_face_integral_kernels.hpp"
 #include "serac/numerics/functional/differentiate_wrt.hpp"
 
+// TODO REMOVE AFTER DEBUGGING
+#include "serac/infrastructure/mpi_fstream.hpp"
+
 namespace serac {
 
 /// @brief a class for representing a Integral calculations and their derivatives
@@ -74,8 +77,10 @@ struct Integral {
         (with_AD) ? evaluation_with_AD_[functional_to_integral_index_.at(differentiation_index)] : evaluation_;
     for (auto& [geometry, func] : kernels) {
       std::vector<const double*> inputs(active_trial_spaces_.size());
+      mpi::out << geometry << std::endl;
       for (std::size_t i = 0; i < active_trial_spaces_.size(); i++) {
         inputs[i] = input_E[uint32_t(active_trial_spaces_[i])].GetBlock(geometry).Read();
+        mpi::out << "input_E[" << i << "].Size(): " << input_E[uint32_t(active_trial_spaces_[i])].GetBlock(geometry).Size() << std::endl;
       }
       func(t, inputs, output_E.GetBlock(geometry).ReadWrite(), update_state);
     }
@@ -84,9 +89,9 @@ struct Integral {
   /**
    * @brief evaluate the jacobian(with respect to some trial space)-vector product of this integral
    *
-   * @param input_E a block vector (block index corresponds to the element geometry) of a specific trial space element
+   * @param dinput_E a block vector (block index corresponds to the element geometry) of a specific trial space element
    * values
-   * @param output_E a block vector (block index corresponds to the element geometry) of the output values for each
+   * @param doutput_E a block vector (block index corresponds to the element geometry) of the output values for each
    * element.
    * @param differentiation_index a non-negative value indicates directional derivative with respect to the trial space
    * with that index.

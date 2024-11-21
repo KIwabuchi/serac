@@ -21,6 +21,7 @@ set(functional_serial_test_sources
     element_restriction_tests.cpp
     dg_restriction_operators.cpp
     bug_boundary_qoi.cpp
+    bug_residual.cpp
     domain_tests.cpp
     geometric_factors_tests.cpp
     hcurl_unit_tests.cpp

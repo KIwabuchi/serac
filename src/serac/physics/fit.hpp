@@ -58,7 +58,7 @@ FiniteElementState fit(std::integer_sequence<int, i...>, func f, mfem::ParMesh &
 /**
  * @brief determine field parameters to approximate the output of a user-provided q-function
  * @param[in] f the user-provided function to approximate
- * @param[in] mesh the region over which to approximate the function f
+ * @param[in] pmesh the region over which to approximate the function f
  * @param[in] solution_fields [optional] any auxiliary field quantities needed to evaluate f
  *
  * @note: mesh is passed by non-const ref because mfem mutates the mesh when creating ParGridFunctions

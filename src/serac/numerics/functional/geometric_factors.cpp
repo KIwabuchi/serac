@@ -62,17 +62,17 @@ void compute_geometric_factors(mfem::Vector& positions_q, mfem::Vector& jacobian
 
 GeometricFactors::GeometricFactors(const Domain& domain, int q, mfem::Geometry::Type geom)
 {
-  auto* nodes = domain.mesh_.GetNodes();
-  auto* fes   = nodes->FESpace();
+  const mfem::ParGridFunction* nodes = static_cast< const mfem::ParGridFunction * >(domain.mesh_.GetNodes());
+  mfem::ParFiniteElementSpace * pfes = nodes->ParFESpace();
 
   const std::vector<int> & element_ids = domain.get_mfem_ids(geom);
 
-  auto         restriction = serac::ElementRestriction(fes, geom, element_ids);
+  auto         restriction = serac::ElementRestriction(pfes, geom, element_ids);
   mfem::Vector X_e(int(restriction.ESize()));
   restriction.Gather(*nodes, X_e);
 
   // assumes all elements are the same order
-  int p = fes->GetElementOrder(0);
+  int p = pfes->GetElementOrder(0);
 
   int spatial_dim   = domain.mesh_.SpaceDimension();
   int geometry_dim  = dimension_of(geom);

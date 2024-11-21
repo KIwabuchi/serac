@@ -352,6 +352,7 @@ public:
    * @tparam MaterialType The thermomechanical material type
    * @tparam StateType The type that contains the internal variables for MaterialType
    * @param material A material that provides a function to evaluate stress, heat flux, density, and heat capacity
+   * @param domain The domain over which the source is applied. 
    * @param qdata the buffer of material internal variables at each quadrature point
    *
    * @pre material must be a object that can be called with the following arguments:
@@ -366,6 +367,8 @@ public:
    *    when doing direct evaluation. When differentiating with respect to one of the inputs, its stored
    *    values will change to `dual` numbers rather than `double`. (e.g. `tensor<double,3>` becomes
    * `tensor<dual<...>, 3>`)
+   * 
+   * @param domain which elements in the mesh are described by the specified material
    *
    * @pre MaterialType must return a serac::tuple of Cauchy stress, volumetric heat capacity, internal heat source,
    * and thermal flux when operator() is called with the arguments listed above.
