@@ -379,6 +379,9 @@ TEST(domain, ofElements2dFindsDofs)
     constexpr int dim  = 2;
     constexpr int p = 2;
     auto          mesh = import_mesh("patch2D_tris_and_quads.mesh");
+
+    auto fec = mfem::H1_FECollection(p, dim);
+    auto fes = mfem::FiniteElementSpace(&mesh, &fec);
     
     auto find_element_0 = [](std::vector<vec2> vertices, int /* attr */) {
       auto centroid = average(vertices);
@@ -387,22 +390,31 @@ TEST(domain, ofElements2dFindsDofs)
 
     Domain d0 = Domain::ofElements(mesh, find_element_0);
 
-    auto fec = mfem::H1_FECollection(p, dim);
-    auto fes = mfem::FiniteElementSpace(&mesh, &fec);
-
     mfem::Array<int> dof_indices = d0.dof_list(&fes);
+
     EXPECT_EQ(dof_indices.Size(), 9);
 
-    auto find_element_1 = [](std::vector<vec2> vertices, int /* attr */) {
+    ///////////////////////////////////////
+
+    auto find_element_4 = [](std::vector<vec2> vertices, int) {
       auto centroid = average(vertices);
-      return (centroid[0] < 0.5) && (centroid[1] < 0.25);
+      tensor<double, 2> target{{0.533, 0.424}};
+      return norm(centroid - target) < 1e-2;
     };
-    Domain d1 = Domain::ofElements(mesh, find_element_1);
+    Domain d1 = Domain::ofElements(mesh, find_element_4);
 
-    Domain elements_0_and_1 = d0 | d1;
+    Domain elements_0_and_4 = d0 | d1;
 
-    dof_indices = elements_0_and_1.dof_list(&fes);
-    EXPECT_EQ(dof_indices.Size(), 15);
+    dof_indices = elements_0_and_4.dof_list(&fes);
+    EXPECT_EQ(dof_indices.Size(), 12);
+
+    ///////////////////////////////////////
+
+    Domain d2 = EntireDomain(mesh) - elements_0_and_4;
+
+    dof_indices = d2.dof_list(&fes);
+
+    EXPECT_EQ(dof_indices.Size(), 22);
 }
 
 int main(int argc, char* argv[])

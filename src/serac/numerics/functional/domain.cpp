@@ -533,17 +533,43 @@ Domain set_operation(set_op op, const Domain& a, const Domain& b)
   }
 
   if (output.dim_ == 1) {
-    output.edge_ids_ = set_operation(op, a.edge_ids_, b.edge_ids_);
+    // BT: if this were Python, I'd use zip() here to iterate through
+    // both vectors simultaneously. Looks like C++23 will have this.
+    auto edges = set_operation(op, a.edge_ids_, b.edge_ids_);
+    auto mfem_edges = set_operation(op, a.mfem_edge_ids_, b.mfem_edge_ids_);
+    SLIC_ERROR_IF(edges.size() != mfem_edges.size(),
+      "Domain object has an invalid state, the edge index arrays should have the same sizes");
+    for (std::vector<int>::size_type i = 0; i < edges.size(); ++i) {
+      output.addElement(edges[i], mfem_edges[i], mfem::Geometry::SEGMENT);
+    }
   }
 
   if (output.dim_ == 2) {
-    output.tri_ids_  = set_operation(op, a.tri_ids_, b.tri_ids_);
-    output.quad_ids_ = set_operation(op, a.quad_ids_, b.quad_ids_);
+    auto tris = set_operation(op, a.tri_ids_, b.tri_ids_);
+    auto mfem_tris = set_operation(op, a.mfem_tri_ids_, b.mfem_tri_ids_);
+    for (std::vector<int>::size_type i = 0; i < tris.size(); ++i) {
+      output.addElement(tris[i], mfem_tris[i], mfem::Geometry::TRIANGLE);
+    }
+
+    auto quads = set_operation(op, a.quad_ids_, b.quad_ids_);
+    auto mfem_quads = set_operation(op, a.mfem_quad_ids_, b.mfem_quad_ids_);
+    for (std::vector<int>::size_type i = 0; i < quads.size(); ++i) {
+      output.addElement(quads[i], mfem_quads[i], mfem::Geometry::SQUARE);
+    }
   }
 
   if (output.dim_ == 3) {
-    output.tet_ids_ = set_operation(op, a.tet_ids_, b.tet_ids_);
-    output.hex_ids_ = set_operation(op, a.hex_ids_, b.hex_ids_);
+    auto tets = set_operation(op, a.tet_ids_, b.tet_ids_);
+    auto mfem_tets = set_operation(op, a.mfem_tet_ids_, b.mfem_tet_ids_);
+    for (std::vector<int>::size_type i = 0; i < tets.size(); ++i) {
+      output.addElement(tets[i], mfem_tets[i], mfem::Geometry::TETRAHEDRON);
+    }
+
+    auto hexes = set_operation(op, a.hex_ids_, b.hex_ids_);
+    auto mfem_hexes = set_operation(op, a.mfem_hex_ids_, b.mfem_hex_ids_);
+    for (std::vector<int>::size_type i = 0; i < hexes.size(); ++i) {
+      output.addElement(hexes[i], mfem_hexes[i], mfem::Geometry::CUBE);
+    }
   }
 
   return output;
