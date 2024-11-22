@@ -132,6 +132,8 @@ struct Domain {
 
   void addElement(int geom_id, int elem_id, mfem::Geometry::Type element_geometry);
 
+  void addElements(const std::vector<int>& geom_id, const std::vector<int>& elem_id, mfem::Geometry::Type element_geometry);
+
   /// @brief get mfem degree of freedom list for a given FiniteElementSpace
   mfem::Array<int> dof_list(mfem::FiniteElementSpace* fes) const;
 };
