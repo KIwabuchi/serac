@@ -319,9 +319,11 @@ void Domain::addElement(int geom_id, int elem_id, mfem::Geometry::Type element_g
   }
 }
 
-void Domain::addElements(const std::vector<int>& geom_ids, const std::vector<int>& elem_ids, mfem::Geometry::Type element_geometry)
+void Domain::addElements(const std::vector<int>& geom_ids, const std::vector<int>& elem_ids,
+                         mfem::Geometry::Type element_geometry)
 {
-  SLIC_ERROR_IF(geom_ids.size() != elem_ids.size(), "To add elements, you must specify a geom_id AND an elem_id for each element");
+  SLIC_ERROR_IF(geom_ids.size() != elem_ids.size(),
+                "To add elements, you must specify a geom_id AND an elem_id for each element");
 
   for (std::vector<int>::size_type i = 0; i < geom_ids.size(); ++i) {
     addElement(geom_ids[i], elem_ids[i], element_geometry);
@@ -484,11 +486,11 @@ mfem::Array<int> Domain::dof_list(mfem::FiniteElementSpace* fes) const
 Domain EntireDomain(const mfem::Mesh& mesh)
 {
   switch (mesh.SpaceDimension()) {
-    case 2: 
-      return Domain::ofElements(mesh, [](std::vector<vec2>, int) {  return true; });
+    case 2:
+      return Domain::ofElements(mesh, [](std::vector<vec2>, int) { return true; });
       break;
-    case 3: 
-      return Domain::ofElements(mesh, [](std::vector<vec3>, int) {  return true; });
+    case 3:
+      return Domain::ofElements(mesh, [](std::vector<vec3>, int) { return true; });
       break;
     default:
       SLIC_ERROR("In valid spatial dimension. Domains may only be created on 2D or 3D meshes.");
@@ -499,11 +501,11 @@ Domain EntireDomain(const mfem::Mesh& mesh)
 Domain EntireBoundary(const mfem::Mesh& mesh)
 {
   switch (mesh.SpaceDimension()) {
-    case 2: 
-      return Domain::ofBoundaryElements(mesh, [](std::vector<vec2>, int) {  return true; });
+    case 2:
+      return Domain::ofBoundaryElements(mesh, [](std::vector<vec2>, int) { return true; });
       break;
-    case 3: 
-      return Domain::ofBoundaryElements(mesh, [](std::vector<vec3>, int) {  return true; });
+    case 3:
+      return Domain::ofBoundaryElements(mesh, [](std::vector<vec3>, int) { return true; });
       break;
     default:
       SLIC_ERROR("In valid spatial dimension. Domains may only be created on 2D or 3D meshes.");
@@ -537,18 +539,18 @@ Domain set_operation(set_op op, const Domain& a, const Domain& b)
 
   Domain output{a.mesh_, a.dim_};
 
-  using Ids = std::vector<int>;
+  using Ids         = std::vector<int>;
   auto apply_set_op = [&op](const Ids& x, const Ids& y) { return set_operation(op, x, y); };
 
   if (output.dim_ == 0) {
     output.vertex_ids_ = apply_set_op(a.vertex_ids_, b.vertex_ids_);
   }
 
-  auto fill_output_lists = [apply_set_op, &output](const Ids& a_ids, const Ids& a_mfem_ids, 
-    const Ids& b_ids, const Ids& b_mfem_ids, mfem::Geometry::Type g) {
-      auto output_ids = apply_set_op(a_ids, b_ids);
-      auto output_mfem_ids = apply_set_op(a_mfem_ids, b_mfem_ids);
-      output.addElements(output_ids, output_mfem_ids, g);
+  auto fill_output_lists = [apply_set_op, &output](const Ids& a_ids, const Ids& a_mfem_ids, const Ids& b_ids,
+                                                   const Ids& b_mfem_ids, mfem::Geometry::Type g) {
+    auto output_ids      = apply_set_op(a_ids, b_ids);
+    auto output_mfem_ids = apply_set_op(a_mfem_ids, b_mfem_ids);
+    output.addElements(output_ids, output_mfem_ids, g);
   };
 
   if (output.dim_ == 1) {

@@ -53,8 +53,8 @@ struct Domain {
   /// The second set, (mfem_edge_ids_, mfem_tri_ids_, ...), gives the ids of
   /// elements in this domain in the global mfem::Mesh data structure. These
   /// maps are needed to find the dofs that live on a Domain.
-  /// 
-  /// Instances of Domain are meant to be homogeneous: only lists with 
+  ///
+  /// Instances of Domain are meant to be homogeneous: only lists with
   /// appropriate dimension (see dim_) will be populated by the factory
   /// functions. For example, a 2D Domain may have `tri_ids_` and `quad_ids_`
   /// non-empty, but all other lists will be empty.
@@ -168,7 +168,8 @@ struct Domain {
   /// This is meant for internal use on the class. Prefer to use the factory
   /// methods (ofElements, ofBoundaryElements, etc) to create domains and
   /// thereby populate the element lists.
-  void addElements(const std::vector<int>& geom_id, const std::vector<int>& elem_id, mfem::Geometry::Type element_geometry);
+  void addElements(const std::vector<int>& geom_id, const std::vector<int>& elem_id,
+                   mfem::Geometry::Type element_geometry);
 };
 
 /// @brief constructs a domain from all the elements in a mesh
