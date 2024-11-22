@@ -532,16 +532,24 @@ Domain set_operation(set_op op, const Domain& a, const Domain& b)
     output.vertex_ids_ = set_operation(op, a.vertex_ids_, b.vertex_ids_);
   }
 
+  // make helper function to populate id lists in output
+  using Ids = std::vector<int>;
+  auto apply_op = [&](const Ids& x, const Ids& y) { return set_operation(op, x, y); };
+  auto fill_output_members = [&apply_op, &output](const Ids& a_ids, const Ids& b_ids, const Ids& a_mfem_ids, const Ids& b_mfem_ids, mfem::Geometry::Type g) {
+    auto output_ids = apply_op(a_ids, b_ids);
+    auto output_mfem_ids = apply_op(a_mfem_ids, b_mfem_ids);
+    SLIC_ERROR_IF(output_ids.size() != output_mfem_ids.size(),
+      "Domain object has an invalid state");
+
+      for (Ids::size_type i = 0; i < output_ids.size(); ++i) {
+        output.addElement(output_ids[i], output_mfem_ids[i], g);
+      }
+  };
+
   if (output.dim_ == 1) {
     // BT: if this were Python, I'd use zip() here to iterate through
     // both vectors simultaneously. Looks like C++23 will have this.
-    auto edges = set_operation(op, a.edge_ids_, b.edge_ids_);
-    auto mfem_edges = set_operation(op, a.mfem_edge_ids_, b.mfem_edge_ids_);
-    SLIC_ERROR_IF(edges.size() != mfem_edges.size(),
-      "Domain object has an invalid state, the edge index arrays should have the same sizes");
-    for (std::vector<int>::size_type i = 0; i < edges.size(); ++i) {
-      output.addElement(edges[i], mfem_edges[i], mfem::Geometry::SEGMENT);
-    }
+    fill_output_members(a.edge_ids_, b.edge_ids_, a.mfem_edge_ids_, b.mfem_edge_ids_, mfem::Geometry::SEGMENT);
   }
 
   if (output.dim_ == 2) {
