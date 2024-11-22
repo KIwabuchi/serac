@@ -537,36 +537,32 @@ Domain set_operation(set_op op, const Domain& a, const Domain& b)
 
   Domain output{a.mesh_, a.dim_};
 
+  using Ids = std::vector<int>;
+  auto apply_set_op = [&op](const Ids& x, const Ids& y) { return set_operation(op, x, y); };
+
   if (output.dim_ == 0) {
-    output.vertex_ids_ = set_operation(op, a.vertex_ids_, b.vertex_ids_);
+    output.vertex_ids_ = apply_set_op(a.vertex_ids_, b.vertex_ids_);
   }
 
+  auto fill_output_lists = [apply_set_op, &output](const Ids& a_ids, const Ids& a_mfem_ids, 
+    const Ids& b_ids, const Ids& b_mfem_ids, mfem::Geometry::Type g) {
+      auto output_ids = apply_set_op(a_ids, b_ids);
+      auto output_mfem_ids = apply_set_op(a_mfem_ids, b_mfem_ids);
+      output.addElements(output_ids, output_mfem_ids, g);
+  };
+
   if (output.dim_ == 1) {
-    // BT: if this were Python, I'd use zip() here to iterate through
-    // both vectors simultaneously. Looks like C++23 will have this.
-    auto edge_ids = set_operation(op, a.edge_ids_, b.edge_ids_);
-    auto mfem_edge_ids = set_operation(op, a.mfem_edge_ids_, b.edge_ids_);
-    output.addElements(edge_ids, mfem_edge_ids, mfem::Geometry::SEGMENT);
+    fill_output_lists(a.edge_ids_, a.mfem_edge_ids_, b.edge_ids_, b.mfem_edge_ids_, mfem::Geometry::SEGMENT);
   }
 
   if (output.dim_ == 2) {
-    auto tris = set_operation(op, a.tri_ids_, b.tri_ids_);
-    auto mfem_tris = set_operation(op, a.mfem_tri_ids_, b.mfem_tri_ids_);
-    output.addElements(tris, mfem_tris, mfem::Geometry::TRIANGLE);
-
-    auto quads = set_operation(op, a.quad_ids_, b.quad_ids_);
-    auto mfem_quads = set_operation(op, a.mfem_quad_ids_, b.mfem_quad_ids_);
-    output.addElements(quads, mfem_quads, mfem::Geometry::SQUARE);
+    fill_output_lists(a.tri_ids_, a.mfem_tri_ids_, b.tri_ids_, b.mfem_tri_ids_, mfem::Geometry::TRIANGLE);
+    fill_output_lists(a.quad_ids_, a.mfem_quad_ids_, b.quad_ids_, b.mfem_quad_ids_, mfem::Geometry::SQUARE);
   }
 
   if (output.dim_ == 3) {
-    auto tets = set_operation(op, a.tet_ids_, b.tet_ids_);
-    auto mfem_tets = set_operation(op, a.mfem_tet_ids_, b.mfem_tet_ids_);
-    output.addElements(tets, mfem_tets, mfem::Geometry::TETRAHEDRON);
-
-    auto hexes = set_operation(op, a.hex_ids_, b.hex_ids_);
-    auto mfem_hexes = set_operation(op, a.mfem_hex_ids_, b.mfem_hex_ids_);
-    output.addElements(hexes, mfem_hexes, mfem::Geometry::CUBE);
+    fill_output_lists(a.tet_ids_, a.mfem_tet_ids_, b.tet_ids_, b.mfem_tet_ids_, mfem::Geometry::TETRAHEDRON);
+    fill_output_lists(a.hex_ids_, a.mfem_hex_ids_, b.hex_ids_, b.mfem_hex_ids_, mfem::Geometry::CUBE);
   }
 
   return output;
