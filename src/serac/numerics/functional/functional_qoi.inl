@@ -186,7 +186,15 @@ public:
   }
 
   /**
-   * @brief TODO
+   * @tparam dim The dimension of the boundary element (1 for line, 2 for quad, etc)
+   * @tparam lambda the type of the integrand functor: must implement operator() with an appropriate function signature
+   * @param[in] integrand The user-provided quadrature function, see @p Integral
+   * @param[in] domain which elements make up the domain of integration
+   *
+   * @brief Adds a interior face integral term to the Functional object
+   *
+   * @note The @p Dimension parameters are used to assist in the deduction of the @a geometry_dim
+   * and @a spatial_dim template parameter
    */
   template <int dim, int... args, typename Integrand>
   void AddInteriorFaceIntegral(Dimension<dim>, DependsOn<args...>, const Integrand& integrand, Domain& domain)
@@ -196,6 +204,7 @@ public:
     std::vector< uint32_t > arg_vec = {args ...};
     for (uint32_t i : arg_vec) {
       domain.insert_restriction(trial_space_[i], trial_function_spaces_[i]);
+      check_interior_face_compatibility(domain.mesh_, trial_function_spaces_[i]);
     }
 
     using signature = test(decltype(serac::type<args>(trial_spaces))...);

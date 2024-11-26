@@ -101,6 +101,15 @@ inline void check_for_unsupported_elements(const mfem::Mesh& mesh)
   }
 }
 
+inline void check_interior_face_compatibility(const mfem::Mesh & mesh, const FunctionSpace space) {
+  if (space.family == Family::L2) {
+    const mfem::ParMesh * pmesh = dynamic_cast< const mfem::ParMesh * >(&mesh);
+    if (pmesh) {
+      SLIC_ERROR_IF(pmesh->GetNSharedFaces() > 0, "interior face integrals involving DG function spaces don't currently support meshes with shared faces");
+    }
+  }
+}
+
 /**
  * @brief create an mfem::ParFiniteElementSpace from one of serac's
  * tag types: H1, Hcurl, L2
@@ -334,8 +343,10 @@ public:
     std::vector< uint32_t > arg_vec = {args ...};
     for (uint32_t i : arg_vec) {
       domain.insert_restriction(trial_space_[i], trial_function_spaces_[i]);
+      check_interior_face_compatibility(domain.mesh_, trial_function_spaces_[i]);
     }
     domain.insert_restriction(test_space_, test_function_space_);
+    check_interior_face_compatibility(domain.mesh_, test_function_space_);
 
     using signature = test(decltype(serac::type<args>(trial_spaces))...);
     integrals_.push_back(
