@@ -31,66 +31,6 @@ tensor<double, dim> average(std::vector<tensor<double, dim> >& positions)
   return total / double(positions.size());
 }
 
-TEST(domain, of_vertices)
-{
-  {
-    auto   mesh = import_mesh("onehex.mesh");
-    Domain d0   = Domain::ofVertices(mesh, std::function([](vec3 x) { return x[0] < 0.5; }));
-    EXPECT_EQ(d0.vertex_ids_.size(), 4);
-    EXPECT_EQ(d0.dim_, 0);
-
-    Domain d1 = Domain::ofVertices(mesh, std::function([](vec3 x) { return x[1] < 0.5; }));
-    EXPECT_EQ(d1.vertex_ids_.size(), 4);
-    EXPECT_EQ(d1.dim_, 0);
-
-    Domain d2 = d0 | d1;
-    EXPECT_EQ(d2.vertex_ids_.size(), 6);
-    EXPECT_EQ(d2.dim_, 0);
-
-    Domain d3 = d0 & d1;
-    EXPECT_EQ(d3.vertex_ids_.size(), 2);
-    EXPECT_EQ(d3.dim_, 0);
-  }
-
-  {
-    auto   mesh = import_mesh("onetet.mesh");
-    Domain d0   = Domain::ofVertices(mesh, std::function([](vec3 x) { return x[0] < 0.5; }));
-    EXPECT_EQ(d0.vertex_ids_.size(), 3);
-    EXPECT_EQ(d0.dim_, 0);
-
-    Domain d1 = Domain::ofVertices(mesh, std::function([](vec3 x) { return x[1] < 0.5; }));
-    EXPECT_EQ(d1.vertex_ids_.size(), 3);
-    EXPECT_EQ(d1.dim_, 0);
-
-    Domain d2 = d0 | d1;
-    EXPECT_EQ(d2.vertex_ids_.size(), 4);
-    EXPECT_EQ(d2.dim_, 0);
-
-    Domain d3 = d0 & d1;
-    EXPECT_EQ(d3.vertex_ids_.size(), 2);
-    EXPECT_EQ(d3.dim_, 0);
-  }
-
-  {
-    auto   mesh = import_mesh("beam-quad.mesh");
-    Domain d0   = Domain::ofVertices(mesh, std::function([](vec2 x) { return x[0] < 0.5; }));
-    EXPECT_EQ(d0.vertex_ids_.size(), 2);
-    EXPECT_EQ(d0.dim_, 0);
-
-    Domain d1 = Domain::ofVertices(mesh, std::function([](vec2 x) { return x[1] < 0.5; }));
-    EXPECT_EQ(d1.vertex_ids_.size(), 9);
-    EXPECT_EQ(d1.dim_, 0);
-
-    Domain d2 = d0 | d1;
-    EXPECT_EQ(d2.vertex_ids_.size(), 10);
-    EXPECT_EQ(d2.dim_, 0);
-
-    Domain d3 = d0 & d1;
-    EXPECT_EQ(d3.vertex_ids_.size(), 1);
-    EXPECT_EQ(d3.dim_, 0);
-  }
-}
-
 TEST(domain, of_edges)
 {
   {

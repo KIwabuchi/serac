@@ -48,44 +48,6 @@ std::vector<tensor<double, d>> gather(const mfem::Vector& coordinates, mfem::Arr
   return x;
 }
 
-template <int d>
-static Domain domain_of_vertices(const mfem::Mesh& mesh, std::function<bool(tensor<double, d>)> predicate)
-{
-  assert(mesh.SpaceDimension() == d);
-
-  Domain output{mesh, 0 /* points are 0-dimensional */};
-
-  // layout is undocumented, but it seems to be
-  // [x1, x2, x3, ..., y1, y2, y3 ..., (z1, z2, z3, ...)]
-  mfem::Vector vertices;
-  mesh.GetVertices(vertices);
-
-  // vertices that satisfy the predicate are added to the domain
-  int num_vertices = mesh.GetNV();
-  for (int i = 0; i < num_vertices; i++) {
-    tensor<double, d> x;
-    for (int j = 0; j < d; j++) {
-      x[j] = vertices[j * num_vertices + i];
-    }
-
-    if (predicate(x)) {
-      output.vertex_ids_.push_back(i);
-    }
-  }
-
-  return output;
-}
-
-Domain Domain::ofVertices(const mfem::Mesh& mesh, std::function<bool(vec2)> func)
-{
-  return domain_of_vertices(mesh, func);
-}
-
-Domain Domain::ofVertices(const mfem::Mesh& mesh, std::function<bool(vec3)> func)
-{
-  return domain_of_vertices(mesh, func);
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -378,13 +340,13 @@ static Domain domain_of_boundary_elems(const mfem::Mesh&                        
         break;
       case mfem::Geometry::TRIANGLE:
         if (add) {
-          output.addElement(edge_id, f, geom);
+          output.addElement(tri_id, f, geom);
         }
         tri_id++;
         break;
       case mfem::Geometry::SQUARE:
         if (add) {
-          output.addElement(edge_id, f, geom);
+          output.addElement(quad_id, f, geom);
         }
         quad_id++;
         break;
@@ -541,10 +503,6 @@ Domain set_operation(set_op op, const Domain& a, const Domain& b)
 
   using Ids         = std::vector<int>;
   auto apply_set_op = [&op](const Ids& x, const Ids& y) { return set_operation(op, x, y); };
-
-  if (output.dim_ == 0) {
-    output.vertex_ids_ = apply_set_op(a.vertex_ids_, b.vertex_ids_);
-  }
 
   auto fill_output_lists = [apply_set_op, &output](const Ids& a_ids, const Ids& a_mfem_ids, const Ids& b_ids,
                                                    const Ids& b_mfem_ids, mfem::Geometry::Type g) {

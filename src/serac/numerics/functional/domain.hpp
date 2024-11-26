@@ -37,12 +37,10 @@ struct Domain {
   /// @brief whether the elements in this domain are on the boundary or not
   Type type_;
 
-  std::vector<int> vertex_ids_;
-
   ///@{
   /// @name ElementIds
   /// Indices of elements contained in the domain.
-  /// The first set, (vertex_ids_, edge_ids_, ...) hold the index of an element in
+  /// The first set, (edge_ids_, tri_ids, ...) hold the index of an element in
   /// this Domain in the set of all elements of like geometry in the mesh.
   /// For example, if edge_ids_[0] = 5, then element 0 in this domain is element
   /// 5 in the grouping of all edges in the mesh. In other words, these lists
@@ -68,6 +66,9 @@ struct Domain {
   /// methods to add new entities, as this requires you to add both entries and
   /// keep the corresponding lists in sync. You are discouraged from
   /// manipulating these lists directly.
+  ///@}
+
+  /// @cond
   std::vector<int> edge_ids_;
   std::vector<int> tri_ids_;
   std::vector<int> quad_ids_;
@@ -79,8 +80,9 @@ struct Domain {
   std::vector<int> mfem_quad_ids_;
   std::vector<int> mfem_tet_ids_;
   std::vector<int> mfem_hex_ids_;
-  ///@}
+  /// @endcond
 
+  /// @brief construct an "empty" domain, to later be populated later with addElement member functions
   Domain(const mfem::Mesh& m, int d, Type type = Domain::Type::Elements) : mesh_(m), dim_(d), type_(type) {}
 
   /**
@@ -143,7 +145,6 @@ struct Domain {
   /// @brief get elements by geometry type
   const std::vector<int>& get(mfem::Geometry::Type geom) const
   {
-    if (geom == mfem::Geometry::POINT) return vertex_ids_;
     if (geom == mfem::Geometry::SEGMENT) return edge_ids_;
     if (geom == mfem::Geometry::TRIANGLE) return tri_ids_;
     if (geom == mfem::Geometry::SQUARE) return quad_ids_;
