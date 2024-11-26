@@ -216,8 +216,7 @@ std::vector<Array2D<int> > geom_local_face_dofs(int p)
   return output;
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementRestriction(const serac::fes_t* fes,
-                                                                   mfem::Geometry::Type            geom)
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementRestriction(const serac::fes_t* fes, mfem::Geometry::Type geom)
 {
   std::vector<DoF> elem_dofs{};
   mfem::Mesh*      mesh = fes->GetMesh();
@@ -279,9 +278,8 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementRestriction(const serac::
   }
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const serac::fes_t* fes,
-                                                            mfem::Geometry::Type            geom,
-                                                            const std::vector< int > & mfem_elem_ids)
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const serac::fes_t* fes, mfem::Geometry::Type geom,
+                                                            const std::vector<int>& mfem_elem_ids)
 
 {
   std::vector<DoF> elem_dofs{};
@@ -294,7 +292,6 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const serac::fes_t* 
   uint64_t n = 0;
 
   for (auto elem : mfem_elem_ids) {
-
     // discard elements with the wrong geometry
     if (mesh->GetElementGeometry(elem) != geom) {
       SLIC_ERROR("encountered incorrect element geometry type");
@@ -347,8 +344,8 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const serac::fes_t* 
   }
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes,
-                                                         mfem::Geometry::Type face_geom, FaceType type)
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
+                                                         FaceType type)
 {
   std::vector<DoF> face_dofs;
   mfem::Mesh*      mesh         = fes->GetMesh();
@@ -462,9 +459,8 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes
   }
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes,
-                                                         mfem::Geometry::Type face_geom,
-                                                         const std::vector<int> & mfem_face_ids) 
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
+                                                         const std::vector<int>& mfem_face_ids)
 {
   std::vector<DoF> face_dofs;
   mfem::Mesh*      mesh         = fes->GetMesh();
@@ -476,25 +472,23 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes
   std::vector<Array2D<int> >     local_face_dofs = geom_local_face_dofs(p);
   std::vector<std::vector<int> > lex_perm        = lexicographic_permutations(p);
 
-  //int components_per_node = fes->GetVDim();
-  //bool by_vdim = fes->GetOrdering() == mfem::Ordering::byVDIM;
-  //fes->ExchangeFaceNbrData();
-  //int LSize = fes->GetProlongationMatrix()->Height();
+  // int components_per_node = fes->GetVDim();
+  // bool by_vdim = fes->GetOrdering() == mfem::Ordering::byVDIM;
+  // fes->ExchangeFaceNbrData();
+  // int LSize = fes->GetProlongationMatrix()->Height();
 
   uint64_t n = 0;
 
   for (int f : mfem_face_ids) {
-
     mfem::Mesh::FaceInformation info = mesh->GetFaceInformation(f);
 
-    if (mesh->GetFaceGeometry(f) != face_geom) { 
+    if (mesh->GetFaceGeometry(f) != face_geom) {
       SLIC_ERROR("encountered incorrect face geometry type");
     }
 
     // mfem doesn't provide this connectivity info for DG spaces directly (?),
     // so we have to get at it indirectly in several steps:
     if (isDG(*fes)) {
-
       // 1. find the element(s) that this face belongs to
       mfem::Array<int> elem_ids;
       face_to_elem->GetRow(f, elem_ids);
@@ -589,7 +583,6 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes
           mpi::out << std::endl;
         }
 #endif
-
       }
 
       // H1 and Hcurl spaces are more straight-forward, since
@@ -631,15 +624,16 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes
 
 namespace serac {
 
-ElementRestriction::ElementRestriction(const fes_t* fes, mfem::Geometry::Type elem_geom, const std::vector< int > & elem_ids) {
-
+ElementRestriction::ElementRestriction(const fes_t* fes, mfem::Geometry::Type elem_geom,
+                                       const std::vector<int>& elem_ids)
+{
   int sdim = fes->GetMesh()->Dimension();
   int gdim = dimension_of(elem_geom);
 
   if (gdim == sdim) {
     dof_info = GetElementDofs(fes, elem_geom, elem_ids);
   }
-  if (gdim+1 == sdim) {
+  if (gdim + 1 == sdim) {
     dof_info = GetFaceDofs(fes, elem_geom, elem_ids);
   }
 
@@ -653,7 +647,6 @@ ElementRestriction::ElementRestriction(const fes_t* fes, mfem::Geometry::Type el
   num_elements   = uint64_t(dof_info.shape()[0]);
   nodes_per_elem = uint64_t(dof_info.shape()[1]);
   esize          = num_elements * nodes_per_elem * components;
-
 }
 
 uint64_t ElementRestriction::ESize() const { return esize; }
@@ -707,8 +700,8 @@ void ElementRestriction::ScatterAdd(const mfem::Vector& E_vector, mfem::Vector& 
 ////////////////////////////////////////////////////////////////////////
 
 /// create a BlockElementRestriction for the elements in a given domain
-BlockElementRestriction::BlockElementRestriction(const fes_t* fes, const Domain & domain) {
-
+BlockElementRestriction::BlockElementRestriction(const fes_t* fes, const Domain& domain)
+{
   // TODO: changing the mfem_XXX_ids arrays to mfem_ids[XXX] would simplify this
   if (domain.mfem_edge_ids_.size() > 0) {
     restrictions[mfem::Geometry::SEGMENT] = ElementRestriction(fes, mfem::Geometry::SEGMENT, domain.mfem_edge_ids_);
@@ -723,18 +716,19 @@ BlockElementRestriction::BlockElementRestriction(const fes_t* fes, const Domain 
   }
 
   if (domain.mfem_tet_ids_.size() > 0) {
-    restrictions[mfem::Geometry::TETRAHEDRON] = ElementRestriction(fes, mfem::Geometry::TETRAHEDRON, domain.mfem_tet_ids_);
+    restrictions[mfem::Geometry::TETRAHEDRON] =
+        ElementRestriction(fes, mfem::Geometry::TETRAHEDRON, domain.mfem_tet_ids_);
   }
 
   if (domain.mfem_hex_ids_.size() > 0) {
     restrictions[mfem::Geometry::CUBE] = ElementRestriction(fes, mfem::Geometry::CUBE, domain.mfem_hex_ids_);
   }
-
 }
 
-uint64_t BlockElementRestriction::ESize() const { 
+uint64_t BlockElementRestriction::ESize() const
+{
   uint64_t total = 0;
-  for (auto & [geom, restriction] : restrictions) {
+  for (auto& [geom, restriction] : restrictions) {
     total += restriction.ESize();
   }
   return total;
@@ -760,14 +754,14 @@ mfem::Array<int> BlockElementRestriction::bOffsets() const
 
 void BlockElementRestriction::Gather(const mfem::Vector& L_vector, mfem::BlockVector& E_block_vector) const
 {
-  for (auto & [geom, restriction] : restrictions) {
+  for (auto& [geom, restriction] : restrictions) {
     restriction.Gather(L_vector, E_block_vector.GetBlock(geom));
   }
 }
 
 void BlockElementRestriction::ScatterAdd(const mfem::BlockVector& E_block_vector, mfem::Vector& L_vector) const
 {
-  for (auto & [geom, restriction] : restrictions) {
+  for (auto& [geom, restriction] : restrictions) {
     restriction.ScatterAdd(E_block_vector.GetBlock(geom), L_vector);
   }
 }

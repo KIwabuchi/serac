@@ -78,15 +78,9 @@ static Domain domain_of_vertices(const mesh_t& mesh, std::function<bool(tensor<d
   return output;
 }
 
-Domain Domain::ofVertices(const mesh_t& mesh, std::function<bool(vec2)> func)
-{
-  return domain_of_vertices(mesh, func);
-}
+Domain Domain::ofVertices(const mesh_t& mesh, std::function<bool(vec2)> func) { return domain_of_vertices(mesh, func); }
 
-Domain Domain::ofVertices(const mesh_t& mesh, std::function<bool(vec3)> func)
-{
-  return domain_of_vertices(mesh, func);
-}
+Domain Domain::ofVertices(const mesh_t& mesh, std::function<bool(vec3)> func) { return domain_of_vertices(mesh, func); }
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -147,8 +141,7 @@ Domain Domain::ofEdges(const mesh_t& mesh, std::function<bool(std::vector<vec3>)
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <int d>
-static Domain domain_of_faces(const mesh_t&                                        mesh,
-                              std::function<bool(std::vector<tensor<double, d>>, int)> predicate)
+static Domain domain_of_faces(const mesh_t& mesh, std::function<bool(std::vector<tensor<double, d>>, int)> predicate)
 {
   assert(mesh.SpaceDimension() == d);
 
@@ -230,8 +223,7 @@ Domain Domain::ofFaces(const mesh_t& mesh, std::function<bool(std::vector<vec3>,
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <int d>
-static Domain domain_of_elems(const mesh_t&                                        mesh,
-                              std::function<bool(std::vector<tensor<double, d>>, int)> predicate)
+static Domain domain_of_elems(const mesh_t& mesh, std::function<bool(std::vector<tensor<double, d>>, int)> predicate)
 {
   assert(mesh.SpaceDimension() == d);
 
@@ -311,7 +303,7 @@ Domain Domain::ofElements(const mesh_t& mesh, std::function<bool(std::vector<vec
 ///////////////////////////////////////////////////////////////////////////////////////
 
 template <int d>
-static Domain domain_of_boundary_elems(const mesh_t&                                        mesh,
+static Domain domain_of_boundary_elems(const mesh_t&                                            mesh,
                                        std::function<bool(std::vector<tensor<double, d>>, int)> predicate)
 {
   assert(mesh.SpaceDimension() == d);
@@ -387,7 +379,7 @@ Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::ve
   return domain_of_boundary_elems<3>(mesh, func);
 }
 
-mfem::Array<int> Domain::dof_list(const serac::fes_t * fes) const
+mfem::Array<int> Domain::dof_list(const serac::fes_t* fes) const
 {
   std::set<int>    dof_ids;
   mfem::Array<int> elem_dofs;
@@ -455,19 +447,15 @@ mfem::Array<int> Domain::dof_list(const serac::fes_t * fes) const
   return uniq_dof_ids;
 }
 
-void Domain::insert_restriction(const serac::fes_t * fes, FunctionSpace space) {
-
+void Domain::insert_restriction(const serac::fes_t* fes, FunctionSpace space)
+{
   // if we don't already have a BlockElementRestriction for this FunctionSpace, make one
   if (restriction_operators.count(space) == 0) {
     restriction_operators[space] = BlockElementRestriction(fes, *this);
   }
-
 }
 
-const BlockElementRestriction & Domain::get_restriction(FunctionSpace space) {
-  return restriction_operators.at(space);
-};
-
+const BlockElementRestriction& Domain::get_restriction(FunctionSpace space) { return restriction_operators.at(space); };
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -551,8 +539,8 @@ Domain EntireBoundary(const mesh_t& mesh)
 }
 
 /// @brief constructs a domain from all the interior face elements in a mesh
-Domain InteriorFaces(const mesh_t & mesh) {
-
+Domain InteriorFaces(const mesh_t& mesh)
+{
   Domain output{mesh, mesh.SpaceDimension() - 1, Domain::Type::InteriorFaces};
 
   int edge_id = 0;
@@ -560,7 +548,6 @@ Domain InteriorFaces(const mesh_t & mesh) {
   int quad_id = 0;
 
   for (int f = 0; f < mesh.GetNumFaces(); f++) {
-
     // discard faces with the wrong type
     if (!mesh.GetFaceInformation(f).IsInterior()) continue;
 
@@ -586,7 +573,6 @@ Domain InteriorFaces(const mesh_t & mesh) {
   }
 
   return output;
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -596,11 +582,17 @@ Domain InteriorFaces(const mesh_t & mesh) {
 
 /// @cond
 using int2 = std::tuple<int, int>;
-enum SET_OPERATION { UNION, INTERSECTION, DIFFERENCE };
+enum SET_OPERATION
+{
+  UNION,
+  INTERSECTION,
+  DIFFERENCE
+};
 /// @endcond
 
 /// @brief combine a pair of arrays of ints into a single array of `int2`, see also: unzip()
-void zip(std::vector< int2 > & ab, const std::vector<int>& a, const std::vector<int>& b) {
+void zip(std::vector<int2>& ab, const std::vector<int>& a, const std::vector<int>& b)
+{
   ab.resize(a.size());
   for (uint32_t i = 0; i < a.size(); i++) {
     ab[i] = {a[i], b[i]};
@@ -608,18 +600,19 @@ void zip(std::vector< int2 > & ab, const std::vector<int>& a, const std::vector<
 }
 
 /// @brief split an array of `int2` into a pair of arrays of ints, see also: zip()
-void unzip(const std::vector< int2 > & ab, std::vector<int>& a, std::vector<int>& b) {
+void unzip(const std::vector<int2>& ab, std::vector<int>& a, std::vector<int>& b)
+{
   a.resize(ab.size());
   b.resize(ab.size());
   for (uint32_t i = 0; i < ab.size(); i++) {
     auto ab_i = ab[i];
-    a[i] = std::get<0>(ab_i);
-    b[i] = std::get<1>(ab_i);
+    a[i]      = std::get<0>(ab_i);
+    b[i]      = std::get<1>(ab_i);
   }
 }
 
 /// @brief return a std::vector that is the result of applying (a op b)
-template < typename T >
+template <typename T>
 std::vector<T> set_operation(SET_OPERATION op, const std::vector<T>& a, const std::vector<T>& b)
 {
   using c_iter = typename std::vector<T>::const_iterator;
@@ -627,14 +620,14 @@ std::vector<T> set_operation(SET_OPERATION op, const std::vector<T>& a, const st
   using set_op = std::function<b_iter(c_iter, c_iter, c_iter, c_iter, b_iter)>;
 
   set_op combine;
-  if (op == SET_OPERATION::UNION) { 
-    combine = std::set_union<c_iter, c_iter, b_iter>; 
+  if (op == SET_OPERATION::UNION) {
+    combine = std::set_union<c_iter, c_iter, b_iter>;
   }
-  if (op == SET_OPERATION::INTERSECTION) { 
-    combine = std::set_intersection<c_iter, c_iter, b_iter>; 
+  if (op == SET_OPERATION::INTERSECTION) {
+    combine = std::set_intersection<c_iter, c_iter, b_iter>;
   }
-  if (op == SET_OPERATION::DIFFERENCE) { 
-    combine = std::set_difference<c_iter, c_iter, b_iter>; 
+  if (op == SET_OPERATION::DIFFERENCE) {
+    combine = std::set_difference<c_iter, c_iter, b_iter>;
   }
 
   std::vector<T> combined;
@@ -668,7 +661,7 @@ Domain set_operation(SET_OPERATION op, const Domain& a, const Domain& b)
     zip(b_zipped_ids, b.tri_ids_, b.mfem_tri_ids_);
     std::vector<int2> combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
     unzip(combined_zipped_ids, combined.tri_ids_, combined.mfem_tri_ids_);
- 
+
     zip(a_zipped_ids, a.quad_ids_, a.mfem_quad_ids_);
     zip(b_zipped_ids, b.quad_ids_, b.mfem_quad_ids_);
     combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
@@ -681,7 +674,7 @@ Domain set_operation(SET_OPERATION op, const Domain& a, const Domain& b)
     zip(b_zipped_ids, b.tet_ids_, b.mfem_tet_ids_);
     std::vector<int2> combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
     unzip(combined_zipped_ids, combined.tet_ids_, combined.mfem_tet_ids_);
- 
+
     zip(a_zipped_ids, a.hex_ids_, a.mfem_hex_ids_);
     zip(b_zipped_ids, b.hex_ids_, b.mfem_hex_ids_);
     combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);

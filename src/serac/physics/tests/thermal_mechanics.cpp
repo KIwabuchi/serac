@@ -40,7 +40,7 @@ void functional_test_static_3D(double expected_norm)
 
   std::string mesh_tag{"mesh"};
 
-  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Define a boundary attribute set
   std::set<int> ess_bdr = {1};
@@ -124,7 +124,7 @@ void functional_test_shrinking_3D(double expected_norm)
 
   std::string mesh_tag{"mesh"};
 
-  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Define a boundary attribute set
   std::set<int> constraint_bdr = {1};

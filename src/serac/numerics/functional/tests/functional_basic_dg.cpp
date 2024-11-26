@@ -40,7 +40,7 @@ using namespace serac::profiling;
 //
 
 // [   ---   L    ---   |  --  FND --  ]
-//                         ^^ 
+//                         ^^
 
 #if 0
 void ParNonlinearForm::Mult(const Vector &x, Vector &y) const
@@ -100,12 +100,12 @@ void L2_test(std::string meshfile)
   using test_space  = L2<p, dim>;
   using trial_space = L2<p, dim>;
 
-  //int k = 0;
-  //while (k == 0);
+  // int k = 0;
+  // while (k == 0);
 
   auto mesh = mesh::refineAndDistribute(buildMeshFromFile(meshfile), 0);
 
-  auto fec = mfem::L2_FECollection(p, dim, mfem::BasisType::GaussLobatto);
+  auto                        fec = mfem::L2_FECollection(p, dim, mfem::BasisType::GaussLobatto);
   mfem::ParFiniteElementSpace fespace(mesh.get(), &fec, dim, serac::ordering);
 
   mfem::Vector U(fespace.TrueVSize());
@@ -119,29 +119,29 @@ void L2_test(std::string meshfile)
   Domain interior_faces = InteriorFaces(*mesh);
 
   residual.AddInteriorFaceIntegral(
-      Dimension<dim-1>{}, DependsOn<0>{},
+      Dimension<dim - 1>{}, DependsOn<0>{},
       [=](double /*t*/, auto X, auto velocity) {
         // compute the surface normal
         auto dX_dxi = get<DERIVATIVE>(X);
-        auto n = normalize(cross(dX_dxi));
+        auto n      = normalize(cross(dX_dxi));
 
         // extract the velocity values from each side of the interface
-        // note: the orientation convention is such that the normal 
+        // note: the orientation convention is such that the normal
         //       computed as above will point from from side 1->2
-        auto [u_1, u_2] = velocity; 
+        auto [u_1, u_2] = velocity;
 
         auto a = dot(u_2 - u_1, n);
 
         auto f_1 = u_1 * a;
         auto f_2 = u_2 * a;
         return serac::tuple{f_1, f_2};
-      }, interior_faces);
+      },
+      interior_faces);
 
   double t = 0.0;
 
   auto value = residual(t, U);
-  //check_gradient(residual, t, U);
-
+  // check_gradient(residual, t, U);
 }
 
 TEST(basic, L2_test_tris_and_quads_linear) { L2_test<2, 1>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }

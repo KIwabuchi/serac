@@ -4,84 +4,119 @@
 
 namespace serac {
 
-enum class Family { 
-  H1, 
-  Hcurl, 
-  Hdiv, 
+enum class Family
+{
+  H1,
+  Hcurl,
+  Hdiv,
   DG
 };
 
-template < mfem::Geometry::Type g, Family f >
+template <mfem::Geometry::Type g, Family f>
 struct FiniteElement;
 
 template <>
-struct FiniteElement< mfem::Geometry::TRIANGLE, Family::H1 > {
-
+struct FiniteElement<mfem::Geometry::TRIANGLE, Family::H1> {
   using source_type = double;
-  using flux_type = vec2;
+  using flux_type   = vec2;
 
   static constexpr int dim = 2;
 
   uint32_t num_nodes() const { return ((p + 1) * (p + 2)) / 2; }
 
-  constexpr double shape_function(vec2 xi, uint32_t i) const {
+  constexpr double shape_function(vec2 xi, uint32_t i) const
+  {
     if (p == 1) {
       if (i == 0) return 1.0 - xi[0] - xi[1];
       if (i == 1) return xi[0];
       if (i == 2) return xi[1];
     }
     if (p == 2) {
-      if (i == 0) return (-1+xi[0]+xi[1])*(-1+2*xi[0]+2*xi[1]);
-      if (i == 1) return -4*xi[0]*(-1+xi[0]+xi[1]);
-      if (i == 2) return xi[0]*(-1+2*xi[0]);
-      if (i == 3) return -4*xi[1]*(-1+xi[0]+xi[1]);
-      if (i == 4) return 4*xi[0]*xi[1];
-      if (i == 5) return xi[1]*(-1+2*xi[1]);
+      if (i == 0) return (-1 + xi[0] + xi[1]) * (-1 + 2 * xi[0] + 2 * xi[1]);
+      if (i == 1) return -4 * xi[0] * (-1 + xi[0] + xi[1]);
+      if (i == 2) return xi[0] * (-1 + 2 * xi[0]);
+      if (i == 3) return -4 * xi[1] * (-1 + xi[0] + xi[1]);
+      if (i == 4) return 4 * xi[0] * xi[1];
+      if (i == 5) return xi[1] * (-1 + 2 * xi[1]);
     }
     if (p == 3) {
       double sqrt5 = 2.23606797749978981;
-      if (i == 0) return -((-1+xi[0]+xi[1])*(1+5*xi[0]*xi[0]+5*(-1+xi[1])*xi[1]+xi[0]*(-5+11*xi[1])));
-      if (i == 1) return (5*xi[0]*(-1+xi[0]+xi[1])*(-1-sqrt5+2*sqrt5*xi[0]+(3+sqrt5)*xi[1]))/2.0;
-      if (i == 2) return (-5*xi[0]*(-1+xi[0]+xi[1])*(1-sqrt5+2*sqrt5*xi[0]+(-3+sqrt5)*xi[1]))/2.0;
-      if (i == 3) return xi[0]*(1+5*xi[0]*xi[0]+xi[1]-xi[1]*xi[1]-xi[0]*(5+xi[1]));
-      if (i == 4) return (5*xi[1]*(-1+xi[0]+xi[1])*(-1-sqrt5+(3+sqrt5)*xi[0]+2*sqrt5*xi[1]))/2.0;
-      if (i == 5) return -27*xi[0]*xi[1]*(-1+xi[0]+xi[1]);
-      if (i == 6) return (5*xi[0]*xi[1]*(-2+(3+sqrt5)*xi[0]-(-3+sqrt5)*xi[1]))/2.;
-      if (i == 7) return (5*xi[1]*(-1+xi[0]+xi[1])*(5-3*sqrt5+2*(-5+2*sqrt5)*xi[0]+5*(-1+sqrt5)*xi[1]))/(-5+sqrt5);
-      if (i == 8) return (-5*xi[0]*xi[1]*(2+(-3+sqrt5)*xi[0]-(3+sqrt5)*xi[1]))/2.;
-      if (i == 9) return xi[1]*(1+xi[0]-xi[0]*xi[0]-xi[0]*xi[1]+5*(-1+xi[1])*xi[1]);
+      if (i == 0)
+        return -((-1 + xi[0] + xi[1]) * (1 + 5 * xi[0] * xi[0] + 5 * (-1 + xi[1]) * xi[1] + xi[0] * (-5 + 11 * xi[1])));
+      if (i == 1)
+        return (5 * xi[0] * (-1 + xi[0] + xi[1]) * (-1 - sqrt5 + 2 * sqrt5 * xi[0] + (3 + sqrt5) * xi[1])) / 2.0;
+      if (i == 2)
+        return (-5 * xi[0] * (-1 + xi[0] + xi[1]) * (1 - sqrt5 + 2 * sqrt5 * xi[0] + (-3 + sqrt5) * xi[1])) / 2.0;
+      if (i == 3) return xi[0] * (1 + 5 * xi[0] * xi[0] + xi[1] - xi[1] * xi[1] - xi[0] * (5 + xi[1]));
+      if (i == 4)
+        return (5 * xi[1] * (-1 + xi[0] + xi[1]) * (-1 - sqrt5 + (3 + sqrt5) * xi[0] + 2 * sqrt5 * xi[1])) / 2.0;
+      if (i == 5) return -27 * xi[0] * xi[1] * (-1 + xi[0] + xi[1]);
+      if (i == 6) return (5 * xi[0] * xi[1] * (-2 + (3 + sqrt5) * xi[0] - (-3 + sqrt5) * xi[1])) / 2.;
+      if (i == 7)
+        return (5 * xi[1] * (-1 + xi[0] + xi[1]) *
+                (5 - 3 * sqrt5 + 2 * (-5 + 2 * sqrt5) * xi[0] + 5 * (-1 + sqrt5) * xi[1])) /
+               (-5 + sqrt5);
+      if (i == 8) return (-5 * xi[0] * xi[1] * (2 + (-3 + sqrt5) * xi[0] - (3 + sqrt5) * xi[1])) / 2.;
+      if (i == 9) return xi[1] * (1 + xi[0] - xi[0] * xi[0] - xi[0] * xi[1] + 5 * (-1 + xi[1]) * xi[1]);
     }
 
     return -1.0;
   }
 
-  vec2 shape_function_gradient(vec2 xi, uint32_t i) const {
+  vec2 shape_function_gradient(vec2 xi, uint32_t i) const
+  {
     // expressions generated symbolically by mathematica
     if (p == 1) {
       if (i == 0) return {-1.0, -1.0};
-      if (i == 1) return { 1.0,  0.0};
-      if (i == 2) return { 0.0,  1.0};
+      if (i == 1) return {1.0, 0.0};
+      if (i == 2) return {0.0, 1.0};
     }
     if (p == 2) {
-      if (i == 0) return {-3+4*xi[0]+4*xi[1], -3+4*xi[0]+4*xi[1]};
-      if (i == 1) return {-4*(-1+2*xi[0]+xi[1]), -4*xi[0]};
-      if (i == 2) return {-1+4*xi[0], 0};
-      if (i == 3) return {-4*xi[1], -4*(-1+xi[0]+2*xi[1])};
-      if (i == 4) return {4*xi[1], 4*xi[0]};
-      if (i == 5) return {0, -1+4*xi[1]};
+      if (i == 0) return {-3 + 4 * xi[0] + 4 * xi[1], -3 + 4 * xi[0] + 4 * xi[1]};
+      if (i == 1) return {-4 * (-1 + 2 * xi[0] + xi[1]), -4 * xi[0]};
+      if (i == 2) return {-1 + 4 * xi[0], 0};
+      if (i == 3) return {-4 * xi[1], -4 * (-1 + xi[0] + 2 * xi[1])};
+      if (i == 4) return {4 * xi[1], 4 * xi[0]};
+      if (i == 5) return {0, -1 + 4 * xi[1]};
     }
     if (p == 3) {
       double sqrt5 = 2.23606797749978981;
-      if (i == 0) return {-6-15*xi[0]*xi[0]+4*xi[0]*(5-8*xi[1])+(21-16*xi[1])*xi[1], -6-16*xi[0]*xi[0]+xi[0]*(21-32*xi[1])+5*(4-3*xi[1])*xi[1]};
-      if (i == 1) return {(5*(6*sqrt5*xi[0]*xi[0]+xi[0]*(-2-6*sqrt5+6*(1+sqrt5)*xi[1])+(-1+xi[1])*(-1-sqrt5+(3+sqrt5)*xi[1])))/2., (5*xi[0]*(-2*(2+sqrt5)+3*(1+sqrt5)*xi[0]+2*(3+sqrt5)*xi[1]))/2.};
-      if (i == 2) return {(-5*(6*sqrt5*xi[0]*xi[0]+(-1+xi[1])*(1-sqrt5+(-3+sqrt5)*xi[1])+xi[0]*(2-6*sqrt5+6*(-1+sqrt5)*xi[1])))/2., (-5*xi[0]*(4-2*sqrt5+3*(-1+sqrt5)*xi[0]+2*(-3+sqrt5)*xi[1]))/2.};
-      if (i == 3) return {1+15*xi[0]*xi[0]+xi[1]-xi[1]*xi[1]-2*xi[0]*(5+xi[1]), -(xi[0]*(-1+xi[0]+2*xi[1]))};
-      if (i == 4) return {(5*xi[1]*(-2*(2+sqrt5)+2*(3+sqrt5)*xi[0]+3*(1+sqrt5)*xi[1]))/2., (5*(1+sqrt5-2*(2+sqrt5)*xi[0]+(3+sqrt5)*xi[0]*xi[0]+6*(1+sqrt5)*xi[0]*xi[1]+2*xi[1]*(-1-3*sqrt5+3*sqrt5*xi[1])))/2.};
-      if (i == 5) return {-27*xi[1]*(-1+2*xi[0]+xi[1]), -27*xi[0]*(-1+xi[0]+2*xi[1])};
-      if (i == 6) return {(-5*xi[1]*(2-2*(3+sqrt5)*xi[0]+(-3+sqrt5)*xi[1]))/2., (5*xi[0]*(-2+(3+sqrt5)*xi[0]-2*(-3+sqrt5)*xi[1]))/2.};
-      if (i == 7) return {(-5*xi[1]*(4-2*sqrt5+2*(-3+sqrt5)*xi[0]+3*(-1+sqrt5)*xi[1]))/2., (-5*(-1+sqrt5+(-3+sqrt5)*xi[0]*xi[0]+2*xi[1]*(1-3*sqrt5+3*sqrt5*xi[1])+xi[0]*(4-2*sqrt5+6*(-1+sqrt5)*xi[1])))/2.};
-      if (i == 8) return {(5*xi[1]*(-2-2*(-3+sqrt5)*xi[0]+(3+sqrt5)*xi[1]))/2., (-5*xi[0]*(2+(-3+sqrt5)*xi[0]-2*(3+sqrt5)*xi[1]))/2.};
-      if (i == 9) return {-(xi[1]*(-1+2*xi[0]+xi[1])), 1+xi[0]-xi[0]*xi[0]-2*(5+xi[0])*xi[1]+15*xi[1]*xi[1]};
+      if (i == 0)
+        return {-6 - 15 * xi[0] * xi[0] + 4 * xi[0] * (5 - 8 * xi[1]) + (21 - 16 * xi[1]) * xi[1],
+                -6 - 16 * xi[0] * xi[0] + xi[0] * (21 - 32 * xi[1]) + 5 * (4 - 3 * xi[1]) * xi[1]};
+      if (i == 1)
+        return {(5 * (6 * sqrt5 * xi[0] * xi[0] + xi[0] * (-2 - 6 * sqrt5 + 6 * (1 + sqrt5) * xi[1]) +
+                      (-1 + xi[1]) * (-1 - sqrt5 + (3 + sqrt5) * xi[1]))) /
+                    2.,
+                (5 * xi[0] * (-2 * (2 + sqrt5) + 3 * (1 + sqrt5) * xi[0] + 2 * (3 + sqrt5) * xi[1])) / 2.};
+      if (i == 2)
+        return {(-5 * (6 * sqrt5 * xi[0] * xi[0] + (-1 + xi[1]) * (1 - sqrt5 + (-3 + sqrt5) * xi[1]) +
+                       xi[0] * (2 - 6 * sqrt5 + 6 * (-1 + sqrt5) * xi[1]))) /
+                    2.,
+                (-5 * xi[0] * (4 - 2 * sqrt5 + 3 * (-1 + sqrt5) * xi[0] + 2 * (-3 + sqrt5) * xi[1])) / 2.};
+      if (i == 3)
+        return {1 + 15 * xi[0] * xi[0] + xi[1] - xi[1] * xi[1] - 2 * xi[0] * (5 + xi[1]),
+                -(xi[0] * (-1 + xi[0] + 2 * xi[1]))};
+      if (i == 4)
+        return {(5 * xi[1] * (-2 * (2 + sqrt5) + 2 * (3 + sqrt5) * xi[0] + 3 * (1 + sqrt5) * xi[1])) / 2.,
+                (5 * (1 + sqrt5 - 2 * (2 + sqrt5) * xi[0] + (3 + sqrt5) * xi[0] * xi[0] +
+                      6 * (1 + sqrt5) * xi[0] * xi[1] + 2 * xi[1] * (-1 - 3 * sqrt5 + 3 * sqrt5 * xi[1]))) /
+                    2.};
+      if (i == 5) return {-27 * xi[1] * (-1 + 2 * xi[0] + xi[1]), -27 * xi[0] * (-1 + xi[0] + 2 * xi[1])};
+      if (i == 6)
+        return {(-5 * xi[1] * (2 - 2 * (3 + sqrt5) * xi[0] + (-3 + sqrt5) * xi[1])) / 2.,
+                (5 * xi[0] * (-2 + (3 + sqrt5) * xi[0] - 2 * (-3 + sqrt5) * xi[1])) / 2.};
+      if (i == 7)
+        return {(-5 * xi[1] * (4 - 2 * sqrt5 + 2 * (-3 + sqrt5) * xi[0] + 3 * (-1 + sqrt5) * xi[1])) / 2.,
+                (-5 * (-1 + sqrt5 + (-3 + sqrt5) * xi[0] * xi[0] + 2 * xi[1] * (1 - 3 * sqrt5 + 3 * sqrt5 * xi[1]) +
+                       xi[0] * (4 - 2 * sqrt5 + 6 * (-1 + sqrt5) * xi[1]))) /
+                    2.};
+      if (i == 8)
+        return {(5 * xi[1] * (-2 - 2 * (-3 + sqrt5) * xi[0] + (3 + sqrt5) * xi[1])) / 2.,
+                (-5 * xi[0] * (2 + (-3 + sqrt5) * xi[0] - 2 * (3 + sqrt5) * xi[1])) / 2.};
+      if (i == 9)
+        return {-(xi[1] * (-1 + 2 * xi[0] + xi[1])),
+                1 + xi[0] - xi[0] * xi[0] - 2 * (5 + xi[0]) * xi[1] + 15 * xi[1] * xi[1]};
     }
 
     return {};
@@ -194,10 +229,9 @@ struct FiniteElement< mfem::Geometry::TRIANGLE, Family::H1 > {
 #endif
 
   int p;
-
 };
 
-}
+}  // namespace serac
 
 //#include "elements/h1_edge.hpp"
 //#include "elements/h1_triangle.hpp"
@@ -207,6 +241,4 @@ struct FiniteElement< mfem::Geometry::TRIANGLE, Family::H1 > {
 
 __global__ void kernel() {}
 
-int main() {
-    kernel<<<1,1>>>();
-}
+int main() { kernel<<<1, 1>>>(); }

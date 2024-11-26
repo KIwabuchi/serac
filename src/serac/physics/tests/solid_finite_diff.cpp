@@ -73,7 +73,7 @@ TEST(SolidMechanics, FiniteDifferenceParameter)
   constexpr int bulk_parameter_index = 0;
 
   solid_mechanics::ParameterizedNeoHookeanSolid mat{1.0, 0.0, 0.0};
-  Domain whole_mesh = EntireDomain(pmesh);
+  Domain                                        whole_mesh = EntireDomain(pmesh);
   solid_solver.setMaterial(DependsOn<0, 1>{}, mat, whole_mesh);
 
   // Define the function for the initial displacement and boundary condition
@@ -222,7 +222,7 @@ void finite_difference_shape_test(LoadingType load)
                                       solid_mechanics::default_quasistatic_options, "solid_functional", mesh_tag);
 
   solid_mechanics::NeoHookean mat{1.0, 1.0, 1.0};
-  Domain whole_mesh = EntireDomain(pmesh);
+  Domain                      whole_mesh = EntireDomain(pmesh);
   solid_solver.setMaterial(mat, whole_mesh);
 
   FiniteElementState shape_displacement(pmesh, H1<SHAPE_ORDER, dim>{});
@@ -237,8 +237,8 @@ void finite_difference_shape_test(LoadingType load)
   solid_solver.setDisplacementBCs(ess_bdr, bc);
   solid_solver.setDisplacement(bc);
 
-  Domain top_face = Domain::ofBoundaryElements(pmesh, [](std::vector< vec2 > vertices, int /*attr*/){
-    return average(vertices)[1] > 0.99; // select faces by y-coordinate
+  Domain top_face = Domain::ofBoundaryElements(pmesh, [](std::vector<vec2> vertices, int /*attr*/) {
+    return average(vertices)[1] > 0.99;  // select faces by y-coordinate
   });
 
   if (load == LoadingType::BodyForce) {
@@ -248,17 +248,9 @@ void finite_difference_shape_test(LoadingType load)
     solid_mechanics::ConstantBodyForce<dim> force{constant_force};
     solid_solver.addBodyForce(force, whole_mesh);
   } else if (load == LoadingType::Pressure) {
-    solid_solver.setPressure(
-        [](auto /*X*/, double /*t*/) {
-          return 0.1;
-        },
-        top_face);
+    solid_solver.setPressure([](auto /*X*/, double /*t*/) { return 0.1; }, top_face);
   } else if (load == LoadingType::Traction) {
-    solid_solver.setTraction(
-        [](auto /*X*/, auto /*n*/, double /*t*/) {
-          return vec2{0.01, 0.01};
-        },
-        top_face);
+    solid_solver.setTraction([](auto /*X*/, auto /*n*/, double /*t*/) { return vec2{0.01, 0.01}; }, top_face);
   }
 
   // Finalize the data structures

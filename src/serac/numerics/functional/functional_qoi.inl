@@ -83,7 +83,7 @@ public:
   Functional(std::array<const mfem::ParFiniteElementSpace*, num_trial_spaces> trial_fes)
       : test_fec_(0, trial_fes[0]->GetMesh()->Dimension()),
         test_space_(dynamic_cast<mfem::ParMesh*>(trial_fes[0]->GetMesh()), &test_fec_, 1, serac::ordering),
-        trial_space_(trial_fes), 
+        trial_space_(trial_fes),
         mem_type(mfem::Device::GetMemoryType())
   {
     SERAC_MARK_FUNCTION;
@@ -98,9 +98,9 @@ public:
       input_E_buffer_.push_back({});
     }
 
-    std::array<Family, num_trial_spaces> trial_families = {trials::family ...};
-    std::array<int, num_trial_spaces> trial_orders = {trials::order ...};
-    std::array<int, num_trial_spaces> trial_components = {trials::components ...};
+    std::array<Family, num_trial_spaces> trial_families   = {trials::family...};
+    std::array<int, num_trial_spaces>    trial_orders     = {trials::order...};
+    std::array<int, num_trial_spaces>    trial_components = {trials::components...};
     for (uint32_t i = 0; i < num_trial_spaces; i++) {
       trial_function_spaces_[i] = {trial_families[i], trial_orders[i], trial_components[i]};
     }
@@ -118,7 +118,6 @@ public:
     for (uint32_t i = 0; i < num_trial_spaces; i++) {
       grad_.emplace_back(*this, i);
     }
-
   }
 
   /**
@@ -133,7 +132,6 @@ public:
    * and @a spatial_dim template parameter
    */
 
-
   template <int dim, int... args, typename lambda, typename qpt_data_type = Nothing>
   void AddDomainIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, Domain& domain,
                          std::shared_ptr<QuadratureData<qpt_data_type>> qdata = NoQData)
@@ -145,7 +143,7 @@ public:
     check_for_unsupported_elements(domain.mesh_);
     check_for_missing_nodal_gridfunc(domain.mesh_);
 
-    std::vector< uint32_t > arg_vec = {args ...};
+    std::vector<uint32_t> arg_vec = {args...};
     for (uint32_t i : arg_vec) {
       domain.insert_restriction(trial_space_[i], trial_function_spaces_[i]);
     }
@@ -176,7 +174,7 @@ public:
 
     check_for_missing_nodal_gridfunc(domain.mesh_);
 
-    std::vector< uint32_t > arg_vec = {args ...};
+    std::vector<uint32_t> arg_vec = {args...};
     for (uint32_t i : arg_vec) {
       domain.insert_restriction(trial_space_[i], trial_function_spaces_[i]);
     }
@@ -201,15 +199,14 @@ public:
   {
     check_for_missing_nodal_gridfunc(domain.mesh_);
 
-    std::vector< uint32_t > arg_vec = {args ...};
+    std::vector<uint32_t> arg_vec = {args...};
     for (uint32_t i : arg_vec) {
       domain.insert_restriction(trial_space_[i], trial_function_spaces_[i]);
       check_interior_face_compatibility(domain.mesh_, trial_function_spaces_[i]);
     }
 
     using signature = test(decltype(serac::type<args>(trial_spaces))...);
-    integrals_.push_back(
-        MakeInteriorFaceIntegral<signature, Q, dim>(domain, integrand, arg_vec));
+    integrals_.push_back(MakeInteriorFaceIntegral<signature, Q, dim>(domain, integrand, arg_vec));
   }
 
   /**
@@ -223,7 +220,7 @@ public:
    * @brief Adds an area integral, i.e., over 2D elements in R^2
    */
   template <int... args, typename lambda, typename qpt_data_type = Nothing>
-  void AddAreaIntegral(DependsOn<args...> which_args, const lambda& integrand, Domain & domain,
+  void AddAreaIntegral(DependsOn<args...> which_args, const lambda& integrand, Domain& domain,
                        std::shared_ptr<QuadratureData<qpt_data_type>>& data = NoQData)
   {
     AddDomainIntegral(Dimension<2>{}, which_args, integrand, domain, data);
@@ -240,7 +237,7 @@ public:
    * @brief Adds a volume integral, i.e., over 3D elements in R^3
    */
   template <int... args, typename lambda, typename qpt_data_type = Nothing>
-  void AddVolumeIntegral(DependsOn<args...> which_args, const lambda& integrand, Domain & domain,
+  void AddVolumeIntegral(DependsOn<args...> which_args, const lambda& integrand, Domain& domain,
                          std::shared_ptr<QuadratureData<qpt_data_type>>& data = NoQData)
   {
     AddDomainIntegral(Dimension<3>{}, which_args, integrand, domain, data);
@@ -248,7 +245,7 @@ public:
 
   /// @brief alias for Functional::AddBoundaryIntegral(Dimension<2>{}, integrand, domain);
   template <int... args, typename lambda>
-  void AddSurfaceIntegral(DependsOn<args...> which_args, const lambda& integrand, Domain & domain)
+  void AddSurfaceIntegral(DependsOn<args...> which_args, const lambda& integrand, Domain& domain)
   {
     AddBoundaryIntegral(Dimension<2>{}, which_args, integrand, domain);
   }
@@ -270,11 +267,10 @@ public:
     output_L_ = 0.0;
 
     for (auto& integral : integrals_) {
-
       if (integral.DependsOn(which)) {
-        Domain & dom = integral.domain_;
+        Domain& dom = integral.domain_;
 
-        const serac::BlockElementRestriction & G_trial = dom.get_restriction(trial_function_spaces_[which]);
+        const serac::BlockElementRestriction& G_trial = dom.get_restriction(trial_function_spaces_[which]);
         input_E_buffer_[which].SetSize(int(G_trial.ESize()));
         input_E_[which].Update(input_E_buffer_[which], G_trial.bOffsets());
         G_trial.Gather(input_L_[which], input_E_[which]);
@@ -287,7 +283,6 @@ public:
         // scatter-add to compute QoI value for the local processor
         G_test_.ScatterAdd(output_E_, output_L_);
       }
-
     }
 
     // compute global QoI value by summing values from different processors
@@ -319,10 +314,10 @@ public:
     output_L_ = 0.0;
 
     for (auto& integral : integrals_) {
-      Domain & dom = integral.domain_;
+      Domain& dom = integral.domain_;
 
       for (auto i : integral.active_trial_spaces_) {
-        const serac::BlockElementRestriction & G_trial = dom.get_restriction(trial_function_spaces_[i]);
+        const serac::BlockElementRestriction& G_trial = dom.get_restriction(trial_function_spaces_[i]);
         input_E_buffer_[i].SetSize(int(G_trial.ESize()));
         input_E_[i].Update(input_E_buffer_[i], G_trial.bOffsets());
         G_trial.Gather(input_L_[i], input_E_[i]);
@@ -405,15 +400,16 @@ private:
 
     double operator()(const mfem::Vector& x) const { return form_.ActionOfGradient(x, which_argument); }
 
-    uint64_t max_buffer_size() {
+    uint64_t max_buffer_size()
+    {
       uint64_t max_entries = 0;
-      for (auto & integral : form_.integrals_) {
+      for (auto& integral : form_.integrals_) {
         if (integral.DependsOn(which_argument)) {
-          Domain & dom = integral.domain_;
+          Domain&     dom     = integral.domain_;
           const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
           for (const auto& [geom, test_restriction] : G_trial.restrictions) {
-            const auto& trial_restriction = G_trial.restrictions.at(geom);
-            uint64_t entries_per_element = trial_restriction.nodes_per_elem * trial_restriction.components;
+            const auto& trial_restriction   = G_trial.restrictions.at(geom);
+            uint64_t    entries_per_element = trial_restriction.nodes_per_elem * trial_restriction.components;
             max_entries = std::max(max_entries, trial_restriction.num_elements * entries_per_element);
           }
         }
@@ -433,32 +429,28 @@ private:
 
       std::map<mfem::Geometry::Type, ExecArray<double, 3, exec>> element_gradients[Domain::num_types];
 
-////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////
 
-      for (auto & integral : form_.integrals_) {
-
-        Domain & dom = integral.domain_;
+      for (auto& integral : form_.integrals_) {
+        Domain& dom = integral.domain_;
 
         // if this integral's derivative isn't identically zero
         if (integral.functional_to_integral_index_.count(which_argument) > 0) {
-
-          uint32_t id = integral.functional_to_integral_index_.at(which_argument);
+          uint32_t    id      = integral.functional_to_integral_index_.at(which_argument);
           const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
           for (const auto& [geom, calculate_element_gradients] : integral.element_gradient_[id]) {
-
             const auto& trial_restriction = G_trial.restrictions.at(geom);
 
             // prepare a buffer to hold the element matrices
-            CPUArrayView<double, 3> K_e(K_elem_buffer.data(), 
-                                        trial_restriction.num_elements, 1,
-                                                      trial_restriction.nodes_per_elem * trial_restriction.components);
+            CPUArrayView<double, 3> K_e(K_elem_buffer.data(), trial_restriction.num_elements, 1,
+                                        trial_restriction.nodes_per_elem * trial_restriction.components);
             detail::zero_out(K_e);
 
             calculate_element_gradients(K_e);
 
-            const std::vector<int> & element_ids = integral.domain_.get(geom);
+            const std::vector<int>& element_ids = integral.domain_.get(geom);
 
-            uint32_t cols_per_elem = uint32_t(trial_restriction.nodes_per_elem * trial_restriction.components);
+            uint32_t         cols_per_elem = uint32_t(trial_restriction.nodes_per_elem * trial_restriction.components);
             std::vector<DoF> trial_vdofs(cols_per_elem);
 
             for (uint32_t e = 0; e < element_ids.size(); e++) {
@@ -469,12 +461,11 @@ private:
                 gradient_L_[col] += K_e(e, 0, i);
               }
             }
-
           }
         }
       }
 
-////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////
 
       form_.P_trial_[which_argument]->MultTranspose(gradient_L_, *gradient_T);
 
@@ -501,7 +492,7 @@ private:
   /// @brief Manages DOFs for the trial space
   std::array<const mfem::ParFiniteElementSpace*, num_trial_spaces> trial_space_;
 
-  std::array< FunctionSpace, num_trial_spaces > trial_function_spaces_;
+  std::array<FunctionSpace, num_trial_spaces> trial_function_spaces_;
 
   /**
    * @brief Operator that converts true (global) DOF values to local (current rank) DOF values
@@ -512,12 +503,12 @@ private:
   /// @brief The input set of local DOF values (i.e., on the current rank)
   mutable mfem::Vector input_L_[num_trial_spaces];
 
-  mutable std::vector<mfem::Vector> input_E_buffer_;
+  mutable std::vector<mfem::Vector>      input_E_buffer_;
   mutable std::vector<mfem::BlockVector> input_E_;
 
   mutable std::vector<Integral> integrals_;
 
-  mutable mfem::Vector output_E_buffer_;
+  mutable mfem::Vector      output_E_buffer_;
   mutable mfem::BlockVector output_E_;
 
   QoIElementRestriction G_test_;
@@ -534,7 +525,6 @@ private:
   mutable std::vector<Gradient> grad_;
 
   const mfem::MemoryType mem_type;
-
 };
 
 }  // namespace serac

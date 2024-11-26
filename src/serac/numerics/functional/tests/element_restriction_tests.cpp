@@ -5,7 +5,8 @@
 
 using namespace serac;
 
-std::ostream & operator<<(std::ostream & out, axom::Array<DoF, 2, axom::MemorySpace::Host> arr) {
+std::ostream& operator<<(std::ostream& out, axom::Array<DoF, 2, axom::MemorySpace::Host> arr)
+{
   for (int i = 0; i < arr.shape()[0]; i++) {
     for (int j = 0; j < arr.shape()[1]; j++) {
       out << arr[i][j].index() << " ";
@@ -15,11 +16,11 @@ std::ostream & operator<<(std::ostream & out, axom::Array<DoF, 2, axom::MemorySp
   return out;
 }
 
-TEST(patch_test_meshes, triangle_domains) {
-
-  int p = 2;
-  int dim = 2;
-  mfem::Mesh mesh(SERAC_REPO_DIR"/data/meshes/patch2D_tris.mesh");
+TEST(patch_test_meshes, triangle_domains)
+{
+  int        p   = 2;
+  int        dim = 2;
+  mfem::Mesh mesh(SERAC_REPO_DIR "/data/meshes/patch2D_tris.mesh");
 
   auto H1_fec = std::make_unique<mfem::H1_FECollection>(p, dim);
   auto H1_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, H1_fec.get());
@@ -83,22 +84,21 @@ TEST(patch_test_meshes, triangle_domains) {
     BlockElementRestriction L2_BER(L2_fes.get(), interior);
     EXPECT_EQ(L2_BER.ESize(), 4 * (3 * 2));
   }
-
 }
 
-TEST(patch_test_meshes, quadrilateral_domains) {
+TEST(patch_test_meshes, quadrilateral_domains)
+{
+  int        p   = 2;
+  int        dim = 2;
+  mfem::Mesh mesh(SERAC_REPO_DIR "/data/meshes/patch2D_quads.mesh");
 
-  int p = 2;
-  int dim = 2;
-  mfem::Mesh mesh(SERAC_REPO_DIR"/data/meshes/patch2D_quads.mesh");
-
-  auto H1_fec = std::make_unique<mfem::H1_FECollection>(p, dim);
+  auto H1_fec    = std::make_unique<mfem::H1_FECollection>(p, dim);
   auto Hcurl_fec = std::make_unique<mfem::ND_FECollection>(p, dim);
-  auto L2_fec = std::make_unique<mfem::L2_FECollection>(p, dim, mfem::BasisType::GaussLobatto);
+  auto L2_fec    = std::make_unique<mfem::L2_FECollection>(p, dim, mfem::BasisType::GaussLobatto);
 
-  auto H1_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, H1_fec.get());
+  auto H1_fes    = std::make_unique<mfem::FiniteElementSpace>(&mesh, H1_fec.get());
   auto Hcurl_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, Hcurl_fec.get());
-  auto L2_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, L2_fec.get());
+  auto L2_fes    = std::make_unique<mfem::FiniteElementSpace>(&mesh, L2_fec.get());
 
   Domain whole = EntireDomain(mesh);
   EXPECT_EQ(whole.mfem_edge_ids_.size(), 0);
@@ -153,22 +153,21 @@ TEST(patch_test_meshes, quadrilateral_domains) {
     BlockElementRestriction L2_BER(L2_fes.get(), interior);
     EXPECT_EQ(L2_BER.ESize(), 8 * (3 * 2));
   }
-
 }
 
-TEST(patch_test_meshes, triangle_and_quadrilateral_domains) {
+TEST(patch_test_meshes, triangle_and_quadrilateral_domains)
+{
+  int        p   = 2;
+  int        dim = 2;
+  mfem::Mesh mesh(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh");
 
-  int p = 2;
-  int dim = 2;
-  mfem::Mesh mesh(SERAC_REPO_DIR"/data/meshes/patch2D_tris_and_quads.mesh");
-
-  auto H1_fec = std::make_unique<mfem::H1_FECollection>(p, dim);
+  auto H1_fec    = std::make_unique<mfem::H1_FECollection>(p, dim);
   auto Hcurl_fec = std::make_unique<mfem::ND_FECollection>(p, dim);
-  auto L2_fec = std::make_unique<mfem::L2_FECollection>(p, dim, mfem::BasisType::GaussLobatto);
+  auto L2_fec    = std::make_unique<mfem::L2_FECollection>(p, dim, mfem::BasisType::GaussLobatto);
 
-  auto H1_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, H1_fec.get());
+  auto H1_fes    = std::make_unique<mfem::FiniteElementSpace>(&mesh, H1_fec.get());
   auto Hcurl_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, Hcurl_fec.get());
-  auto L2_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, L2_fec.get());
+  auto L2_fes    = std::make_unique<mfem::FiniteElementSpace>(&mesh, L2_fec.get());
 
   Domain whole = EntireDomain(mesh);
   EXPECT_EQ(whole.mfem_edge_ids_.size(), 0);
@@ -223,22 +222,21 @@ TEST(patch_test_meshes, triangle_and_quadrilateral_domains) {
     BlockElementRestriction L2_BER(L2_fes.get(), interior);
     EXPECT_EQ(L2_BER.ESize(), 9 * (3 * 2));
   }
-
 }
 
-TEST(patch_test_meshes, tetrahedron_domains) {
+TEST(patch_test_meshes, tetrahedron_domains)
+{
+  int        p   = 2;
+  int        dim = 3;
+  mfem::Mesh mesh(SERAC_REPO_DIR "/data/meshes/patch3D_tets.mesh");
 
-  int p = 2;
-  int dim = 3;
-  mfem::Mesh mesh(SERAC_REPO_DIR"/data/meshes/patch3D_tets.mesh");
-
-  auto H1_fec = std::make_unique<mfem::H1_FECollection>(p, dim);
+  auto H1_fec    = std::make_unique<mfem::H1_FECollection>(p, dim);
   auto Hcurl_fec = std::make_unique<mfem::ND_FECollection>(p, dim);
-  auto L2_fec = std::make_unique<mfem::L2_FECollection>(p, dim, mfem::BasisType::GaussLobatto);
+  auto L2_fec    = std::make_unique<mfem::L2_FECollection>(p, dim, mfem::BasisType::GaussLobatto);
 
-  auto H1_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, H1_fec.get());
+  auto H1_fes    = std::make_unique<mfem::FiniteElementSpace>(&mesh, H1_fec.get());
   auto Hcurl_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, Hcurl_fec.get());
-  auto L2_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, L2_fec.get());
+  auto L2_fes    = std::make_unique<mfem::FiniteElementSpace>(&mesh, L2_fec.get());
 
   Domain whole = EntireDomain(mesh);
   EXPECT_EQ(whole.mfem_edge_ids_.size(), 0);
@@ -293,22 +291,21 @@ TEST(patch_test_meshes, tetrahedron_domains) {
     BlockElementRestriction L2_BER(L2_fes.get(), interior);
     EXPECT_EQ(L2_BER.ESize(), 18 * (6 * 2));
   }
-
 }
 
-TEST(patch_test_meshes, hexahedron_domains) {
+TEST(patch_test_meshes, hexahedron_domains)
+{
+  int        p   = 2;
+  int        dim = 3;
+  mfem::Mesh mesh(SERAC_REPO_DIR "/data/meshes/patch3D_hexes.mesh");
 
-  int p = 2;
-  int dim = 3;
-  mfem::Mesh mesh(SERAC_REPO_DIR"/data/meshes/patch3D_hexes.mesh");
-
-  auto H1_fec = std::make_unique<mfem::H1_FECollection>(p, dim);
+  auto H1_fec    = std::make_unique<mfem::H1_FECollection>(p, dim);
   auto Hcurl_fec = std::make_unique<mfem::ND_FECollection>(p, dim);
-  auto L2_fec = std::make_unique<mfem::L2_FECollection>(p, dim, mfem::BasisType::GaussLobatto);
+  auto L2_fec    = std::make_unique<mfem::L2_FECollection>(p, dim, mfem::BasisType::GaussLobatto);
 
-  auto H1_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, H1_fec.get());
+  auto H1_fes    = std::make_unique<mfem::FiniteElementSpace>(&mesh, H1_fec.get());
   auto Hcurl_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, Hcurl_fec.get());
-  auto L2_fes = std::make_unique<mfem::FiniteElementSpace>(&mesh, L2_fec.get());
+  auto L2_fes    = std::make_unique<mfem::FiniteElementSpace>(&mesh, L2_fec.get());
 
   Domain whole = EntireDomain(mesh);
   EXPECT_EQ(whole.mfem_edge_ids_.size(), 0);
@@ -363,5 +360,4 @@ TEST(patch_test_meshes, hexahedron_domains) {
     BlockElementRestriction L2_BER(L2_fes.get(), interior);
     EXPECT_EQ(L2_BER.ESize(), 18 * (9 * 2));
   }
-
 }

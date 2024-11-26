@@ -80,7 +80,8 @@ struct Integral {
       mpi::out << geometry << std::endl;
       for (std::size_t i = 0; i < active_trial_spaces_.size(); i++) {
         inputs[i] = input_E[uint32_t(active_trial_spaces_[i])].GetBlock(geometry).Read();
-        mpi::out << "input_E[" << i << "].Size(): " << input_E[uint32_t(active_trial_spaces_[i])].GetBlock(geometry).Size() << std::endl;
+        mpi::out << "input_E[" << i
+                 << "].Size(): " << input_E[uint32_t(active_trial_spaces_[i])].GetBlock(geometry).Size() << std::endl;
       }
       func(t, inputs, output_E.GetBlock(geometry).ReadWrite(), update_state);
     }
@@ -96,7 +97,8 @@ struct Integral {
    * @param differentiation_index a non-negative value indicates directional derivative with respect to the trial space
    * with that index.
    */
-  void GradientMult(const mfem::BlockVector& dinput_E, mfem::BlockVector& doutput_E, uint32_t differentiation_index) const
+  void GradientMult(const mfem::BlockVector& dinput_E, mfem::BlockVector& doutput_E,
+                    uint32_t differentiation_index) const
   {
     doutput_E = 0.0;
 
@@ -125,14 +127,15 @@ struct Integral {
       }
     }
   }
-  
+
   /**
-   * @brief returns whether or not this integral depends on argument `which` 
-   * 
+   * @brief returns whether or not this integral depends on argument `which`
+   *
    * @param which an argument index
-   * @return true when if this Integral object was created with a DependsOn<...> statement that includes `i` 
+   * @return true when if this Integral object was created with a DependsOn<...> statement that includes `i`
    */
-  bool DependsOn(uint32_t which) const {
+  bool DependsOn(uint32_t which) const
+  {
     for (uint32_t i : active_trial_spaces_) {
       if (which == i) return true;
     }
@@ -229,11 +232,10 @@ void generate_kernels(FunctionSignature<test(trials...)> s, Integral& integral, 
     using derivative_type = decltype(domain_integral::get_derivative_type<index, dim, trials...>(qf, qpt_data_type{}));
     auto ptr = accelerator::make_shared_array<ExecutionSpace::CPU, derivative_type>(num_elements * qpts_per_element);
 
-    integral.evaluation_with_AD_[index][geom] = domain_integral::evaluation_kernel<index, Q, geom>(
-        s, qf, positions, jacobians, qdata, ptr, num_elements);
+    integral.evaluation_with_AD_[index][geom] =
+        domain_integral::evaluation_kernel<index, Q, geom>(s, qf, positions, jacobians, qdata, ptr, num_elements);
 
-    integral.jvp_[index][geom] =
-        domain_integral::jacobian_vector_product_kernel<index, Q, geom>(s, ptr, num_elements);
+    integral.jvp_[index][geom] = domain_integral::jacobian_vector_product_kernel<index, Q, geom>(s, ptr, num_elements);
     integral.element_gradient_[index][geom] =
         domain_integral::element_gradient_kernel<index, Q, geom>(s, ptr, num_elements);
   });
@@ -364,8 +366,8 @@ Integral MakeBoundaryIntegral(const Domain& domain, const lambda_type& qf, std::
 }
 
 /**
- * @brief function to generate kernels held by an `Integral` object of type "InteriorFaceDomain", with a specific element
- * type
+ * @brief function to generate kernels held by an `Integral` object of type "InteriorFaceDomain", with a specific
+ * element type
  *
  * @tparam geom the element geometry
  * @tparam Q a parameter that controls the number of quadrature points

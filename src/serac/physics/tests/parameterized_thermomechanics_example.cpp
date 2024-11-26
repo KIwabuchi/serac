@@ -108,7 +108,7 @@ TEST(Thermomechanics, ParameterizedMaterial)
   double theta_ref = 0.0;     ///< datum temperature for thermal expansion
 
   ParameterizedThermoelasticMaterial material{density, E, nu, theta_ref};
-  Domain material_block = EntireDomain(pmesh);
+  Domain                             material_block = EntireDomain(pmesh);
   simulation.setMaterial(DependsOn<0, 1>{}, material, material_block);
 
   double             deltaT = 1.0;
@@ -166,8 +166,7 @@ TEST(Thermomechanics, ParameterizedMaterial)
         auto n           = normalize(cross(dX_dxi));
         return dot(u, n);
       },
-      top_surface
-  );
+      top_surface);
 
   double initial_qoi = qoi(time, simulation.displacement());
   SLIC_INFO_ROOT(axom::fmt::format("vertical displacement integrated over the top surface: {}", initial_qoi));
@@ -175,10 +174,7 @@ TEST(Thermomechanics, ParameterizedMaterial)
 
   Functional<double(H1<p, dim>)> area({&simulation.displacement().space()});
   area.AddSurfaceIntegral(
-      DependsOn<>{},
-      [=](double /*t*/, auto /*position*/) { return 1.0; }, 
-      top_surface
-  );
+      DependsOn<>{}, [=](double /*t*/, auto /*position*/) { return 1.0; }, top_surface);
 
   double top_area = area(time, simulation.displacement());
 

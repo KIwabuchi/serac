@@ -56,7 +56,7 @@ TEST(LiquidCrystalElastomer, Bertoldi)
 
   std::string mesh_tag{"mesh"};
 
-  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Construct a functional-based solid mechanics solver
   LinearSolverOptions linear_options = {.linear_solver = LinearSolver::SuperLU};

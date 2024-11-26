@@ -28,7 +28,7 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
   static constexpr int VALUE = 0, GRADIENT = 1;
   static constexpr int SOURCE = 0, FLUX = 1;
 
-  using dof_type = tensor<double, c, n>;
+  using dof_type    = tensor<double, c, n>;
   using dof_type_if = tensor<double, c, 2, ndof>;
 
   using value_type      = typename std::conditional<components == 1, double, tensor<double, components> >::type;
@@ -158,7 +158,7 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
 
     tensor<double, q> values{};
 
-    tensor< tuple< value_type, value_type >, q > output{};
+    tensor<tuple<value_type, value_type>, q> output{};
 
     // apply the shape functions
     for (int i = 0; i < c; i++) {
@@ -256,12 +256,10 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
   }
 
   template <typename T, int q>
-  SERAC_HOST_DEVICE static void integrate(const tensor<tuple< T, T >, q>& qf_output,
-                                          const TensorProductQuadratureRule<q>&, 
-                                          dof_type_if * element_residual,
+  SERAC_HOST_DEVICE static void integrate(const tensor<tuple<T, T>, q>& qf_output,
+                                          const TensorProductQuadratureRule<q>&, dof_type_if* element_residual,
                                           [[maybe_unused]] int step = 1)
   {
-
     constexpr int ntrial = size(T{}) / c;
 
     using buffer_type = tensor<double, q>;
@@ -284,6 +282,5 @@ struct finite_element<mfem::Geometry::SEGMENT, L2<p, c> > {
       }
     }
   }
-
 };
 /// @endcond

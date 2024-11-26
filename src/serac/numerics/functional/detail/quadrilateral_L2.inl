@@ -31,7 +31,7 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
   using residual_type =
       typename std::conditional<components == 1, tensor<double, ndof>, tensor<double, ndof, components> >::type;
 
-  using dof_type = tensor<double, c, p + 1, p + 1>;
+  using dof_type    = tensor<double, c, p + 1, p + 1>;
   using dof_type_if = tensor<double, c, 2, p + 1, p + 1>;
 
   using value_type = typename std::conditional<components == 1, double, tensor<double, components> >::type;
@@ -174,11 +174,11 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
         double              phi_j      = B(qx, jx) * B(qy, jy);
         tensor<double, dim> dphi_j_dxi = {G(qx, jx) * B(qy, jy), B(qx, jx) * G(qy, jy)};
 
-        int   Q   = qy * q + qx;
-        const auto & d00 = get<0>(get<0>(input(Q)));
-        const auto & d01 = get<1>(get<0>(input(Q)));
-        const auto & d10 = get<0>(get<1>(input(Q)));
-        const auto & d11 = get<1>(get<1>(input(Q)));
+        int         Q   = qy * q + qx;
+        const auto& d00 = get<0>(get<0>(input(Q)));
+        const auto& d01 = get<1>(get<0>(input(Q)));
+        const auto& d10 = get<0>(get<1>(input(Q)));
+        const auto& d11 = get<1>(get<1>(input(Q)));
 
         output[Q] = {d00 * phi_j + dot(d01, dphi_j_dxi), d10 * phi_j + dot(d11, dphi_j_dxi)};
       }
@@ -188,9 +188,8 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
   }
 
   template <typename T, int q>
-  static auto batch_apply_shape_fn_interior_face(int j, tensor<T, q*q> input, const TensorProductQuadratureRule<q>&)
+  static auto batch_apply_shape_fn_interior_face(int j, tensor<T, q * q> input, const TensorProductQuadratureRule<q>&)
   {
-
     static constexpr bool apply_weights = false;
     static constexpr auto B             = calculate_B<apply_weights, q>();
 
@@ -198,21 +197,21 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
     using source1_t = decltype(get<0>(get<1>(T{})) + get<1>(get<1>(T{})));
 
     int jx = j % n;
-    int jy = (j % ndof) /  n;
-    int s = j / ndof;
+    int jy = (j % ndof) / n;
+    int s  = j / ndof;
 
-    tensor<tuple<source0_t, source1_t>, q*q> output;
+    tensor<tuple<source0_t, source1_t>, q * q> output;
 
     for (int qy = 0; qy < q; qy++) {
       for (int qx = 0; qx < q; qx++) {
         double phi0_j = B(qx, jx) * B(qy, jy) * (s == 0);
         double phi1_j = B(qx, jx) * B(qy, jy) * (s == 1);
 
-        int   Q   = qy * q + qx;
-        const auto & d00 = get<0>(get<0>(input(Q)));
-        const auto & d01 = get<1>(get<0>(input(Q)));
-        const auto & d10 = get<0>(get<1>(input(Q)));
-        const auto & d11 = get<1>(get<1>(input(Q)));
+        int         Q   = qy * q + qx;
+        const auto& d00 = get<0>(get<0>(input(Q)));
+        const auto& d01 = get<1>(get<0>(input(Q)));
+        const auto& d10 = get<0>(get<1>(input(Q)));
+        const auto& d11 = get<1>(get<1>(input(Q)));
 
         output[Q] = {d00 * phi0_j + d01 * phi1_j, d10 * phi0_j + d11 * phi1_j};
       }
@@ -220,8 +219,6 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
 
     return output;
   }
-
-
 
   // we want to compute the following:
   //
@@ -279,18 +276,19 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
 
   // overload for two-sided interior face kernels
   template <int q>
-  SERAC_HOST_DEVICE static auto interpolate([[maybe_unused]] const dof_type_if& X, const TensorProductQuadratureRule<q>&)
+  SERAC_HOST_DEVICE static auto interpolate([[maybe_unused]] const dof_type_if& X,
+                                            const TensorProductQuadratureRule<q>&)
   {
     static constexpr bool apply_weights = false;
     static constexpr auto B             = calculate_B<apply_weights, q>();
 
-    tensor< tuple< value_type, value_type >, q * q> output;
+    tensor<tuple<value_type, value_type>, q * q> output;
 
     tensor<double, c, q, q> value{};
 
     // side 0
     for (int i = 0; i < c; i++) {
-      auto A0 = contract<1, 1>(X(i, 0), B);
+      auto A0  = contract<1, 1>(X(i, 0), B);
       value(i) = contract<0, 1>(A0, B);
     }
 
@@ -308,7 +306,7 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
 
     // side 1
     for (int i = 0; i < c; i++) {
-      auto A0 = contract<1, 1>(X(i, 1), B);
+      auto A0  = contract<1, 1>(X(i, 1), B);
       value(i) = contract<0, 1>(A0, B);
     }
 
@@ -376,13 +374,11 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
   }
 
   template <typename T, int q>
-  SERAC_HOST_DEVICE static void integrate(const tensor<tuple< T, T >, q*q>& qf_output,
-                                          const TensorProductQuadratureRule<q>&, 
-                                          dof_type_if * element_residual,
+  SERAC_HOST_DEVICE static void integrate(const tensor<tuple<T, T>, q * q>& qf_output,
+                                          const TensorProductQuadratureRule<q>&, dof_type_if* element_residual,
                                           [[maybe_unused]] int step = 1)
   {
-
-    constexpr int ntrial = size(T{}) / c;
+    constexpr int         ntrial        = size(T{}) / c;
     static constexpr bool apply_weights = true;
     static constexpr auto B             = calculate_B<apply_weights, q>();
 
@@ -394,7 +390,7 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
         {
           for (int qy = 0; qy < q; qy++) {
             for (int qx = 0; qx < q; qx++) {
-              int Q = qy * q + qx;
+              int Q          = qy * q + qx;
               source(qy, qx) = reinterpret_cast<const double*>(&get<0>(qf_output[Q]))[i * ntrial + j];
             }
           }
@@ -407,7 +403,7 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
         {
           for (int qy = 0; qy < q; qy++) {
             for (int qx = 0; qx < q; qx++) {
-              int Q = qy * q + qx;
+              int Q          = qy * q + qx;
               source(qy, qx) = reinterpret_cast<const double*>(&get<1>(qf_output[Q]))[i * ntrial + j];
             }
           }
@@ -415,13 +411,9 @@ struct finite_element<mfem::Geometry::SQUARE, L2<p, c> > {
           auto A0 = contract<1, 0>(source, B);
           element_residual[j * step](i, 1) += contract<0, 0>(A0, B);
         }
-
       }
     }
-
   }
-
-
 
 #if 0
 

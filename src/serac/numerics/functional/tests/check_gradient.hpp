@@ -14,8 +14,9 @@
 #include "serac/numerics/functional/functional.hpp"
 
 template <typename T>
-void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& U, [[maybe_unused]] double epsilon = 1.0e-4) {
-
+void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& U,
+                         [[maybe_unused]] double epsilon = 1.0e-4)
+{
   mfem::Vector dU(U.Size());
   dU = 0.0;
 
@@ -24,7 +25,7 @@ void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& 
 
   std::cout << "{";
   for (int i = 0; i < U.Size(); i++) {
-    dU[i] = 1;
+    dU[i]               = 1;
     mfem::Vector df_jvp = dfdU(dU);  // matrix-free
 
     std::cout << "{";
@@ -48,7 +49,6 @@ void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& 
   std::cout << "}" << std::endl;
 
   dfdU_matrix->Print("K.mtx");
-
 }
 
 template <typename T, serac::ExecutionSpace exec = serac::ExecutionSpace::CPU>
@@ -125,7 +125,6 @@ void check_gradient(serac::Functional<T, exec>& f, double t, mfem::Vector& U, do
   double e3 = df1_cd[0].DistanceTo(df_jvp1.GetData()) / denominator;
   double e4 = df1_cd[1].DistanceTo(df_jvp1.GetData()) / denominator;
   EXPECT_TRUE((fabs(e3 / e4 - 4.0) < 0.1) || fmin(e3, e4) < 1.0e-9);
-
 }
 
 template <typename T>

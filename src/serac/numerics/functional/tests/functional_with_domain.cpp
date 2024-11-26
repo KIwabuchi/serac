@@ -215,7 +215,6 @@ void partial_mesh_comparison_test_impl(std::unique_ptr<mfem::ParMesh>& mesh)
   Domain d = EntireDomain(*mesh);
   residual_comparison.AddDomainIntegral(Dimension<dim>{}, DependsOn<0>{}, TestThermalIntegratorOne<dim, true>{}, d);
 
-
   Domain bdr = EntireBoundary(*mesh);
   residual_comparison.AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<0>{}, TestThermalIntegratorTwo<true>{}, bdr);
 

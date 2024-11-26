@@ -124,8 +124,8 @@ int main(int argc, char* argv[])
 
   // Create and refine mesh
   std::string filename = SERAC_REPO_DIR "/data/meshes/hollow-cylinder.mesh";
-  auto mesh = mesh::refineAndDistribute(serac::buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto  mesh  = mesh::refineAndDistribute(serac::buildMeshFromFile(filename), serial_refinement, parallel_refinement);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Surface attributes for boundary conditions
   std::set<int> xneg{2};
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
   auto                        lambda = 1.0;
   auto                        G      = 0.1;
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = (3 * lambda + 2 * G) / 3, .G = G};
-  Domain whole_mesh = EntireDomain(pmesh);
+  Domain                      whole_mesh = EntireDomain(pmesh);
   solid_solver->setMaterial(mat, whole_mesh);
 
   // Set up essential boundary conditions

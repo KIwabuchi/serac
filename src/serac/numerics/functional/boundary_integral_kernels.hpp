@@ -297,7 +297,8 @@ void action_of_gradient_kernel(const double* dU, double* dR, derivatives_type* q
  * @param[in] num_elements The number of elements in the mesh
  */
 template <mfem::Geometry::Type g, typename test, typename trial, int Q, typename derivatives_type>
-void element_gradient_kernel(ExecArrayView<double, 3, ExecutionSpace::CPU> dK, derivatives_type* qf_derivatives, std::size_t num_elements)
+void element_gradient_kernel(ExecArrayView<double, 3, ExecutionSpace::CPU> dK, derivatives_type* qf_derivatives,
+                             std::size_t num_elements)
 {
   using test_element  = finite_element<g, test>;
   using trial_element = finite_element<g, trial>;

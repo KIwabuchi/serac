@@ -101,11 +101,14 @@ inline void check_for_unsupported_elements(const mfem::Mesh& mesh)
   }
 }
 
-inline void check_interior_face_compatibility(const mfem::Mesh & mesh, const FunctionSpace space) {
+inline void check_interior_face_compatibility(const mfem::Mesh& mesh, const FunctionSpace space)
+{
   if (space.family == Family::L2) {
-    const mfem::ParMesh * pmesh = dynamic_cast< const mfem::ParMesh * >(&mesh);
+    const mfem::ParMesh* pmesh = dynamic_cast<const mfem::ParMesh*>(&mesh);
     if (pmesh) {
-      SLIC_ERROR_IF(pmesh->GetNSharedFaces() > 0, "interior face integrals involving DG function spaces don't currently support meshes with shared faces");
+      SLIC_ERROR_IF(
+          pmesh->GetNSharedFaces() > 0,
+          "interior face integrals involving DG function spaces don't currently support meshes with shared faces");
     }
   }
 }
@@ -244,16 +247,16 @@ public:
 
     test_function_space_ = {test::family, test::order, test::components};
 
-    std::array<Family, num_trial_spaces> trial_families = {trials::family ...};
-    std::array<int, num_trial_spaces> trial_orders = {trials::order ...};
-    std::array<int, num_trial_spaces> trial_components = {trials::components ...};
+    std::array<Family, num_trial_spaces> trial_families   = {trials::family...};
+    std::array<int, num_trial_spaces>    trial_orders     = {trials::order...};
+    std::array<int, num_trial_spaces>    trial_components = {trials::components...};
     for (uint32_t i = 0; i < num_trial_spaces; i++) {
       trial_function_spaces_[i] = {trial_families[i], trial_orders[i], trial_components[i]};
     }
 
-    //for (auto type : {Domain::Type::Elements, Domain::Type::BoundaryElements, Domain::Type::InteriorFaces}) {
-    //  output_E_[type].Update(G_test_[type].bOffsets(), mem_type);
-    //}
+    // for (auto type : {Domain::Type::Elements, Domain::Type::BoundaryElements, Domain::Type::InteriorFaces}) {
+    //   output_E_[type].Update(G_test_[type].bOffsets(), mem_type);
+    // }
 
     P_test_ = test_space_->GetProlongationMatrix();
 
@@ -267,7 +270,6 @@ public:
     for (uint32_t i = 0; i < num_trial_spaces; i++) {
       grad_.emplace_back(*this, i);
     }
-
   }
 
   /**
@@ -292,7 +294,7 @@ public:
     check_for_unsupported_elements(domain.mesh_);
     check_for_missing_nodal_gridfunc(domain.mesh_);
 
-    std::vector< uint32_t > arg_vec = {args ...};
+    std::vector<uint32_t> arg_vec = {args...};
     for (uint32_t i : arg_vec) {
       domain.insert_restriction(trial_space_[i], trial_function_spaces_[i]);
     }
@@ -322,7 +324,7 @@ public:
 
     check_for_missing_nodal_gridfunc(domain.mesh_);
 
-    std::vector< uint32_t > arg_vec = {args ...};
+    std::vector<uint32_t> arg_vec = {args...};
     for (uint32_t i : arg_vec) {
       domain.insert_restriction(trial_space_[i], trial_function_spaces_[i]);
     }
@@ -340,7 +342,7 @@ public:
   {
     check_for_missing_nodal_gridfunc(domain.mesh_);
 
-    std::vector< uint32_t > arg_vec = {args ...};
+    std::vector<uint32_t> arg_vec = {args...};
     for (uint32_t i : arg_vec) {
       domain.insert_restriction(trial_space_[i], trial_function_spaces_[i]);
       check_interior_face_compatibility(domain.mesh_, trial_function_spaces_[i]);
@@ -410,16 +412,15 @@ public:
     output_L_ = 0.0;
 
     for (auto& integral : integrals_) {
-
       if (integral.DependsOn(which)) {
-        Domain & dom = integral.domain_;
+        Domain& dom = integral.domain_;
 
-        const serac::BlockElementRestriction & G_trial = dom.get_restriction(trial_function_spaces_[which]);
+        const serac::BlockElementRestriction& G_trial = dom.get_restriction(trial_function_spaces_[which]);
         input_E_buffer_[which].SetSize(int(G_trial.ESize()));
         input_E_[which].Update(input_E_buffer_[which], G_trial.bOffsets());
         G_trial.Gather(input_L_[which], input_E_[which]);
 
-        const serac::BlockElementRestriction & G_test = dom.get_restriction(test_function_space_);
+        const serac::BlockElementRestriction& G_test = dom.get_restriction(test_function_space_);
         output_E_buffer_.SetSize(int(G_test.ESize()));
         output_E_.Update(output_E_buffer_, G_test.bOffsets());
 
@@ -428,12 +429,10 @@ public:
         // scatter-add to compute residuals on the local processor
         G_test.ScatterAdd(output_E_, output_L_);
       }
-
     }
 
     // scatter-add to compute global residuals
     P_test_->MultTranspose(output_L_, output_T);
-
   }
 
   /**
@@ -455,7 +454,7 @@ public:
 
     // get the values for each local processor
     for (uint32_t i = 0; i < num_trial_spaces; i++) {
-    #if 0
+#if 0
       if (trial_function_spaces_[i].family == Family::L2) {
 
         // make a PGF on the fly
@@ -482,21 +481,21 @@ public:
         P_trial_[i]->Mult(*input_T[i], input_L_[i]);
 
       }
-    #else
+#else
       P_trial_[i]->Mult(*input_T[i], input_L_[i]);
-    #endif
+#endif
     }
 
     output_L_ = 0.0;
 
     for (auto& integral : integrals_) {
-      Domain & dom = integral.domain_;
+      Domain& dom = integral.domain_;
 
-      const serac::BlockElementRestriction & G_test = dom.get_restriction(test_function_space_);
+      const serac::BlockElementRestriction& G_test = dom.get_restriction(test_function_space_);
       mpi::out << "G_test.ESize() " << G_test.ESize() << std::endl;
 
       for (auto i : integral.active_trial_spaces_) {
-        const serac::BlockElementRestriction & G_trial = dom.get_restriction(trial_function_spaces_[i]);
+        const serac::BlockElementRestriction& G_trial = dom.get_restriction(trial_function_spaces_[i]);
         input_E_buffer_[i].SetSize(int(G_trial.ESize()));
         mpi::out << "G_trial.ESize() " << G_trial.ESize() << std::endl;
         input_E_[i].Update(input_E_buffer_[i], G_trial.bOffsets());
@@ -603,15 +602,15 @@ private:
     }
 
 #if 1
-    void initialize_sparsity_pattern() {
+    void initialize_sparsity_pattern()
+    {
+      using row_col = std::tuple<int, int>;
 
-      using row_col = std::tuple<int,int>;
-      
-      std::set< row_col > nonzero_entries;
+      std::set<row_col> nonzero_entries;
 
       for (auto& integral : form_.integrals_) {
         if (integral.DependsOn(which_argument)) {
-          Domain & dom = integral.domain_;
+          Domain&     dom     = integral.domain_;
           const auto& G_test  = dom.get_restriction(form_.test_function_space_);
           const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
           for (const auto& [geom, test_restriction] : G_test.restrictions) {
@@ -623,7 +622,6 @@ private:
 
             auto num_elements = static_cast<uint32_t>(test_restriction.num_elements);
             for (uint32_t e = 0; e < num_elements; e++) {
-
               for (uint32_t i = 0; i < test_restriction.nodes_per_elem; i++) {
                 auto test_dof = test_restriction.dof_info(e, i);
                 for (uint32_t j = 0; j < test_restriction.components; j++) {
@@ -634,7 +632,8 @@ private:
               for (uint32_t i = 0; i < trial_restriction.nodes_per_elem; i++) {
                 auto trial_dof = trial_restriction.dof_info(e, i);
                 for (uint32_t j = 0; j < trial_restriction.components; j++) {
-                  trial_vdofs[i * trial_restriction.components + j] = int(trial_restriction.GetVDof(trial_dof, j).index());
+                  trial_vdofs[i * trial_restriction.components + j] =
+                      int(trial_restriction.GetVDof(trial_dof, j).index());
                 }
               }
 
@@ -648,91 +647,86 @@ private:
         }
       }
 
-      uint64_t nnz = nonzero_entries.size();
-      int nrows = form_.output_L_.Size();
+      uint64_t nnz   = nonzero_entries.size();
+      int      nrows = form_.output_L_.Size();
 
       row_ptr.resize(uint32_t(nrows + 1));
       col_ind.resize(nnz);
 
-      int nz = 0;
+      int nz       = 0;
       int last_row = -1;
       for (auto [row, col] : nonzero_entries) {
         col_ind[uint32_t(nz)] = col;
-        for (int i = last_row+1; i <= row; i++) { row_ptr[uint32_t(i)] = nz; }
+        for (int i = last_row + 1; i <= row; i++) {
+          row_ptr[uint32_t(i)] = nz;
+        }
         last_row = row;
         nz++;
       }
-      for (int i = last_row+1; i <= nrows; i++) { row_ptr[uint32_t(i)] = nz; }
+      for (int i = last_row + 1; i <= nrows; i++) {
+        row_ptr[uint32_t(i)] = nz;
+      }
     };
 
-    uint64_t max_buffer_size() {
+    uint64_t max_buffer_size()
+    {
       uint64_t max_entries = 0;
-      for (auto & integral : form_.integrals_) {
+      for (auto& integral : form_.integrals_) {
         if (integral.DependsOn(which_argument)) {
-          Domain & dom = integral.domain_;
+          Domain&     dom     = integral.domain_;
           const auto& G_test  = dom.get_restriction(form_.test_function_space_);
           const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
           for (const auto& [geom, test_restriction] : G_test.restrictions) {
-            const auto& trial_restriction = G_trial.restrictions.at(geom);
-            uint64_t nrows_per_element = test_restriction.nodes_per_elem * test_restriction.components;
-            uint64_t ncols_per_element = trial_restriction.nodes_per_elem * trial_restriction.components;
-            uint64_t entries_per_element = nrows_per_element * ncols_per_element;
-            uint64_t entries_needed = test_restriction.num_elements * entries_per_element;
-            max_entries = std::max(entries_needed, max_entries);
+            const auto& trial_restriction   = G_trial.restrictions.at(geom);
+            uint64_t    nrows_per_element   = test_restriction.nodes_per_elem * test_restriction.components;
+            uint64_t    ncols_per_element   = trial_restriction.nodes_per_elem * trial_restriction.components;
+            uint64_t    entries_per_element = nrows_per_element * ncols_per_element;
+            uint64_t    entries_needed      = test_restriction.num_elements * entries_per_element;
+            max_entries                     = std::max(entries_needed, max_entries);
           }
         }
       }
       return max_entries;
     }
 
-    std::unique_ptr<mfem::HypreParMatrix> assemble() {
-
+    std::unique_ptr<mfem::HypreParMatrix> assemble()
+    {
       if (row_ptr.empty()) {
         initialize_sparsity_pattern();
       }
 
-      // since we own the storage for row_ptr, col_ind, values, 
+      // since we own the storage for row_ptr, col_ind, values,
       // we ask mfem to not deallocate those pointers in the SparseMatrix dtor
       constexpr bool sparse_matrix_frees_graph_ptrs = false;
       constexpr bool sparse_matrix_frees_values_ptr = false;
-      constexpr bool col_ind_is_sorted = true;
+      constexpr bool col_ind_is_sorted              = true;
 
       // note: we make a copy of col_ind since mfem::HypreParMatrix
       //       changes it in the constructor
       std::vector<int> col_ind_copy = col_ind;
 
-      int nnz = row_ptr.back();
+      int                 nnz = row_ptr.back();
       std::vector<double> values(uint32_t(nnz), 0.0);
-      auto A_local = mfem::SparseMatrix(
-        row_ptr.data(), 
-        col_ind_copy.data(), 
-        values.data(), 
-        form_.output_L_.Size(),
-        form_.input_L_[which_argument].Size(), 
-        sparse_matrix_frees_graph_ptrs,
-        sparse_matrix_frees_values_ptr, 
-        col_ind_is_sorted
-      );
+      auto A_local = mfem::SparseMatrix(row_ptr.data(), col_ind_copy.data(), values.data(), form_.output_L_.Size(),
+                                        form_.input_L_[which_argument].Size(), sparse_matrix_frees_graph_ptrs,
+                                        sparse_matrix_frees_values_ptr, col_ind_is_sorted);
 
       std::vector<double> K_elem_buffer(max_buffer_size());
 
-      for (auto & integral : form_.integrals_) {
-
+      for (auto& integral : form_.integrals_) {
         // if this integral's derivative isn't identically zero
         if (integral.functional_to_integral_index_.count(which_argument) > 0) {
-          Domain & dom = integral.domain_;
+          Domain& dom = integral.domain_;
 
-          uint32_t id = integral.functional_to_integral_index_.at(which_argument);
+          uint32_t    id      = integral.functional_to_integral_index_.at(which_argument);
           const auto& G_test  = dom.get_restriction(form_.test_function_space_);
           const auto& G_trial = dom.get_restriction(form_.trial_function_spaces_[which_argument]);
           for (const auto& [geom, calculate_element_matrices_func] : integral.element_gradient_[id]) {
-
-            const auto& test_restriction = G_test.restrictions.at(geom);
+            const auto& test_restriction  = G_test.restrictions.at(geom);
             const auto& trial_restriction = G_trial.restrictions.at(geom);
 
             // prepare a buffer to hold the element matrices
-            CPUArrayView<double, 3> K_e(K_elem_buffer.data(), 
-                                        test_restriction.num_elements,
+            CPUArrayView<double, 3> K_e(K_elem_buffer.data(), test_restriction.num_elements,
                                         trial_restriction.nodes_per_elem * trial_restriction.components,
                                         test_restriction.nodes_per_elem * test_restriction.components);
             detail::zero_out(K_e);
@@ -740,7 +734,7 @@ private:
             // perform the actual calculations
             calculate_element_matrices_func(K_e);
 
-            const std::vector<int> & element_ids = integral.domain_.get(geom);
+            const std::vector<int>& element_ids = integral.domain_.get(geom);
 
             uint32_t rows_per_elem = uint32_t(test_restriction.nodes_per_elem * test_restriction.components);
             uint32_t cols_per_elem = uint32_t(trial_restriction.nodes_per_elem * trial_restriction.components);
@@ -761,15 +755,15 @@ private:
                 }
               }
             }
-
           }
         }
       }
 
       auto* R = form_.test_space_->Dof_TrueDof_Matrix();
 
-      auto* A_hypre = new mfem::HypreParMatrix(test_space_->GetComm(), test_space_->GlobalVSize(), trial_space_->GlobalVSize(),
-                                               test_space_->GetDofOffsets(), trial_space_->GetDofOffsets(), &A_local);
+      auto* A_hypre =
+          new mfem::HypreParMatrix(test_space_->GetComm(), test_space_->GlobalVSize(), trial_space_->GlobalVSize(),
+                                   test_space_->GetDofOffsets(), trial_space_->GetDofOffsets(), &A_local);
 
       auto* P = trial_space_->Dof_TrueDof_Matrix();
 
@@ -803,8 +797,8 @@ private:
       std::map<mfem::Geometry::Type, ExecArray<double, 3, exec>> element_gradients[Domain::num_types];
 
       for (auto& integral : form_.integrals_) {
-        auto& K_elem             = element_gradients[integral.domain_.type_];
-        auto& test_restrictions  = form_.G_test_[integral.domain_.type_].restrictions;
+        auto& K_elem = element_gradients[integral.domain_.type_];
+        auto& test_restrictions = form_.G_test_[integral.domain_.type_].restrictions;
         auto& trial_restrictions = form_.G_trial_[integral.domain_.type_][which_argument].restrictions;
 
         if (K_elem.empty()) {
@@ -823,8 +817,8 @@ private:
       }
 
       for (auto type : {Domain::Type::Elements, Domain::Type::BoundaryElements}) {
-        auto& K_elem             = element_gradients[type];
-        auto& test_restrictions  = form_.G_test_[type].restrictions;
+        auto& K_elem = element_gradients[type];
+        auto& test_restrictions = form_.G_test_[type].restrictions;
         auto& trial_restrictions = form_.G_trial_[type][which_argument].restrictions;
 
         if (!K_elem.empty()) {
@@ -856,7 +850,6 @@ private:
             }
           }
         }
-
       }
 
       // Copy the column indices to an auxilliary array as MFEM can mutate these during HypreParMatrix construction
@@ -881,7 +874,7 @@ private:
 
       return K;
     };
-  #endif
+#endif
 
     friend auto assemble(Gradient& g) { return g.assemble(); }
 
@@ -918,10 +911,10 @@ private:
   const mfem::ParFiniteElementSpace* test_space_;
 
   /// @brief Manages DOFs for the trial space
-  std::array< const mfem::ParFiniteElementSpace*, num_trial_spaces> trial_space_;
+  std::array<const mfem::ParFiniteElementSpace*, num_trial_spaces> trial_space_;
 
-  std::array< FunctionSpace, num_trial_spaces > trial_function_spaces_;
-  FunctionSpace test_function_space_;
+  std::array<FunctionSpace, num_trial_spaces> trial_function_spaces_;
+  FunctionSpace                               test_function_space_;
 
   /**
    * @brief Operator that converts true (global) DOF values to local (current rank) DOF values
@@ -932,12 +925,12 @@ private:
   /// @brief The input set of local DOF values (i.e., on the current rank)
   mutable mfem::Vector input_L_[num_trial_spaces];
 
-  mutable std::vector<mfem::Vector> input_E_buffer_;
+  mutable std::vector<mfem::Vector>      input_E_buffer_;
   mutable std::vector<mfem::BlockVector> input_E_;
 
   mutable std::vector<Integral> integrals_;
 
-  mutable mfem::Vector output_E_buffer_;
+  mutable mfem::Vector      output_E_buffer_;
   mutable mfem::BlockVector output_E_;
 
   /// @brief The output set of local DOF values (i.e., on the current rank)
@@ -949,10 +942,9 @@ private:
   mutable mfem::Vector output_T_;
 
   /// @brief The objects representing the gradients w.r.t. each input argument of the Functional
-  mutable std::vector< Gradient > grad_;
+  mutable std::vector<Gradient> grad_;
 
   const mfem::MemoryType mem_type;
-
 };
 
 }  // namespace serac

@@ -232,30 +232,25 @@ struct QOI {
   static constexpr Family family     = Family::QOI;  ///< the family of the basis functions
 };
 
-
 /**
  * @brief a small POD class for tracking function space metadata
  */
 struct FunctionSpace {
-  Family family; ///< either H1, Hcurl, L2
-  int order; ///< polynomial order
-  int components; ///< how many values are stored at each node
+  Family family;      ///< either H1, Hcurl, L2
+  int    order;       ///< polynomial order
+  int    components;  ///< how many values are stored at each node
 
   /**
    * @brief return the data contained in this struct as a tuple
    * @note the main point of this conversion is to take advantage of std::tuple's automatic
    *       lexicographic-ordering comparison operators
    */
-  std::tuple<int,int,int> as_tuple() const {
-    return std::tuple<int,int,int>(int(family), order, components);
-  }
+  std::tuple<int, int, int> as_tuple() const { return std::tuple<int, int, int>(int(family), order, components); }
 
   /**
    * @brief defines an ordering over FunctionSpaces, to enable use in containers like std::map
    */
-  bool operator<(FunctionSpace other) const {
-    return this->as_tuple() < other.as_tuple();
-  }
+  bool operator<(FunctionSpace other) const { return this->as_tuple() < other.as_tuple(); }
 };
 
 /**

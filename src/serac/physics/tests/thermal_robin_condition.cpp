@@ -40,8 +40,8 @@ void functional_thermal_test_robin_condition()
 
   std::string mesh_tag{"mesh"};
 
-  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto  mesh  = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // _solver_params_start
   serac::NonlinearSolverOptions nonlinear_options{.nonlin_solver  = NonlinearSolver::Newton,
@@ -60,7 +60,7 @@ void functional_thermal_test_robin_condition()
       1.0   // isotropic thermal conductivity
   };
 
-  Domain whole_domain = EntireDomain(pmesh);
+  Domain whole_domain   = EntireDomain(pmesh);
   Domain whole_boundary = EntireBoundary(pmesh);
 
   thermal_solver.setMaterial(mat, whole_domain);

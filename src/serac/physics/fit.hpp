@@ -17,7 +17,7 @@ namespace detail {
 
 /// @overload
 template <int dim, typename signature, int... i, typename func, typename... T>
-FiniteElementState fit(std::integer_sequence<int, i...>, func f, mfem::ParMesh & pmesh, const T&... solution_fields)
+FiniteElementState fit(std::integer_sequence<int, i...>, func f, mfem::ParMesh& pmesh, const T&... solution_fields)
 {
   // signature looks like return_type(arg0_type, arg1_type);
   // so this unpacks the return type
@@ -27,7 +27,7 @@ FiniteElementState fit(std::integer_sequence<int, i...>, func f, mfem::ParMesh &
   fitted_field = 0.0;
 
   // mass term
-  Domain whole_domain = EntireDomain(pmesh);
+  Domain                                        whole_domain = EntireDomain(pmesh);
   serac::Functional<output_space(output_space)> phi_phi(&fitted_field.space(), {&fitted_field.space()});
   phi_phi.AddDomainIntegral(
       Dimension<dim>{}, DependsOn<0>{},
@@ -64,7 +64,7 @@ FiniteElementState fit(std::integer_sequence<int, i...>, func f, mfem::ParMesh &
  * @note: mesh is passed by non-const ref because mfem mutates the mesh when creating ParGridFunctions
  */
 template <int dim, typename signature, int... n, typename func, typename... T>
-FiniteElementState fit(func f, mfem::ParMesh & pmesh, const T&... solution_fields)
+FiniteElementState fit(func f, mfem::ParMesh& pmesh, const T&... solution_fields)
 {
   auto iseq = std::make_integer_sequence<int, sizeof...(T)>{};
   return detail::fit<dim, signature>(iseq, f, pmesh, solution_fields...);

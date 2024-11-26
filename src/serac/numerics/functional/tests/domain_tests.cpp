@@ -21,7 +21,6 @@ mfem::Mesh import_mesh(std::string meshfile)
   return mesh;
 }
 
-
 TEST(domain, of_vertices)
 {
   {

@@ -117,8 +117,8 @@ TEST(LiquidCrystalElastomer, Brighenti)
                                     transition_temperature, Nb2);
 
   LiquidCrystElastomerBrighenti::State initial_state{};
-  auto                                 qdata = solid_solver.createQuadratureDataBuffer(initial_state);
-  Domain whole_mesh = EntireDomain(pmesh);
+  auto                                 qdata      = solid_solver.createQuadratureDataBuffer(initial_state);
+  Domain                               whole_mesh = EntireDomain(pmesh);
   solid_solver.setMaterial(DependsOn<TEMPERATURE_INDEX, GAMMA_INDEX>{}, mat, whole_mesh, qdata);
 
   // prescribe symmetry conditions
@@ -134,16 +134,14 @@ TEST(LiquidCrystalElastomer, Brighenti)
   double maxLoadVal = 4 * 1.3e0 / lx / lz;
   double loadVal    = iniLoadVal + 0.0 * maxLoadVal;
 
-  Domain front_face = Domain::ofBoundaryElements(pmesh, [ly](std::vector< vec3 > vertices, int /* attr */){
-    return average(vertices)[1] > 0.99 * ly;
-  });
+  Domain front_face = Domain::ofBoundaryElements(
+      pmesh, [ly](std::vector<vec3> vertices, int /* attr */) { return average(vertices)[1] > 0.99 * ly; });
 
   solid_solver.setTraction(
-    [&loadVal](auto /*x*/, auto /*n*/, auto /*t*/) {
-      return tensor<double, 3>{0, loadVal, 0};
-    },
-    front_face
-  );
+      [&loadVal](auto /*x*/, auto /*n*/, auto /*t*/) {
+        return tensor<double, 3>{0, loadVal, 0};
+      },
+      front_face);
 
   solid_solver.setDisplacement(ini_displacement);
 
@@ -164,15 +162,11 @@ TEST(LiquidCrystalElastomer, Brighenti)
         auto n           = normalize(cross(dX_dxi));
         return dot(u, n);
       },
-      front_face
-  );
+      front_face);
 
   Functional<double(H1<p, dim>)> area({&solid_solver.displacement().space()});
   area.AddSurfaceIntegral(
-      DependsOn<>{},
-      [=](double /*t*/, auto /*position*/) { return 1.0; },
-      front_face
-  );
+      DependsOn<>{}, [=](double /*t*/, auto /*position*/) { return 1.0; }, front_face);
 
   double t            = 0.0;
   double initial_area = area(t, solid_solver.displacement());

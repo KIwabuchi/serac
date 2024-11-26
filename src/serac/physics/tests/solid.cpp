@@ -45,7 +45,7 @@ void functional_solid_test_static_J2()
 
   std::string mesh_tag{"mesh"};
 
-  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // _solver_params_start
   serac::LinearSolverOptions linear_options{.linear_solver = LinearSolver::SuperLU};
@@ -136,7 +136,7 @@ void functional_solid_spatial_essential_bc()
 
   std::string mesh_tag{"mesh"};
 
-  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Construct a functional-based solid mechanics solver
   SolidMechanics<p, dim> solid_solver(solid_mechanics::default_nonlinear_options,
@@ -144,7 +144,7 @@ void functional_solid_spatial_essential_bc()
                                       solid_mechanics::default_quasistatic_options, "solid_mechanics", mesh_tag);
 
   solid_mechanics::LinearIsotropic mat{1.0, 1.0, 1.0};
-  Domain whole_domain = EntireDomain(pmesh);
+  Domain                           whole_domain = EntireDomain(pmesh);
   solid_solver.setMaterial(mat, whole_domain);
 
   // Set up
@@ -303,7 +303,7 @@ void functional_parameterized_solid_test(double expected_disp_norm)
   solid_solver.setParameter(0, user_defined_bulk_modulus);
   solid_solver.setParameter(1, user_defined_shear_modulus);
 
-  Domain whole_domain = EntireDomain(pmesh);
+  Domain whole_domain   = EntireDomain(pmesh);
   Domain whole_boundary = EntireBoundary(pmesh);
 
   solid_mechanics::ParameterizedLinearIsotropicSolid mat{1.0, 0.0, 0.0};
@@ -340,9 +340,12 @@ void functional_parameterized_solid_test(double expected_disp_norm)
 
   // add some nonexistent body forces / tractions to check that
   // these parameterized versions compile and run without error
-  solid_solver.addBodyForce(DependsOn<0>{}, [](const auto& x, double /*t*/, auto /* bulk */) { return x * 0.0; }, whole_domain);
-  solid_solver.addBodyForce(DependsOn<1>{}, ParameterizedBodyForce{[](const auto& x) { return 0.0 * x; }}, whole_domain);
-  solid_solver.setTraction(DependsOn<1>{}, [](const auto& x, auto...) { return 0 * x; }, whole_boundary);
+  solid_solver.addBodyForce(
+      DependsOn<0>{}, [](const auto& x, double /*t*/, auto /* bulk */) { return x * 0.0; }, whole_domain);
+  solid_solver.addBodyForce(DependsOn<1>{}, ParameterizedBodyForce{[](const auto& x) { return 0.0 * x; }},
+                            whole_domain);
+  solid_solver.setTraction(
+      DependsOn<1>{}, [](const auto& x, auto...) { return 0 * x; }, whole_boundary);
 
   // Finalize the data structures
   solid_solver.completeSetup();

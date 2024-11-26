@@ -53,15 +53,15 @@ struct QFunctionArgument<H1<p, c>, Dimension<dim>> {
 };
 
 /// @overload
-template <int p, int dim >
-struct QFunctionArgument<L2<p, 1>, Dimension<dim> > {
+template <int p, int dim>
+struct QFunctionArgument<L2<p, 1>, Dimension<dim>> {
   using type = serac::tuple<double, double>;  ///< what will be passed to the q-function
 };
 
 /// @overload
-template <int c, int p, int dim >
-struct QFunctionArgument<L2<p, c>, Dimension<dim> > {
-  using type = serac::tuple< tensor<double, c> , tensor<double,c> >;  ///< what will be passed to the q-function
+template <int c, int p, int dim>
+struct QFunctionArgument<L2<p, c>, Dimension<dim>> {
+  using type = serac::tuple<tensor<double, c>, tensor<double, c>>;  ///< what will be passed to the q-function
 };
 
 /// @overload
@@ -167,11 +167,12 @@ void evaluation_kernel_impl(trial_element_type trial_elements, test_element, dou
   [[maybe_unused]] tuple u = {
       reinterpret_cast<const typename decltype(type<indices>(trial_elements))::dof_type_if*>(inputs[indices])...};
 
-  ((mpi::out << "sizeof(dof_type_if) / sizeof(double): " << sizeof(decltype(get<indices>(u)[0])) / sizeof(double) << std::endl), ...);
+  ((mpi::out << "sizeof(dof_type_if) / sizeof(double): " << sizeof(decltype(get<indices>(u)[0])) / sizeof(double)
+             << std::endl),
+   ...);
 
   // for each element in the domain
   for (uint32_t e = 0; e < num_elements; e++) {
-
     mpi::out << "e: " << e << " / " << num_elements << std::endl;
 
     // load the jacobians and positions for each quadrature point in this element
@@ -261,10 +262,10 @@ void action_of_gradient_kernel(const double* dU, double* dR, derivatives_type* q
 
   // mfem provides this information in 1D arrays, so we reshape it
   // into strided multidimensional arrays before using
-  constexpr bool is_QOI   = (test::family == Family::QOI);
-  constexpr int                                   nqp = num_quadrature_points(geom, Q);
-  auto                                            du  = reinterpret_cast<const typename trial_element::dof_type_if*>(dU);
-  auto                                            dr  = reinterpret_cast<typename test_element::dof_type_if*>(dR);
+  constexpr bool                                  is_QOI = (test::family == Family::QOI);
+  constexpr int                                   nqp    = num_quadrature_points(geom, Q);
+  auto                                            du = reinterpret_cast<const typename trial_element::dof_type_if*>(dU);
+  auto                                            dr = reinterpret_cast<typename test_element::dof_type_if*>(dR);
   static constexpr TensorProductQuadratureRule<Q> rule{};
 
   // for each element in the domain
@@ -302,9 +303,9 @@ void action_of_gradient_kernel(const double* dU, double* dR, derivatives_type* q
  * @param[in] num_elements The number of elements in the mesh
  */
 template <mfem::Geometry::Type g, typename test, typename trial, int Q, typename derivatives_type>
-void element_gradient_kernel([[maybe_unused]] ExecArrayView<double, 3, ExecutionSpace::CPU> dK, 
-                             [[maybe_unused]] derivatives_type* qf_derivatives,
-                             [[maybe_unused]] std::size_t num_elements)
+void element_gradient_kernel([[maybe_unused]] ExecArrayView<double, 3, ExecutionSpace::CPU> dK,
+                             [[maybe_unused]] derivatives_type*                             qf_derivatives,
+                             [[maybe_unused]] std::size_t                                   num_elements)
 {
   using test_element  = finite_element<g, test>;
   using trial_element = finite_element<g, trial>;
@@ -340,7 +341,6 @@ void element_gradient_kernel([[maybe_unused]] ExecArrayView<double, 3, Execution
         test_element::integrate(source_and_flux, rule, output_ptr + J, trial_element::ndof);
       }
     }
-
   }
 }
 
@@ -379,6 +379,6 @@ std::function<void(ExecArrayView<double, 3, ExecutionSpace::CPU>)> element_gradi
   };
 }
 
-}  // namespace boundary_integral
+}  // namespace interior_face_integral
 
 }  // namespace serac

@@ -211,8 +211,8 @@ void qoi_test(mfem::ParMesh& mesh, H1<p> trial, Dimension<dim>, WhichTest which)
   mfem::HypreParVector  V    = *tmp2;
   V_gf.GetTrueDofs(V);
 
-  Domain domain = EntireDomain(mesh); 
-  Domain boundary = EntireBoundary(mesh); 
+  Domain domain   = EntireDomain(mesh);
+  Domain boundary = EntireBoundary(mesh);
 
   switch (which) {
     case WhichTest::Measure: {
@@ -318,8 +318,8 @@ void qoi_test(mfem::ParMesh& mesh, H1<p1> trial1, H1<p2> trial2, Dimension<dim>)
   mfem::HypreParVector U2 = *tmp;
   U2_gf.GetTrueDofs(U2);
 
-  Domain domain = EntireDomain(mesh); 
-  Domain boundary = EntireBoundary(mesh); 
+  Domain domain   = EntireDomain(mesh);
+  Domain boundary = EntireBoundary(mesh);
 
   Functional<double(trial_space1, trial_space2)> f({fespace1.get(), fespace2.get()});
   f.AddDomainIntegral(Dimension<dim>{}, DependsOn<0, 1>{}, FourArgSineIntegrator{}, domain);
@@ -457,7 +457,7 @@ TEST(QoI, UsingL2)
   // this tests a fix for the QoI constructor segfaulting when using L2 spaces
   Functional<double(trial_space_0, trial_space_1)> f({fespace_0.get(), fespace_1.get()});
 
-  Domain whole_mesh = EntireDomain(mesh);
+  Domain whole_mesh     = EntireDomain(mesh);
   Domain whole_boundary = EntireBoundary(mesh);
 
   f.AddVolumeIntegral(DependsOn<1>{}, TrivialVariadicIntegrator{}, whole_mesh);

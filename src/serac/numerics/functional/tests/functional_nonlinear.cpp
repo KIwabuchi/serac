@@ -142,8 +142,8 @@ void functional_test(mfem::ParMesh& mesh, H1<p, dim> test, H1<p, dim> trial, Dim
       [=](double /*t*/, auto position, auto displacement) {
         auto [X, dX_dxi] = position;
         std::cout << X << " " << dX_dxi << std::endl;
-        auto u           = get<0>(displacement);
-        auto n           = normalize(cross(dX_dxi));
+        auto u = get<0>(displacement);
+        auto n = normalize(cross(dX_dxi));
         return (X[0] + X[1] - cos(u[0])) * n;
       },
       bdr);

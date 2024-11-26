@@ -25,7 +25,6 @@ struct BlockElementRestriction;
  * This region can be an entire mesh or some subset of its elements
  */
 struct Domain {
-
   /// @brief enum describing what kind of elements are included in a Domain
   enum Type
   {
@@ -66,7 +65,7 @@ struct Domain {
   std::vector<int> mfem_hex_ids_;
   /// @endcond
 
-  std::map< FunctionSpace, BlockElementRestriction > restriction_operators;
+  std::map<FunctionSpace, BlockElementRestriction> restriction_operators;
 
   /**
    * @brief empty Domain constructor, with connectivity info to be populated later
@@ -156,28 +155,37 @@ struct Domain {
   }
 
   /**
-   * @brief returns how many elements of any type belong to this domain 
+   * @brief returns how many elements of any type belong to this domain
    */
-  int total_elements() const {
-    return int(vertex_ids_.size() + edge_ids_.size() + tri_ids_.size() + quad_ids_.size() + tet_ids_.size() + hex_ids_.size());
+  int total_elements() const
+  {
+    return int(vertex_ids_.size() + edge_ids_.size() + tri_ids_.size() + quad_ids_.size() + tet_ids_.size() +
+               hex_ids_.size());
   }
 
   /**
-   * @brief returns an array of the prefix sum of element counts belonging to this domain. 
+   * @brief returns an array of the prefix sum of element counts belonging to this domain.
    *        Primarily intended to be used in mfem::BlockVector::Update(double * data, mfem::Array<int> bOffsets);
    */
-  mfem::Array<int> bOffsets() const {
+  mfem::Array<int> bOffsets() const
+  {
     mfem::Array<int> offsets(mfem::Geometry::NUM_GEOMETRIES + 1);
 
-    int total = 0;
-    offsets[mfem::Geometry::POINT] = total;       total += vertex_ids_.size();
-    offsets[mfem::Geometry::SEGMENT] = total;     total += edge_ids_.size();
-    offsets[mfem::Geometry::TRIANGLE] = total;    total += tri_ids_.size();
-    offsets[mfem::Geometry::SQUARE] = total;      total += quad_ids_.size();
-    offsets[mfem::Geometry::TETRAHEDRON] = total; total += tet_ids_.size();
-    offsets[mfem::Geometry::CUBE] = total;        total += hex_ids_.size();
-    offsets[mfem::Geometry::PRISM] = total;
-    offsets[mfem::Geometry::PYRAMID] = total;
+    int total                      = 0;
+    offsets[mfem::Geometry::POINT] = total;
+    total += vertex_ids_.size();
+    offsets[mfem::Geometry::SEGMENT] = total;
+    total += edge_ids_.size();
+    offsets[mfem::Geometry::TRIANGLE] = total;
+    total += tri_ids_.size();
+    offsets[mfem::Geometry::SQUARE] = total;
+    total += quad_ids_.size();
+    offsets[mfem::Geometry::TETRAHEDRON] = total;
+    total += tet_ids_.size();
+    offsets[mfem::Geometry::CUBE] = total;
+    total += hex_ids_.size();
+    offsets[mfem::Geometry::PRISM]          = total;
+    offsets[mfem::Geometry::PYRAMID]        = total;
     offsets[mfem::Geometry::NUM_GEOMETRIES] = total;
 
     return offsets;
@@ -187,11 +195,10 @@ struct Domain {
   mfem::Array<int> dof_list(const fes_t* fes) const;
 
   /// @brief TODO
-  void insert_restriction(const fes_t * fes, FunctionSpace space);
+  void insert_restriction(const fes_t* fes, FunctionSpace space);
 
   /// @brief TODO
-  const BlockElementRestriction & get_restriction(FunctionSpace space);
-
+  const BlockElementRestriction& get_restriction(FunctionSpace space);
 };
 
 /// @brief constructs a domain from all the elements in a mesh

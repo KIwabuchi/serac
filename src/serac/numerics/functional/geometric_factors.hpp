@@ -14,7 +14,6 @@ namespace serac {
  *       calculations on boundary elements and on simplex elements
  */
 struct GeometricFactors {
-
   /// @brief default ctor, leaving this object uninitialized
   GeometricFactors(){};
 

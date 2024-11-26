@@ -453,7 +453,7 @@ public:
    * and @a spatial_dim template parameter
    */
   template <int dim, int... args, typename lambda, typename qpt_data_type = Nothing>
-  void AddDomainIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, Domain & domain,
+  void AddDomainIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, Domain& domain,
                          std::shared_ptr<QuadratureData<qpt_data_type>> qdata = NoQData)
   {
     if constexpr (std::is_same_v<qpt_data_type, Nothing>) {
@@ -512,7 +512,7 @@ public:
    * and @a spatial_dim template parameter
    */
   template <int dim, int... args, typename lambda>
-  void AddBoundaryIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, Domain & domain)
+  void AddBoundaryIntegral(Dimension<dim>, DependsOn<args...>, const lambda& integrand, Domain& domain)
   {
     functional_->AddBoundaryIntegral(Dimension<dim>{}, DependsOn<0, (args + 1)...>{},
                                      ShapeAwareBoundaryIntegrandWrapper<lambda, dim, args...>(integrand), domain);

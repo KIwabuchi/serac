@@ -35,7 +35,6 @@ void compute_geometric_factors(mfem::Vector& positions_q, mfem::Vector& jacobian
 
   // for each element in the domain
   for (uint32_t e = 0; e < num_elements; e++) {
-
     // load the positions for the nodes in this element
     auto X_e = X[e];
 
@@ -62,12 +61,12 @@ void compute_geometric_factors(mfem::Vector& positions_q, mfem::Vector& jacobian
 
 GeometricFactors::GeometricFactors(const Domain& domain, int q, mfem::Geometry::Type geom)
 {
-  //const mfem::ParGridFunction* nodes = static_cast< const mfem::ParGridFunction * >(domain.mesh_.GetNodes());
-  // mfem::ParFiniteElementSpace * pfes = nodes->ParFESpace();
-  const mfem::GridFunction* nodes = domain.mesh_.GetNodes();
-  const mfem::FiniteElementSpace * fes = nodes->FESpace();
+  // const mfem::ParGridFunction* nodes = static_cast< const mfem::ParGridFunction * >(domain.mesh_.GetNodes());
+  //  mfem::ParFiniteElementSpace * pfes = nodes->ParFESpace();
+  const mfem::GridFunction*       nodes = domain.mesh_.GetNodes();
+  const mfem::FiniteElementSpace* fes   = nodes->FESpace();
 
-  const std::vector<int> & element_ids = domain.get_mfem_ids(geom);
+  const std::vector<int>& element_ids = domain.get_mfem_ids(geom);
 
   auto         restriction = serac::ElementRestriction(fes, geom, element_ids);
   mfem::Vector X_e(int(restriction.ESize()));
@@ -85,10 +84,11 @@ GeometricFactors::GeometricFactors(const Domain& domain, int q, mfem::Geometry::
   X = mfem::Vector(int(num_elements) * qpts_per_elem * spatial_dim);
   J = mfem::Vector(int(num_elements) * qpts_per_elem * spatial_dim * geometry_dim);
 
-#define DISPATCH_KERNEL(GEOM, P, Q, BDR)  \
-  if (geom == mfem::Geometry::GEOM && p == P && q == Q && (spatial_dim - geometry_dim) == BDR) { \
-    compute_geometric_factors<Q, mfem::Geometry::GEOM, H1<P, dimension_of(mfem::Geometry::GEOM) + BDR> >(X, J, X_e, element_ids); \
-    return; \
+#define DISPATCH_KERNEL(GEOM, P, Q, BDR)                                                                               \
+  if (geom == mfem::Geometry::GEOM && p == P && q == Q && (spatial_dim - geometry_dim) == BDR) {                       \
+    compute_geometric_factors<Q, mfem::Geometry::GEOM, H1<P, dimension_of(mfem::Geometry::GEOM) + BDR> >(X, J, X_e,    \
+                                                                                                         element_ids); \
+    return;                                                                                                            \
   }
 
   DISPATCH_KERNEL(SEGMENT, 1, 1, 1);
@@ -106,7 +106,7 @@ GeometricFactors::GeometricFactors(const Domain& domain, int q, mfem::Geometry::
   DISPATCH_KERNEL(SEGMENT, 3, 3, 1);
   DISPATCH_KERNEL(SEGMENT, 3, 4, 1);
 
-///////////////////////////////////////
+  ///////////////////////////////////////
 
   DISPATCH_KERNEL(TRIANGLE, 1, 1, 0);
   DISPATCH_KERNEL(TRIANGLE, 1, 2, 0);
@@ -138,7 +138,7 @@ GeometricFactors::GeometricFactors(const Domain& domain, int q, mfem::Geometry::
   DISPATCH_KERNEL(TRIANGLE, 3, 3, 1);
   DISPATCH_KERNEL(TRIANGLE, 3, 4, 1);
 
-///////////////////////////////////////
+  ///////////////////////////////////////
 
   DISPATCH_KERNEL(SQUARE, 1, 1, 0);
   DISPATCH_KERNEL(SQUARE, 1, 2, 0);
@@ -170,7 +170,7 @@ GeometricFactors::GeometricFactors(const Domain& domain, int q, mfem::Geometry::
   DISPATCH_KERNEL(SQUARE, 3, 3, 1);
   DISPATCH_KERNEL(SQUARE, 3, 4, 1);
 
-///////////////////////////////////////
+  ///////////////////////////////////////
 
   DISPATCH_KERNEL(TETRAHEDRON, 1, 1, 0);
   DISPATCH_KERNEL(TETRAHEDRON, 1, 2, 0);
@@ -187,7 +187,7 @@ GeometricFactors::GeometricFactors(const Domain& domain, int q, mfem::Geometry::
   DISPATCH_KERNEL(TETRAHEDRON, 3, 3, 0);
   DISPATCH_KERNEL(TETRAHEDRON, 3, 4, 0);
 
-///////////////////////////////////////
+  ///////////////////////////////////////
 
   DISPATCH_KERNEL(CUBE, 1, 1, 0);
   DISPATCH_KERNEL(CUBE, 1, 2, 0);

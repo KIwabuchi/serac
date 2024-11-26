@@ -153,7 +153,7 @@ struct ElementRestriction {
   ElementRestriction() {}
 
   /// ctor from a list of elements (e.g. from a serac::Domain)
-  ElementRestriction(const fes_t* fes, mfem::Geometry::Type elem_geom, const std::vector<int> & domain_elements);
+  ElementRestriction(const fes_t* fes, mfem::Geometry::Type elem_geom, const std::vector<int>& domain_elements);
 
   /// the size of the "E-vector" associated with this restriction operator
   uint64_t ESize() const;
@@ -196,7 +196,7 @@ struct ElementRestriction {
   /// the number of nodes in each element
   uint64_t nodes_per_elem;
 
-  /// an array mapping from domain element ids [0, num_elements) to 
+  /// an array mapping from domain element ids [0, num_elements) to
   std::vector<int> element_ids;
 
   /// a 2D array (num_elements-by-nodes_per_elem) holding the dof info extracted from the finite element space
@@ -216,7 +216,7 @@ struct BlockElementRestriction {
   BlockElementRestriction() {}
 
   /// create a BlockElementRestriction for the elements in a given domain
-  BlockElementRestriction(const fes_t* fes, const Domain & domain);
+  BlockElementRestriction(const fes_t* fes, const Domain& domain);
 
   /// the size of the "E-vector" associated with this restriction operator
   uint64_t ESize() const;
@@ -254,7 +254,9 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementDofs(const serac::fes_t* 
  * @param geom the kind of element geometry
  * @param type whether the face is of interior or boundary type
  */
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom, FaceType type);
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
+                                                         FaceType type);
 
 /// @overload
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom, const std::vector<int> & mfem_face_ids);
+axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
+                                                         const std::vector<int>& mfem_face_ids);

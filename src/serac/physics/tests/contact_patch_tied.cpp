@@ -41,7 +41,7 @@ TEST_P(ContactPatchTied, patch)
   // Construct the appropriate dimension mesh and give it to the data store
   std::string filename = SERAC_REPO_DIR "/data/meshes/twohex_for_contact.mesh";
 
-  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), 3, 0);
+  auto  mesh  = mesh::refineAndDistribute(buildMeshFromFile(filename), 3, 0);
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "patch_mesh");
 
 // TODO: investigate performance with Petsc
@@ -79,7 +79,7 @@ TEST_P(ContactPatchTied, patch)
   double                      K = 10.0;
   double                      G = 0.25;
   solid_mechanics::NeoHookean mat{1.0, K, G};
-  Domain material_block = EntireDomain(pmesh);
+  Domain                      material_block = EntireDomain(pmesh);
   solid_solver.setMaterial(mat, material_block);
 
   // Define the function for the initial displacement and boundary condition

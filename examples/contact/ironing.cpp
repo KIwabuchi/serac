@@ -35,8 +35,8 @@ int main(int argc, char* argv[])
   // Construct the appropriate dimension mesh and give it to the data store
   std::string filename = SERAC_REPO_DIR "/data/meshes/ironing.mesh";
 
-  auto mesh = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 2, 0);
-  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), "ironing_mesh");
+  auto  mesh  = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 2, 0);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "ironing_mesh");
 
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};
 
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
   solid_solver.setParameter(1, G_field);
 
   serac::solid_mechanics::ParameterizedNeoHookeanSolid mat{1.0, 0.0, 0.0};
-  serac::Domain whole_mesh = serac::EntireDomain(pmesh);
+  serac::Domain                                        whole_mesh = serac::EntireDomain(pmesh);
   solid_solver.setMaterial(serac::DependsOn<0, 1>{}, mat, whole_mesh);
 
   // Pass the BC information to the solver object

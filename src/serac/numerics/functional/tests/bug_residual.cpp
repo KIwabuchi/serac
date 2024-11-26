@@ -32,7 +32,7 @@ int num_procs, myid;
 // this is an attempt to reproduce an error message described by Mike
 void test()
 {
-  constexpr int p = 1;
+  constexpr int p   = 1;
   constexpr int dim = 2;
 
 #ifdef L2_SCALAR_SPACE
@@ -43,51 +43,48 @@ void test()
   using vector_space = serac::H1<p, dim>;
 
   std::string meshfile = SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh";
-  auto pmesh = mesh::refineAndDistribute(buildMeshFromFile(meshfile), 1);
+  auto        pmesh    = mesh::refineAndDistribute(buildMeshFromFile(meshfile), 1);
 
-  auto L2fec = mfem::L2_FECollection(p, dim, mfem::BasisType::GaussLobatto);
+  auto                        L2fec = mfem::L2_FECollection(p, dim, mfem::BasisType::GaussLobatto);
   mfem::ParFiniteElementSpace L2_fespace(pmesh.get(), &L2fec, 1, serac::ordering);
 
 #ifdef L2_SCALAR_SPACE
   auto scalar_fec = mfem::L2_FECollection(p, dim, mfem::BasisType::GaussLobatto);
 #else
-  auto scalar_fec = mfem::H1_FECollection(p, dim);
+  auto scalar_fec    = mfem::H1_FECollection(p, dim);
 #endif
   mfem::ParFiniteElementSpace scalar_fespace(pmesh.get(), &scalar_fec, 1, serac::ordering);
 
-  auto vector_fec = mfem::H1_FECollection(p, dim);
+  auto                        vector_fec = mfem::H1_FECollection(p, dim);
   mfem::ParFiniteElementSpace vector_fespace(pmesh.get(), &vector_fec, dim, serac::ordering);
 
   Domain whole_domain = EntireDomain(*pmesh);
 
-  Functional< scalar_space(scalar_space, scalar_space, vector_space, vector_space) > residual(
-    &scalar_fespace, 
-    {&scalar_fespace, &scalar_fespace, &vector_fespace, &vector_fespace}
-  );
+  Functional<scalar_space(scalar_space, scalar_space, vector_space, vector_space)> residual(
+      &scalar_fespace, {&scalar_fespace, &scalar_fespace, &vector_fespace, &vector_fespace});
 
-  residual.AddDomainIntegral(serac::Dimension<dim>{}, serac::DependsOn<0,1,2,3>{},
-    [=](double time, auto /*X*/, auto Rho, auto Rho_dot, auto U0, auto UF) {
-        auto U = UF * time + U0 * (1.0 - time);
+  residual.AddDomainIntegral(
+      serac::Dimension<dim>{}, serac::DependsOn<0, 1, 2, 3>{},
+      [=](double time, auto /*X*/, auto Rho, auto Rho_dot, auto U0, auto UF) {
+        auto U     = UF * time + U0 * (1.0 - time);
         auto dx_dX = get<DERIVATIVE>(U) + Identity<dim>();
         auto dX_dx = inv(dx_dX);
- 
-        auto v = get<VALUE>(UF) - get<VALUE>(U0);
-        auto v_X = get<DERIVATIVE>(UF) - get<DERIVATIVE>(U0);
-        auto v_dx = dot(v_X, dX_dx);
-        auto div_v = serac::tr(v_dx);
- 
-        auto rho_dot = get<VALUE>(Rho_dot);
-        auto rho = get<VALUE>(Rho);
- 
-        auto J = det(dx_dX);
-        auto JrhoV = J * dot(v, transpose(dX_dx));
-        //std::string y = rho;
-        //std::string z = rho*JrhoV;
-        return serac::tuple{J*(rho_dot + rho*div_v), rho * JrhoV};
-    },
-    whole_domain
-  );
 
+        auto v     = get<VALUE>(UF) - get<VALUE>(U0);
+        auto v_X   = get<DERIVATIVE>(UF) - get<DERIVATIVE>(U0);
+        auto v_dx  = dot(v_X, dX_dx);
+        auto div_v = serac::tr(v_dx);
+
+        auto rho_dot = get<VALUE>(Rho_dot);
+        auto rho     = get<VALUE>(Rho);
+
+        auto J     = det(dx_dX);
+        auto JrhoV = J * dot(v, transpose(dX_dx));
+        // std::string y = rho;
+        // std::string z = rho*JrhoV;
+        return serac::tuple{J * (rho_dot + rho * div_v), rho * JrhoV};
+      },
+      whole_domain);
 }
 
 int main(int argc, char* argv[])

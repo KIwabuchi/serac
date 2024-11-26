@@ -65,7 +65,7 @@ TEST(Thermal, FiniteDifference)
 
   thermal_solver.setParameter(0, user_defined_conductivity);
 
-  Domain whole_domain = EntireDomain(pmesh);
+  Domain whole_domain   = EntireDomain(pmesh);
   Domain whole_boundary = EntireBoundary(pmesh);
 
   // Construct a potentially user-defined parameterized material and send it to the thermal module

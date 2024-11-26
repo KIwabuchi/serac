@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 
   std::string mesh_tag{"mesh"};
 
-  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
   // _create_mesh_end
 
   // _create_module_start

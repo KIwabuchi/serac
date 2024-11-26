@@ -156,7 +156,7 @@ struct finite_element<mfem::Geometry::CUBE, L2<p, c> > {
           tensor<double, dim> dphi_j_dxi = {G(qx, jx) * B(qy, jy) * B(qz, jz), B(qx, jx) * G(qy, jy) * B(qz, jz),
                                             B(qx, jx) * B(qy, jy) * G(qz, jz)};
 
-          int   Q   = (qz * q + qy) * q + qx;
+          int         Q   = (qz * q + qy) * q + qx;
           const auto& d00 = get<0>(get<0>(input(Q)));
           const auto& d01 = get<1>(get<0>(input(Q)));
           const auto& d10 = get<0>(get<1>(input(Q)));

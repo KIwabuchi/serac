@@ -131,7 +131,8 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <int p, typename Material>
-  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundaries, Domain & bdr_domain) const
+  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundaries,
+                  Domain& bdr_domain) const
   {
     // essential BCs
     auto ebc_func = [*this](const auto& X, double t, auto& u) { this->operator()(X, t, u); };
@@ -224,7 +225,8 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <int p, typename Material>
-  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundaries, Domain & domain) const
+  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundaries,
+                  Domain& domain) const
   {
     // essential BCs
     auto ebc_func = [*this](const auto& X, double t, auto& u) { this->operator()(X, t, u); };
@@ -310,8 +312,8 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
                                "solid_dynamics", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = 1.0, .G = 1.0};
-  Domain whole_domain = EntireDomain(pmesh);
-  Domain whole_boundary = EntireBoundary(pmesh);
+  Domain                      whole_domain   = EntireDomain(pmesh);
+  Domain                      whole_boundary = EntireBoundary(pmesh);
   solid.setMaterial(mat, whole_domain);
 
   // initial conditions
@@ -319,14 +321,12 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
 
   solid.setDisplacement([exact_solution](const mfem::Vector& x, mfem::Vector& u) { exact_solution(x, 0.0, u); });
 
-
-
   // forcing terms
-  if constexpr (std::is_same< solution_type, ConstantAccelerationSolution<dim> >::value) {
+  if constexpr (std::is_same<solution_type, ConstantAccelerationSolution<dim> >::value) {
     exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc), whole_domain);
   }
 
-  if constexpr (std::is_same< solution_type, AffineSolution<dim> >::value) {
+  if constexpr (std::is_same<solution_type, AffineSolution<dim> >::value) {
     exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc), whole_boundary);
   }
 

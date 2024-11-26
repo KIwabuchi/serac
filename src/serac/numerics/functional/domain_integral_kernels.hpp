@@ -156,8 +156,8 @@ void evaluation_kernel_impl(trial_element_tuple trial_elements, test_element, do
                             const std::vector<const double*>& inputs, double* outputs, const double* positions,
                             const double* jacobians, lambda_type qf,
                             [[maybe_unused]] axom::ArrayView<state_type, 2> qf_state,
-                            [[maybe_unused]] derivative_type* qf_derivatives, 
-                            uint32_t num_elements, bool update_state, camp::int_seq<int, indices...>)
+                            [[maybe_unused]] derivative_type* qf_derivatives, uint32_t num_elements, bool update_state,
+                            camp::int_seq<int, indices...>)
 {
   // mfem provides this information as opaque arrays of doubles,
   // so we reinterpret the pointer with
@@ -275,8 +275,8 @@ SERAC_HOST_DEVICE auto batch_apply_chain_rule(derivative_type* qf_derivatives, c
  */
 
 template <int Q, mfem::Geometry::Type g, typename test, typename trial, typename derivatives_type>
-void action_of_gradient_kernel(const double* dU, double* dR, derivatives_type* qf_derivatives, std::size_t num_elements) {
-
+void action_of_gradient_kernel(const double* dU, double* dR, derivatives_type* qf_derivatives, std::size_t num_elements)
+{
   using test_element  = finite_element<g, test>;
   using trial_element = finite_element<g, trial>;
 
@@ -324,7 +324,8 @@ void action_of_gradient_kernel(const double* dU, double* dR, derivatives_type* q
  * @param[in] num_elements The number of elements in the mesh
  */
 template <mfem::Geometry::Type g, typename test, typename trial, int Q, typename derivatives_type>
-void element_gradient_kernel(ExecArrayView<double, 3, ExecutionSpace::CPU> dK, derivatives_type* qf_derivatives, std::size_t num_elements)
+void element_gradient_kernel(ExecArrayView<double, 3, ExecutionSpace::CPU> dK, derivatives_type* qf_derivatives,
+                             std::size_t num_elements)
 {
   // quantities of interest have no flux term, so we pad the derivative
   // tuple with a "zero" type in the second position to treat it like the standard case
