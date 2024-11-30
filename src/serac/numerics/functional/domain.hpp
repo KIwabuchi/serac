@@ -174,20 +174,10 @@ struct Domain {
 };
 
 /// @brief constructs a domain from all the elements in a mesh
-template <int dim>
-Domain EntireDomain(const mfem::Mesh& mesh)
-{
-  auto tautological_predicate = [](std::vector<tensor<double, dim>>, int) { return true; };
-  return Domain::ofElements(mesh, tautological_predicate);
-}
+Domain EntireDomain(const mfem::Mesh& mesh);
 
 /// @brief constructs a domain from all the boundary elements in a mesh
-template <int dim>
-Domain EntireBoundary(const mfem::Mesh& mesh)
-{
-  auto tautological_predicate = [](std::vector<tensor<double, dim>>, int) { return true; };
-  return Domain::ofBoundaryElements(mesh, tautological_predicate);
-}
+Domain EntireBoundary(const mfem::Mesh& mesh);
 
 /// @brief create a new domain that is the union of `a` and `b`
 Domain operator|(const Domain& a, const Domain& b);
