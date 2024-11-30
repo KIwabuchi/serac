@@ -16,6 +16,7 @@
 #include "mfem.hpp"
 
 #include "serac/mesh/mesh_utils.hpp"
+#include "serac/numerics/functional/domain.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/physics/materials/solid_material.hpp"
 #include "serac/serac_config.hpp"
@@ -40,7 +41,7 @@ TEST(BeamBending, TwoDimensional)
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   serac::LinearSolverOptions linear_options{.linear_solver  = LinearSolver::GMRES,
                                             .preconditioner = Preconditioner::HypreAMG,
@@ -71,13 +72,12 @@ TEST(BeamBending, TwoDimensional)
   solid_mechanics::StVenantKirchhoff mat{1.0, K, G};
   solid_solver.setMaterial(mat);
 
-  // Define the function for the initial displacement and boundary condition
-  auto bc = [](const mfem::Vector&, mfem::Vector& bc_vec) -> void { bc_vec = 0.0; };
-
   // Define a boundary attribute set and specify initial / boundary conditions
   std::set<int> ess_bdr = {1};
-  solid_solver.setDisplacementBCs(ess_bdr, bc);
-  solid_solver.setDisplacement(bc);
+  solid_solver.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)));
+
+  // initial displacement
+  solid_solver.setDisplacement([](const mfem::Vector&, mfem::Vector& bc_vec) { bc_vec = 0.0; });
 
   solid_solver.setTraction([](const auto& x, const auto& n, const double) { return -0.01 * n * (x[1] > 0.99); },
                            EntireBoundary(StateManager::mesh(mesh_tag)));

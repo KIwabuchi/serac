@@ -6,6 +6,7 @@
 
 #include "serac/physics/solid_mechanics.hpp"
 
+#include <algorithm>
 #include <functional>
 #include <fstream>
 #include <set>
@@ -15,6 +16,7 @@
 #include <gtest/gtest.h>
 #include "mfem.hpp"
 
+#include "serac/numerics/functional/domain.hpp"
 #include "serac/mesh/mesh_utils.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/physics/materials/solid_material.hpp"
@@ -42,7 +44,7 @@ void functional_solid_test_robin_condition()
   std::string mesh_tag{"mesh"};
 
   auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // _solver_params_start
   serac::NonlinearSolverOptions nonlinear_options{.nonlin_solver  = NonlinearSolver::Newton,
@@ -65,22 +67,27 @@ void functional_solid_test_robin_condition()
 
   // prescribe zero displacement in the y- and z-directions
   // at the supported end of the beam,
-  std::set<int> support     = {1};
-  auto          zero        = [](const mfem::Vector&) -> double { return 0.0; };
-  int           y_direction = 1;
-  int           z_direction = 2;
-  solid_solver.setDisplacementBCs(support, zero, y_direction);
-  solid_solver.setDisplacementBCs(support, zero, z_direction);
+  constexpr int Y_DIRECTION = 1;
+  constexpr int Z_DIRECTION = 2;
+
+  Domain support = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+
+  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, support, Y_DIRECTION);
+  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, support, Z_DIRECTION);
+
+  // apply an axial displacement at the the tip of the beam
+  auto translated_in_x = [](tensor<double, dim>, double t) -> vec3 {
+    tensor<double, dim> u{};
+    u[0] = t;
+    return u;
+  };
+  Domain tip = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
+  solid_solver.setDisplacementBCs(translated_in_x, tip, 0);
 
   // clang-format off
-  Domain robinDomain = Domain::ofBoundaryElements(StateManager::mesh(mesh_tag), 
-    [](std::vector<serac::tensor<double, dim>> X, int) {
-      for (const auto& coordinate : X) {
-        if (coordinate[0]<0.01) {
-          return true;
-        }
-      }
-      return false;
+  Domain robinDomain = Domain::ofBoundaryElements(StateManager::mesh(mesh_tag),
+    [](std::vector<serac::tensor<double, dim>> elem_coordinates, int) {
+      return std::all_of(elem_coordinates.begin(), elem_coordinates.end(), [](auto X) { return X[0] < 0.01; });
     });
   solid_solver.addCustomBoundaryIntegral(DependsOn<>{}, 
       [](double /* t */, auto /*position*/, auto displacement, auto /*acceleration*/) {
@@ -89,14 +96,6 @@ void functional_solid_test_robin_condition()
         return f;  // define a displacement-proportional traction at the support
       }, robinDomain);
   // clang-format on
-
-  // apply an axial displacement at the the tip of the beam
-  auto translated_in_x = [](const mfem::Vector&, double t, mfem::Vector& u) -> void {
-    u    = 0.0;
-    u[0] = t;
-  };
-  std::set<int> tip = {2};
-  solid_solver.setDisplacementBCs(tip, translated_in_x);
 
   auto zero_displacement = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 0.0; };
   solid_solver.setDisplacement(zero_displacement);

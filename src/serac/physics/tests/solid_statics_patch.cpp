@@ -217,7 +217,7 @@ public:
       return dot(P, n0);
     };
 
-    sf.setTraction(traction, EntireBoundary<dim>(sf.mesh()));
+    sf.setTraction(traction, EntireBoundary(sf.mesh()));
 
     auto bf = [=](auto X, auto) {
       auto X_val = get_value(X);

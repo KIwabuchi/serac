@@ -40,10 +40,13 @@ void functional_test_static_3D(double expected_norm)
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
-  // Define a boundary attribute set
+  // Define the boundary subset where essential boundary conditions will be prescribed
+  // For simplicity, we apply essential boundary condtions in both the thermal and mechanics
+  // on the same boundary subset.
   std::set<int> ess_bdr = {1};
+  auto displacement_essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
 
   // define the solid solver configurations
   // no default solver options for solid yet, so make some here
@@ -86,7 +89,9 @@ void functional_test_static_3D(double expected_norm)
   auto zeroVector = [](const mfem::Vector&, mfem::Vector& u) { u = 0.0; };
 
   // Set the initial displcament and boundary condition
-  thermal_solid_solver.setDisplacementBCs(ess_bdr, zeroVector);
+  for (int i = 0; i < dim; ++i) {
+    thermal_solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, displacement_essential_boundary, i);
+  }
   thermal_solid_solver.setDisplacement(zeroVector);
 
   // Finalize the data structures
@@ -122,10 +127,10 @@ void functional_test_shrinking_3D(double expected_norm)
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
-  // Define a boundary attribute set
-  std::set<int> constraint_bdr = {1};
+  // Define a boundary partitions where essential boundary conditions will be prescribed
+  Domain constraint_bdr = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
   std::set<int> temp_bdr       = {1, 2, 3};
 
   // define the solid solver configurations
@@ -172,7 +177,9 @@ void functional_test_shrinking_3D(double expected_norm)
   auto zeroVector = [](const mfem::Vector&, mfem::Vector& u) { u = 0.0; };
 
   // Set the initial displacement and boundary condition
-  thermal_solid_solver.setDisplacementBCs(constraint_bdr, zeroVector);
+  for (int i = 0; i < 3; ++i) {
+    thermal_solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, constraint_bdr, i);
+  }
   thermal_solid_solver.setDisplacement(zeroVector);
 
   // Finalize the data structures

@@ -44,6 +44,12 @@ void adjoint_integrate(double dt_n, double dt_np1, mfem::HypreParMatrix* m_mat, 
 }  // namespace detail
 
 /**
+ * @brief Convenience function for zero displacements, tractions, or body forces
+ */
+template <int dim>
+tensor<double, dim> zero_vector_function(tensor<double, dim>, ...) { return tensor<double, dim>{}; };
+
+/**
  * @brief default method and tolerances for solving the
  * systems of linear equations that show up in implicit
  * solid mechanics simulations

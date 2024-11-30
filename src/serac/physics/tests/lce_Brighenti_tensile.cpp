@@ -10,6 +10,7 @@
 #include "mfem.hpp"
 
 #include "serac/serac_config.hpp"
+#include "serac/numerics/functional/domain.hpp"
 #include "serac/mesh/mesh_utils.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/physics/solid_mechanics.hpp"
@@ -38,6 +39,13 @@ TEST(LiquidCrystalElastomer, Brighenti)
   std::string mesh_tag{"mesh"};
 
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+
+  auto xmin_face = Domain::ofBoundaryElements(pmesh, by_attr<dim>(5));
+  auto ymin_face = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
+  auto zmin_face = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+  auto xmax_face = Domain::ofBoundaryElements(pmesh, by_attr<dim>(3));
+  auto ymax_face = Domain::ofBoundaryElements(pmesh, by_attr<dim>(4));
+  auto zmax_face = Domain::ofBoundaryElements(pmesh, by_attr<dim>(6));
 
   double             initial_temperature = 25 + 273;
   double             final_temperature   = 430.0;
@@ -121,10 +129,9 @@ TEST(LiquidCrystalElastomer, Brighenti)
   solid_solver.setMaterial(DependsOn<TEMPERATURE_INDEX, GAMMA_INDEX>{}, mat, qdata);
 
   // prescribe symmetry conditions
-  auto zeroFunc = [](const mfem::Vector /*x*/) { return 0.0; };
-  solid_solver.setDisplacementBCs({1}, zeroFunc, 2);  // bottom face z-dir disp = 0
-  solid_solver.setDisplacementBCs({2}, zeroFunc, 1);  // left face y-dir disp = 0
-  solid_solver.setDisplacementBCs({5}, zeroFunc, 0);  // back face x-dir disp = 0
+  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, xmin_face, 0);
+  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, ymin_face, 1);
+  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, zmin_face, 2);
 
   // set initila displacement different than zero to help solver
   auto ini_displacement = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 1.0e-5; };
@@ -132,11 +139,7 @@ TEST(LiquidCrystalElastomer, Brighenti)
   double iniLoadVal = 1.0e0;
   double maxLoadVal = 4 * 1.3e0 / lx / lz;
   double loadVal    = iniLoadVal + 0.0 * maxLoadVal;
-  solid_solver.setTraction(
-      [&loadVal, ly](auto x, auto /*n*/, auto /*t*/) {
-        return tensor<double, 3>{0, loadVal * (x[1] > 0.99 * ly), 0};
-      },
-      EntireBoundary(pmesh));
+  solid_solver.setTraction([&loadVal](auto, auto n, auto) { return loadVal*n; }, ymax_face);
 
   solid_solver.setDisplacement(ini_displacement);
 

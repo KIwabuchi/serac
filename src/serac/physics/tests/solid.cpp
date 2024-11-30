@@ -6,6 +6,7 @@
 
 #include "serac/physics/solid_mechanics.hpp"
 
+#include <algorithm>
 #include <functional>
 #include <fstream>
 #include <set>
@@ -16,6 +17,7 @@
 #include "mfem.hpp"
 
 #include "serac/mesh/mesh_utils.hpp"
+#include "serac/numerics/functional/domain.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/physics/materials/solid_material.hpp"
 #include "serac/physics/materials/parameterized_solid_material.hpp"
@@ -45,7 +47,7 @@ void functional_solid_test_static_J2()
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // _solver_params_start
   serac::LinearSolverOptions linear_options{.linear_solver = LinearSolver::SuperLU};
@@ -79,19 +81,17 @@ void functional_solid_test_static_J2()
   solid_solver.setMaterial(mat, qdata);
 
   // prescribe zero displacement at the supported end of the beam,
-  std::set<int> support           = {1};
-  auto          zero_displacement = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 0.0; };
-  solid_solver.setDisplacementBCs(support, zero_displacement);
+  auto support = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+  solid_solver.setFixedBCs(support);
 
   // apply a displacement along z to the the tip of the beam
-  auto translated_in_z = [](const mfem::Vector&, double t, mfem::Vector& u) -> void {
-    u    = 0.0;
+  auto translated_in_z = [](tensor<double, dim>, double t) {
+    tensor<double, dim> u{};
     u[2] = t * (t - 1);
+    return u;
   };
-  std::set<int> tip = {2};
-  solid_solver.setDisplacementBCs(tip, translated_in_z);
-
-  solid_solver.setDisplacement(zero_displacement);
+  auto tip = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
+  solid_solver.setDisplacementBCs(translated_in_z, tip, 2);
 
   // Finalize the data structures
   solid_solver.completeSetup();
@@ -135,51 +135,45 @@ void functional_solid_spatial_essential_bc()
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Construct a functional-based solid mechanics solver
   SolidMechanics<p, dim> solid_solver(solid_mechanics::default_nonlinear_options,
                                       solid_mechanics::direct_linear_options,
                                       solid_mechanics::default_quasistatic_options, "solid_mechanics", mesh_tag);
 
-  solid_mechanics::LinearIsotropic mat{1.0, 1.0, 1.0};
+  constexpr double K = 1.0;
+  constexpr double G = 1.0; 
+  solid_mechanics::LinearIsotropic mat{.density = 1.0, .K = K, .G = G};
   solid_solver.setMaterial(mat);
 
-  // Set up
-  auto zero_vector = [](const mfem::Vector&, mfem::Vector& u) { u = 0.0; };
+  constexpr double node_tol = 1e-1;
 
-  // We want to test both the scalar displacement functions including the time argument and the scalar displacement
-  // functions without
-  auto zero_scalar   = [](const mfem::Vector&, double) { return 0.0; };
-  auto scalar_offset = [](const mfem::Vector&) { return -0.1; };
+  auto all = [](std::vector<vec3> coords, auto predicate) { return std::all_of(coords.begin(), coords.end(), [predicate](auto X) { return predicate(X); }); };
 
-  auto is_on_bottom = [](const mfem::Vector& x) {
-    if (x(2) < 0.01) {
-      return true;
-    }
-    return false;
-  };
+  Domain bottom = Domain::ofBoundaryElements(
+    pmesh,
+    [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[2] < node_tol; }); });
 
-  auto is_on_bottom_corner = [](const mfem::Vector& x) {
-    if (x(0) < 0.01 && x(1) < 0.01 && x(2) < 0.01) {
-      return true;
-    }
-    return false;
-  };
+  Domain top = Domain::ofBoundaryElements(
+    pmesh,
+    [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[2] > 1.0 - node_tol; }); });
 
-  auto is_on_top = [](const mfem::Vector& x) {
-    if (x(2) > 0.95) {
-      return true;
-    }
-    return false;
-  };
+  Domain left = Domain::ofBoundaryElements(
+    pmesh,
+    [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[0] < node_tol; }); });
 
-  solid_solver.setDisplacementBCs(is_on_bottom_corner, zero_vector);
-  solid_solver.setDisplacementBCs(is_on_bottom, zero_scalar, 2);
-  solid_solver.setDisplacementBCs(is_on_top, scalar_offset, 2);
+  Domain back = Domain::ofBoundaryElements(
+    pmesh,
+    [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[1] < node_tol; }); });
+
+  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, left, 0);
+  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, back, 1);
+  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, bottom, 2);
+  solid_solver.setDisplacementBCs([](vec3, double) { return vec3{{0.0, 0.0, -0.1}}; }, top, 2);
 
   // Set a zero initial guess
-  solid_solver.setDisplacement(zero_vector);
+  solid_solver.setDisplacement([](const mfem::Vector&, mfem::Vector& u) { u = 0.0; });
 
   // Finalize the data structures
   solid_solver.completeSetup();
@@ -367,71 +361,6 @@ TEST(SolidMechanics, 2DQuadParameterizedStatic) { functional_parameterized_solid
 TEST(SolidMechanics, 3DQuadStaticJ2) { functional_solid_test_static_J2(); }
 
 TEST(SolidMechanics, SpatialBoundaryCondition) { functional_solid_spatial_essential_bc(); }
-
-TEST(SolidMechanics, BrandonBC)
-{
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  constexpr int p                   = 1;
-  constexpr int dim                 = 3;
-  int           serial_refinement   = 1;
-  int           parallel_refinement = 0;
-
-  // Create DataStore
-  axom::sidre::DataStore datastore;
-  serac::StateManager::initialize(datastore, "solid_mechanics_essential_bc");
-
-  // Construct the appropriate dimension mesh and give it to the data store
-  std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex.mesh";
-
-  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-
-  std::string mesh_tag{"mesh"};
-
-  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
-
-  // Construct a functional-based solid mechanics solver
-  SolidMechanics<p, dim> solid_solver(solid_mechanics::default_nonlinear_options,
-                                      solid_mechanics::direct_linear_options,
-                                      solid_mechanics::default_quasistatic_options, "solid_mechanics", mesh_tag);
-
-  solid_mechanics::LinearIsotropic mat{1.0, 1.0, 1.0};
-  solid_solver.setMaterial(mat);
-
-  // Set up
-  auto zero_vector = [](const mfem::Vector&, double t, mfem::Vector& u) { u = 0.0; };
-
-
-  // We want to test both the scalar displacement functions including the time argument and the scalar displacement
-  // functions without
-  auto zero_scalar   = [](const mfem::Vector&, double) { return 0.0; };
-  auto scalar_offset = [](const mfem::Vector&) { return -0.1; };
-
-  constexpr double node_tol = 1e-6;
-
-  auto is_on_left = [](std::vector<tensor<double, dim>> face_coords, int) {
-    tensor<double, dim> centroid{};
-    for (auto x : face_coords) {
-      centroid += x;
-    }
-    centroid = centroid / double(face_coords.size());
-    return (centroid[0] < node_tol);
-  };
-
-  auto left = Domain::ofBoundaryElements(pmesh, is_on_left);
-
-  solid_solver.setDisplacementBCs(zero_vector, left);
-
-  // Set a zero initial guess
-  //solid_solver.setDisplacement(zero_vector);
-
-  // Finalize the data structures
-  solid_solver.completeSetup();
-
-  // Perform the quasi-static solve
-  solid_solver.advanceTimestep(1.0);
-  solid_solver.outputStateToDisk("my_bc");
-}
 
 }  // namespace serac
 

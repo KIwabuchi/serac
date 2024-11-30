@@ -159,16 +159,19 @@ TEST(quasistatic, finiteDifference)
   materialType material;
   seracSolid->setMaterial(::serac::DependsOn<0, 1>{}, material);
 
-  seracSolid->setDisplacementBCs(
-      {3}, [](const mfem::Vector&) { return 0.0; }, 0);
-  seracSolid->setDisplacementBCs(
-      {4}, [](const mfem::Vector&) { return 0.0; }, 1);
-  seracSolid->setDisplacementBCs(
-      {1}, [](const mfem::Vector&) { return 0.0; }, 2);
+  seracSolid->setDisplacementBCs(::serac::solid_mechanics::zero_vector_function<DIM>,
+                                 ::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(3)),
+                                 0);
+  seracSolid->setDisplacementBCs(::serac::solid_mechanics::zero_vector_function<DIM>,
+                                 ::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(4)),
+                                 1);
+  seracSolid->setDisplacementBCs(::serac::solid_mechanics::zero_vector_function<DIM>,
+                                 ::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(1)),
+                                 2);
 
-  // serac::Domain loadRegion = serac::Domain::ofBoundaryElements(*meshPtr, serac::by_attr<DIM>(6));
+  serac::Domain loadRegion = serac::Domain::ofBoundaryElements(*meshPtr, serac::by_attr<DIM>(6));
   // seracSolid->setTraction([](auto, auto n, auto) {return 1.0*n;}, loadRegion);
-  seracSolid->setDisplacementBCs({6}, [](const mfem::Vector&, double time, mfem::Vector& u) { return u[2] = time; });
+  seracSolid->setDisplacementBCs([](vec3, double time) { return vec3{{0.0, 0.0, time}}; }, loadRegion, 2);
 
   double                      E0 = 1.0;
   double                      v0 = 0.3;

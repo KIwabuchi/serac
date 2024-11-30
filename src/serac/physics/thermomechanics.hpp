@@ -402,15 +402,27 @@ public:
   }
 
   /**
-   * @brief Set essential displacement boundary conditions (strongly enforced)
+   * @brief Set essential displacement boundary conditions on one component
    *
-   * @param[in] displacement_attributes The boundary attributes on which to enforce a displacement
-   * @param[in] prescribed_value The prescribed boundary displacement function
+   * @param[in] applied_displacement Function specifying the applied displacement vector. 
+   *   Only the value in the component @p component will be used, the others are ignored.
+   * @param[in] domain Domain over which to apply the boundary condition.
+   * @param[in] component Index of the displacement component that will be constrained
+   *
+   * @note This method must be called prior to completeSetup()
+   *
+   * The signature of the applied_displacement callable is:
+   * tensor<double, dim> applied_displacement(tensor<double, dim> X, double t)
+   * Parameters:
+   *   X - coordinates of node
+   *   t - time
+   * Returns:
+   *   u, vector of applied displacements
    */
-  void setDisplacementBCs(const std::set<int>&                                           displacement_attributes,
-                          std::function<void(const mfem::Vector& x, mfem::Vector& disp)> prescribed_value)
+  template <typename AppliedDisplacementFunction>
+  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain, int component)
   {
-    solid_.setDisplacementBCs(displacement_attributes, prescribed_value);
+    solid_.setDisplacementBCs(applied_displacement, domain, component);
   }
 
   /**

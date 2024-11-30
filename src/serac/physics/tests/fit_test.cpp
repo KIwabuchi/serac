@@ -70,13 +70,19 @@ void stress_extrapolation_test()
   solid_solver.setMaterial(mat);
 
   // prescribe small displacement at each hole, pulling the plate apart
-  std::set<int> top_hole = {2};
-  auto          up       = [](const mfem::Vector&, mfem::Vector& u) -> void { u[1] = 0.01; };
-  solid_solver.setDisplacementBCs(top_hole, up);
+  Domain top_hole = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
+  auto up = [](tensor<double, dim>, double) {
+    tensor<double, dim> u{};
+    u[1] = 0.01;
+    return u;
+  };
+  for (int i = 0; i < dim; ++i) solid_solver.setDisplacementBCs(up, top_hole, i);
 
-  std::set<int> bottom_hole = {3};
-  auto          down        = [](const mfem::Vector&, mfem::Vector& u) -> void { u[1] = -0.01; };
-  solid_solver.setDisplacementBCs(bottom_hole, down);
+  Domain bottom_hole = Domain::ofBoundaryElements(pmesh, by_attr<dim>(3));
+  auto down = [up](tensor<double, dim> X, double t) {
+    return -up(X, t);
+  };
+  for (int i = 0; i < dim; ++i) solid_solver.setDisplacementBCs(down, bottom_hole, i);
 
   auto zero_displacement = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 0.0; };
   solid_solver.setDisplacement(zero_displacement);

@@ -13,6 +13,7 @@
 
 #include "mfem.hpp"
 
+#include "serac/numerics/functional/domain.hpp"
 #include "serac/physics/solid_mechanics_contact.hpp"
 #include "serac/infrastructure/terminator.hpp"
 #include "serac/mesh/mesh_utils.hpp"
@@ -38,7 +39,7 @@ int main(int argc, char* argv[])
   std::string filename = SERAC_REPO_DIR "/data/meshes/twohex_for_contact.mesh";
 
   auto mesh = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 3, 0);
-  serac::StateManager::setMesh(std::move(mesh), "twist_mesh");
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "twist_mesh");
 
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};
 #ifndef MFEM_USE_STRUMPACK
@@ -64,13 +65,11 @@ int main(int argc, char* argv[])
   solid_solver.setMaterial(mat);
 
   // Pass the BC information to the solver object
-  solid_solver.setDisplacementBCs({3}, [](const mfem::Vector&, mfem::Vector& u) {
-    u.SetSize(dim);
-    u = 0.0;
-  });
-  solid_solver.setDisplacementBCs({6}, [](const mfem::Vector& x, double t, mfem::Vector& u) {
-    u.SetSize(dim);
-    u = 0.0;
+  solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3)));
+
+  auto driven_surface = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6));
+  auto applied_displacement = [](serac::tensor<double, dim> x, double t) {
+    serac::tensor<double, dim> u{};
     if (t <= 3.0 + 1.0e-12) {
       u[2] = -t * 0.02;
     } else {
@@ -80,7 +79,12 @@ int main(int argc, char* argv[])
           std::sin(M_PI / 40.0 * (t - 3.0)) * (x[0] - 0.5) + (std::cos(M_PI / 40.0 * (t - 3.0)) - 1.0) * (x[1] - 0.5);
       u[2] = -0.06;
     }
-  });
+    return u;
+  };
+
+  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 0);
+  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 1);
+  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 2);
 
   // Add the contact interaction
   auto          contact_interaction_id = 0;

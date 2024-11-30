@@ -97,12 +97,9 @@ TEST(Solid, MultiMaterial)
   solid.setTraction(
       DependsOn<>{}, [stress](auto, auto n, auto) { return stress * n; }, end_face);
 
-  solid.setDisplacementBCs(
-      {2}, [](auto) { return 0.0; }, 1);
-  solid.setDisplacementBCs(
-      {5}, [](auto) { return 0.0; }, 0);
-  solid.setDisplacementBCs(
-      {1}, [](auto) { return 0.0; }, 2);
+  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(2)), 1);
+  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(5)), 0);
+  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)), 2);
 
   solid.completeSetup();
 
@@ -227,12 +224,9 @@ TEST(Solid, MultiMaterialWithState)
   solid.setTraction(
       DependsOn<>{}, [applied_stress](auto, auto n, auto) { return applied_stress * n; }, end_face);
 
-  solid.setDisplacementBCs(
-      {2}, [](auto) { return 0.0; }, 1);
-  solid.setDisplacementBCs(
-      {5}, [](auto) { return 0.0; }, 0);
-  solid.setDisplacementBCs(
-      {1}, [](auto) { return 0.0; }, 2);
+  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(2)), 1);
+  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(5)), 0);
+  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)), 2);
 
   solid.completeSetup();
 

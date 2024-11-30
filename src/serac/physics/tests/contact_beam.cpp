@@ -14,6 +14,7 @@
 #include <gtest/gtest.h>
 #include "mfem.hpp"
 
+#include "serac/numerics/functional/domain.hpp"
 #include "serac/mesh/mesh_utils.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/physics/materials/solid_material.hpp"
@@ -40,7 +41,7 @@ TEST_P(ContactTest, beam)
   std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex-with-contact-block.mesh";
 
   auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), 1, 0);
-  StateManager::setMesh(std::move(mesh), "beam_mesh");
+  auto& pmesh = StateManager::setMesh(std::move(mesh), "beam_mesh");
 
   LinearSolverOptions linear_options{.linear_solver = LinearSolver::Strumpack, .print_level = 1};
 #ifndef MFEM_USE_STRUMPACK
@@ -74,15 +75,16 @@ TEST_P(ContactTest, beam)
   solid_solver.setMaterial(mat);
 
   // Pass the BC information to the solver object
-  solid_solver.setDisplacementBCs({1}, [](const mfem::Vector&, mfem::Vector& u) {
-    u.SetSize(dim);
-    u = 0.0;
-  });
-  solid_solver.setDisplacementBCs({6}, [](const mfem::Vector&, mfem::Vector& u) {
-    u.SetSize(dim);
-    u    = 0.0;
+  solid_solver.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)));
+  auto applied_displacement = [](tensor<double, dim>, double) { 
+    tensor<double, dim> u{};
     u[2] = -0.15;
-  });
+    return u;
+  };
+  auto driven_surface = Domain::ofBoundaryElements(pmesh, by_attr<dim>(6));
+  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 0);
+  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 1);
+  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 2);
 
   // Add the contact interaction
   solid_solver.addContactInteraction(0, {7}, {5}, contact_options);
