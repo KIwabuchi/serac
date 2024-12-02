@@ -90,7 +90,7 @@ struct Domain {
   /// @endcond
 
   /**
-   * @brief a collection of restriction operators for the different test/trial spaces appearing in 
+   * @brief a collection of restriction operators for the different test/trial spaces appearing in
    *        integrals evaluated over this Domain. These are stored on the Domain itself to avoid duplicating
    *        these restriction operators in each Integral over a given Domain.
    */
@@ -200,7 +200,7 @@ struct Domain {
 
     int total                      = 0;
     offsets[mfem::Geometry::POINT] = total;
-    total += 0; // vertices;
+    total += 0;  // vertices;
     offsets[mfem::Geometry::SEGMENT] = total;
     total += int(edge_ids_.size());
     offsets[mfem::Geometry::TRIANGLE] = total;
