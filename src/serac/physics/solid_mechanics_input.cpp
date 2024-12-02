@@ -16,10 +16,6 @@ void SolidMechanicsInputOptions::defineInputFileSchema(axom::inlet::Container& c
   auto& material_container = container.addStructArray("materials", "Container for array of materials");
   SolidMaterialInputOptions::defineInputFileSchema(material_container);
 
-  // Geometric nonlinearities flag
-  container.addBool("geometric_nonlin", "Flag to include geometric nonlinearities in the residual calculation.")
-      .defaultValue(true);
-
   auto& equation_solver_container =
       container.addStruct("equation_solver", "Linear and Nonlinear stiffness Solver Parameters.");
   EquationSolver::defineInputFileSchema(equation_solver_container);
@@ -77,14 +73,6 @@ serac::SolidMechanicsInputOptions FromInlet<serac::SolidMechanicsInputOptions>::
   }
 
   result.materials = base["materials"].get<std::vector<serac::var_solid_material_t>>();
-
-  // Set the geometric nonlinearities flag
-  bool input_geom_nonlin = base["geometric_nonlin"];
-  if (input_geom_nonlin) {
-    result.geom_nonlin = serac::GeometricNonlinearities::On;
-  } else {
-    result.geom_nonlin = serac::GeometricNonlinearities::Off;
-  }
 
   if (base.contains("boundary_conds")) {
     result.boundary_conditions =

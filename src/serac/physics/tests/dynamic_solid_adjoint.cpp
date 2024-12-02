@@ -28,7 +28,6 @@ const std::string mesh_tag       = "mesh";
 const std::string physics_prefix = "solid";
 
 using SolidMaterial = solid_mechanics::NeoHookean;
-auto geoNonlinear   = GeometricNonlinearities::On;
 
 struct TimeSteppingInfo {
   TimeSteppingInfo() : dts({0.0, 0.2, 0.4, 0.24, 0.12, 0.0}) {}
@@ -99,7 +98,7 @@ std::unique_ptr<SolidMechanics<p, dim>> createNonlinearSolidMechanicsSolver(
                                               .print_level    = 0};
 
   bool checkpoint_to_disk = true;
-  auto solid = std::make_unique<SolidMechanics<p, dim>>(nonlinear_opts, linear_options, dyn_opts, geoNonlinear,
+  auto solid              = std::make_unique<SolidMechanics<p, dim>>(nonlinear_opts, linear_options, dyn_opts,
                                                         physics_prefix + std::to_string(iter++), mesh_tag,
                                                         std::vector<std::string>{}, 0, 0.0, checkpoint_to_disk, false);
   solid->setMaterial(mat);

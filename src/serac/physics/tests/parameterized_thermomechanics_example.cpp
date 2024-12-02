@@ -99,8 +99,8 @@ TEST(Thermomechanics, ParameterizedMaterial)
 #endif
 
   SolidMechanics<p, dim, Parameters<H1<p>, H1<p>>> simulation(
-      nonlinear_opts, linear_opts, solid_mechanics::default_quasistatic_options, GeometricNonlinearities::On,
-      "thermomechanics_simulation", mesh_tag, {"theta", "alpha"});
+      nonlinear_opts, linear_opts, solid_mechanics::default_quasistatic_options, "thermomechanics_simulation", mesh_tag,
+      {"theta", "alpha"});
 
   double density   = 1.0;     ///< density
   double E         = 1000.0;  ///< Young's modulus
