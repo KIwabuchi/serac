@@ -590,25 +590,25 @@ Domain set_operation(SET_OPERATION op, const Domain& a, const Domain& b)
   using Ids         = std::vector<int>;
   auto apply_set_op = [&op](const Ids& x, const Ids& y) { return set_operation(op, x, y); };
 
-  auto fill_output_lists = [apply_set_op, &output](const Ids& a_ids, const Ids& a_mfem_ids, const Ids& b_ids,
+  auto fill_combined_lists = [apply_set_op, &combined](const Ids& a_ids, const Ids& a_mfem_ids, const Ids& b_ids,
                                                    const Ids& b_mfem_ids, mfem::Geometry::Type g) {
-    auto output_ids      = apply_set_op(a_ids, b_ids);
-    auto output_mfem_ids = apply_set_op(a_mfem_ids, b_mfem_ids);
-    output.addElements(output_ids, output_mfem_ids, g);
+    auto combined_ids      = apply_set_op(a_ids, b_ids);
+    auto combined_mfem_ids = apply_set_op(a_mfem_ids, b_mfem_ids);
+    combined.addElements(combined_ids, combined_mfem_ids, g);
   };
 
-  if (output.dim_ == 1) {
-    fill_output_lists(a.edge_ids_, a.mfem_edge_ids_, b.edge_ids_, b.mfem_edge_ids_, mfem::Geometry::SEGMENT);
+  if (combined.dim_ == 1) {
+    fill_combined_lists(a.edge_ids_, a.mfem_edge_ids_, b.edge_ids_, b.mfem_edge_ids_, mfem::Geometry::SEGMENT);
   }
 
-  if (output.dim_ == 2) {
-    fill_output_lists(a.tri_ids_, a.mfem_tri_ids_, b.tri_ids_, b.mfem_tri_ids_, mfem::Geometry::TRIANGLE);
-    fill_output_lists(a.quad_ids_, a.mfem_quad_ids_, b.quad_ids_, b.mfem_quad_ids_, mfem::Geometry::SQUARE);
+  if (combined.dim_ == 2) {
+    fill_combined_lists(a.tri_ids_, a.mfem_tri_ids_, b.tri_ids_, b.mfem_tri_ids_, mfem::Geometry::TRIANGLE);
+    fill_combined_lists(a.quad_ids_, a.mfem_quad_ids_, b.quad_ids_, b.mfem_quad_ids_, mfem::Geometry::SQUARE);
   }
 
-  if (output.dim_ == 3) {
-    fill_output_lists(a.tet_ids_, a.mfem_tet_ids_, b.tet_ids_, b.mfem_tet_ids_, mfem::Geometry::TETRAHEDRON);
-    fill_output_lists(a.hex_ids_, a.mfem_hex_ids_, b.hex_ids_, b.mfem_hex_ids_, mfem::Geometry::CUBE);
+  if (combined.dim_ == 3) {
+    fill_combined_lists(a.tet_ids_, a.mfem_tet_ids_, b.tet_ids_, b.mfem_tet_ids_, mfem::Geometry::TETRAHEDRON);
+    fill_combined_lists(a.hex_ids_, a.mfem_hex_ids_, b.hex_ids_, b.mfem_hex_ids_, mfem::Geometry::CUBE);
   }
 
   return combined;

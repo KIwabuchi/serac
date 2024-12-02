@@ -182,8 +182,7 @@ struct Domain {
    */
   int total_elements() const
   {
-    return int(vertex_ids_.size() + edge_ids_.size() + tri_ids_.size() + quad_ids_.size() + tet_ids_.size() +
-               hex_ids_.size());
+    return int(edge_ids_.size() + tri_ids_.size() + quad_ids_.size() + tet_ids_.size() + hex_ids_.size());
   }
 
   /**
@@ -196,7 +195,7 @@ struct Domain {
 
     int total                      = 0;
     offsets[mfem::Geometry::POINT] = total;
-    total += vertex_ids_.size();
+    total += 0; // vertices;
     offsets[mfem::Geometry::SEGMENT] = total;
     total += edge_ids_.size();
     offsets[mfem::Geometry::TRIANGLE] = total;
