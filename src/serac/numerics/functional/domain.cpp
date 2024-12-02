@@ -589,7 +589,7 @@ Domain set_operation(SET_OPERATION op, const Domain& a, const Domain& b)
   auto apply_set_op = [&op](const Ids& x, const Ids& y) { return set_operation(op, x, y); };
 
   auto fill_combined_lists = [apply_set_op, &combined](const Ids& a_ids, const Ids& a_mfem_ids, const Ids& b_ids,
-                                                   const Ids& b_mfem_ids, mfem::Geometry::Type g) {
+                                                       const Ids& b_mfem_ids, mfem::Geometry::Type g) {
     auto combined_ids      = apply_set_op(a_ids, b_ids);
     auto combined_mfem_ids = apply_set_op(a_mfem_ids, b_mfem_ids);
     combined.addElements(combined_ids, combined_mfem_ids, g);
