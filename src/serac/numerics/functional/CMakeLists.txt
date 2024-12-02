@@ -21,6 +21,7 @@ set(functional_headers
     function_signature.hpp
     functional_qoi.inl
     integral.hpp
+    interior_face_integral_kernels.hpp
     isotropic_tensor.hpp
     polynomials.hpp
     quadrature.hpp
@@ -29,6 +30,7 @@ set(functional_headers
     tensor.hpp
     tuple.hpp
     tuple_tensor_dual_functions.hpp
+    typedefs.hpp
     )
 
 set(functional_sources 
