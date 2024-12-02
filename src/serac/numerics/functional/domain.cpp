@@ -50,38 +50,6 @@ std::vector<tensor<double, d>> gather(const mfem::Vector& coordinates, mfem::Arr
   return x;
 }
 
-template <int d>
-static Domain domain_of_vertices(const mesh_t& mesh, std::function<bool(tensor<double, d>)> predicate)
-{
-  assert(mesh.SpaceDimension() == d);
-
-  Domain output{mesh, 0 /* points are 0-dimensional */};
-
-  // layout is undocumented, but it seems to be
-  // [x1, x2, x3, ..., y1, y2, y3 ..., (z1, z2, z3, ...)]
-  mfem::Vector vertices;
-  mesh.GetVertices(vertices);
-
-  // vertices that satisfy the predicate are added to the domain
-  int num_vertices = mesh.GetNV();
-  for (int i = 0; i < num_vertices; i++) {
-    tensor<double, d> x;
-    for (int j = 0; j < d; j++) {
-      x[j] = vertices[j * num_vertices + i];
-    }
-
-    if (predicate(x)) {
-      output.vertex_ids_.push_back(i);
-    }
-  }
-
-  return output;
-}
-
-Domain Domain::ofVertices(const mesh_t& mesh, std::function<bool(vec2)> func) { return domain_of_vertices(mesh, func); }
-
-Domain Domain::ofVertices(const mesh_t& mesh, std::function<bool(vec3)> func) { return domain_of_vertices(mesh, func); }
-
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -113,13 +81,11 @@ static Domain domain_of_edges(const mesh_t& mesh, std::function<T> predicate)
       int bdr_id = edge_id_to_bdr_id[i];
       int attr   = (bdr_id > 0) ? mesh.GetBdrAttribute(bdr_id) : -1;
       if (predicate(x, attr)) {
-        output.edge_ids_.push_back(i);
-        output.mfem_edge_ids_.push_back(i);
+        output.addElement(i, i, mfem::Geometry::SEGMENT);
       }
     } else {
       if (predicate(x)) {
-        output.edge_ids_.push_back(i);
-        output.mfem_edge_ids_.push_back(i);
+        output.addElement(i, i, mfem::Geometry::SEGMENT);
       }
     }
   }
@@ -189,12 +155,10 @@ static Domain domain_of_faces(const mesh_t& mesh, std::function<bool(std::vector
 
     if (predicate(x, attr)) {
       if (x.size() == 3) {
-        output.tri_ids_.push_back(tri_id);
-        output.mfem_tri_ids_.push_back(i);
+        output.addElement(tri_id, i, mfem::Geometry::TRIANGLE);
       }
       if (x.size() == 4) {
-        output.quad_ids_.push_back(quad_id);
-        output.mfem_quad_ids_.push_back(i);
+        output.addElement(quad_id, i, mfem::Geometry::SQUARE);
       }
     }
 
@@ -252,31 +216,27 @@ static Domain domain_of_elems(const mesh_t& mesh, std::function<bool(std::vector
     switch (x.size()) {
       case 3:
         if (add) {
-          output.tri_ids_.push_back(tri_id);
-          output.mfem_tri_ids_.push_back(i);
+          output.addElement(tri_id, i, mfem::Geometry::TRIANGLE);
         }
         tri_id++;
         break;
       case 4:
         if constexpr (d == 2) {
           if (add) {
-            output.quad_ids_.push_back(quad_id);
-            output.mfem_quad_ids_.push_back(i);
+            output.addElement(quad_id, i, mfem::Geometry::SQUARE);
           }
           quad_id++;
         }
         if constexpr (d == 3) {
           if (add) {
-            output.tet_ids_.push_back(tet_id);
-            output.mfem_tet_ids_.push_back(i);
+            output.addElement(tet_id, i, mfem::Geometry::TETRAHEDRON);
           }
           tet_id++;
         }
         break;
       case 8:
         if (add) {
-          output.hex_ids_.push_back(hex_id);
-          output.mfem_hex_ids_.push_back(i);
+          output.addElement(hex_id, i, mfem::Geometry::CUBE);
         }
         hex_id++;
         break;
@@ -297,6 +257,39 @@ Domain Domain::ofElements(const mesh_t& mesh, std::function<bool(std::vector<vec
 Domain Domain::ofElements(const mesh_t& mesh, std::function<bool(std::vector<vec3>, int)> func)
 {
   return domain_of_elems<3>(mesh, func);
+}
+
+void Domain::addElement(int geom_id, int elem_id, mfem::Geometry::Type element_geometry)
+{
+  if (element_geometry == mfem::Geometry::SEGMENT) {
+    edge_ids_.push_back(geom_id);
+    mfem_edge_ids_.push_back(elem_id);
+  } else if (element_geometry == mfem::Geometry::TRIANGLE) {
+    tri_ids_.push_back(geom_id);
+    mfem_tri_ids_.push_back(elem_id);
+  } else if (element_geometry == mfem::Geometry::SQUARE) {
+    quad_ids_.push_back(geom_id);
+    mfem_quad_ids_.push_back(elem_id);
+  } else if (element_geometry == mfem::Geometry::TETRAHEDRON) {
+    tet_ids_.push_back(geom_id);
+    mfem_tet_ids_.push_back(elem_id);
+  } else if (element_geometry == mfem::Geometry::CUBE) {
+    hex_ids_.push_back(geom_id);
+    mfem_hex_ids_.push_back(elem_id);
+  } else {
+    SLIC_ERROR("unsupported element type");
+  }
+}
+
+void Domain::addElements(const std::vector<int>& geom_ids, const std::vector<int>& elem_ids,
+                         mfem::Geometry::Type element_geometry)
+{
+  SLIC_ERROR_IF(geom_ids.size() != elem_ids.size(),
+                "To add elements, you must specify a geom_id AND an elem_id for each element");
+
+  for (std::vector<int>::size_type i = 0; i < geom_ids.size(); ++i) {
+    addElement(geom_ids[i], elem_ids[i], element_geometry);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -341,22 +334,19 @@ static Domain domain_of_boundary_elems(const mesh_t&                            
     switch (geom) {
       case mfem::Geometry::SEGMENT:
         if (add) {
-          output.edge_ids_.push_back(edge_id);
-          output.mfem_edge_ids_.push_back(f);
+          output.addElement(edge_id, f, geom);
         }
         edge_id++;
         break;
       case mfem::Geometry::TRIANGLE:
         if (add) {
-          output.tri_ids_.push_back(tri_id);
-          output.mfem_tri_ids_.push_back(f);
+          output.addElement(tri_id, f, geom);
         }
         tri_id++;
         break;
       case mfem::Geometry::SQUARE:
         if (add) {
-          output.quad_ids_.push_back(quad_id);
-          output.mfem_quad_ids_.push_back(f);
+          output.addElement(quad_id, f, geom);
         }
         quad_id++;
         break;
@@ -464,78 +454,32 @@ const BlockElementRestriction& Domain::get_restriction(FunctionSpace space) { re
 
 Domain EntireDomain(const mesh_t& mesh)
 {
-  Domain output{mesh, mesh.SpaceDimension() /* elems can be 2 or 3 dimensional */};
-
-  int tri_id  = 0;
-  int quad_id = 0;
-  int tet_id  = 0;
-  int hex_id  = 0;
-
-  // faces that satisfy the predicate are added to the domain
-  int num_elems = mesh.GetNE();
-  for (int i = 0; i < num_elems; i++) {
-    auto geom = mesh.GetElementGeometry(i);
-
-    switch (geom) {
-      case mfem::Geometry::TRIANGLE:
-        output.tri_ids_.push_back(tri_id++);
-        output.mfem_tri_ids_.push_back(i);
-        break;
-      case mfem::Geometry::SQUARE:
-        output.quad_ids_.push_back(quad_id++);
-        output.mfem_quad_ids_.push_back(i);
-        break;
-      case mfem::Geometry::TETRAHEDRON:
-        output.tet_ids_.push_back(tet_id++);
-        output.mfem_tet_ids_.push_back(i);
-        break;
-      case mfem::Geometry::CUBE:
-        output.hex_ids_.push_back(hex_id++);
-        output.mfem_hex_ids_.push_back(i);
-        break;
-      default:
-        SLIC_ERROR("unsupported element type");
-        break;
-    }
+  switch (mesh.SpaceDimension()) {
+    case 2:
+      return Domain::ofElements(mesh, [](std::vector<vec2>, int) { return true; });
+      break;
+    case 3:
+      return Domain::ofElements(mesh, [](std::vector<vec3>, int) { return true; });
+      break;
+    default:
+      SLIC_ERROR("In valid spatial dimension. Domains may only be created on 2D or 3D meshes.");
+      exit(-1);
   }
-
-  return output;
 }
 
 Domain EntireBoundary(const mesh_t& mesh)
 {
-  Domain output{mesh, mesh.SpaceDimension() - 1, Domain::Type::BoundaryElements};
-
-  int edge_id = 0;
-  int tri_id  = 0;
-  int quad_id = 0;
-
-  for (int f = 0; f < mesh.GetNumFaces(); f++) {
-    // discard faces with the wrong type
-    if (mesh.GetFaceInformation(f).IsInterior()) continue;
-
-    auto geom = mesh.GetFaceGeometry(f);
-
-    switch (geom) {
-      case mfem::Geometry::SEGMENT:
-        output.edge_ids_.push_back(edge_id++);
-        output.mfem_edge_ids_.push_back(f);
-        break;
-      case mfem::Geometry::TRIANGLE:
-        output.tri_ids_.push_back(tri_id++);
-        output.mfem_tri_ids_.push_back(f);
-        break;
-      case mfem::Geometry::SQUARE:
-        output.quad_ids_.push_back(quad_id++);
-        output.mfem_quad_ids_.push_back(f);
-        break;
-      default:
-        SLIC_ERROR("unsupported element type");
-        break;
-    }
+  switch (mesh.SpaceDimension()) {
+    case 2:
+      return Domain::ofBoundaryElements(mesh, [](std::vector<vec2>, int) { return true; });
+      break;
+    case 3:
+      return Domain::ofBoundaryElements(mesh, [](std::vector<vec3>, int) { return true; });
+      break;
+    default:
+      SLIC_ERROR("In valid spatial dimension. Domains may only be created on 2D or 3D meshes.");
+      exit(-1);
   }
-
-  return output;
 }
 
 /// @brief constructs a domain from all the interior face elements in a mesh
@@ -643,42 +587,28 @@ Domain set_operation(SET_OPERATION op, const Domain& a, const Domain& b)
 
   Domain combined{a.mesh_, a.dim_};
 
-  if (combined.dim_ == 0) {
-    combined.vertex_ids_ = set_operation(op, a.vertex_ids_, b.vertex_ids_);
+  using Ids         = std::vector<int>;
+  auto apply_set_op = [&op](const Ids& x, const Ids& y) { return set_operation(op, x, y); };
+
+  auto fill_output_lists = [apply_set_op, &output](const Ids& a_ids, const Ids& a_mfem_ids, const Ids& b_ids,
+                                                   const Ids& b_mfem_ids, mfem::Geometry::Type g) {
+    auto output_ids      = apply_set_op(a_ids, b_ids);
+    auto output_mfem_ids = apply_set_op(a_mfem_ids, b_mfem_ids);
+    output.addElements(output_ids, output_mfem_ids, g);
+  };
+
+  if (output.dim_ == 1) {
+    fill_output_lists(a.edge_ids_, a.mfem_edge_ids_, b.edge_ids_, b.mfem_edge_ids_, mfem::Geometry::SEGMENT);
   }
 
-  if (combined.dim_ == 1) {
-    std::vector<int2> a_zipped_ids, b_zipped_ids;
-    zip(a_zipped_ids, a.edge_ids_, a.mfem_edge_ids_);
-    zip(b_zipped_ids, b.edge_ids_, b.mfem_edge_ids_);
-    std::vector<int2> combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
-    unzip(combined_zipped_ids, combined.edge_ids_, combined.mfem_edge_ids_);
+  if (output.dim_ == 2) {
+    fill_output_lists(a.tri_ids_, a.mfem_tri_ids_, b.tri_ids_, b.mfem_tri_ids_, mfem::Geometry::TRIANGLE);
+    fill_output_lists(a.quad_ids_, a.mfem_quad_ids_, b.quad_ids_, b.mfem_quad_ids_, mfem::Geometry::SQUARE);
   }
 
-  if (combined.dim_ == 2) {
-    std::vector<int2> a_zipped_ids, b_zipped_ids;
-    zip(a_zipped_ids, a.tri_ids_, a.mfem_tri_ids_);
-    zip(b_zipped_ids, b.tri_ids_, b.mfem_tri_ids_);
-    std::vector<int2> combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
-    unzip(combined_zipped_ids, combined.tri_ids_, combined.mfem_tri_ids_);
-
-    zip(a_zipped_ids, a.quad_ids_, a.mfem_quad_ids_);
-    zip(b_zipped_ids, b.quad_ids_, b.mfem_quad_ids_);
-    combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
-    unzip(combined_zipped_ids, combined.quad_ids_, combined.mfem_quad_ids_);
-  }
-
-  if (combined.dim_ == 3) {
-    std::vector<int2> a_zipped_ids, b_zipped_ids;
-    zip(a_zipped_ids, a.tet_ids_, a.mfem_tet_ids_);
-    zip(b_zipped_ids, b.tet_ids_, b.mfem_tet_ids_);
-    std::vector<int2> combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
-    unzip(combined_zipped_ids, combined.tet_ids_, combined.mfem_tet_ids_);
-
-    zip(a_zipped_ids, a.hex_ids_, a.mfem_hex_ids_);
-    zip(b_zipped_ids, b.hex_ids_, b.mfem_hex_ids_);
-    combined_zipped_ids = set_operation(op, a_zipped_ids, b_zipped_ids);
-    unzip(combined_zipped_ids, combined.hex_ids_, combined.mfem_hex_ids_);
+  if (output.dim_ == 3) {
+    fill_output_lists(a.tet_ids_, a.mfem_tet_ids_, b.tet_ids_, b.mfem_tet_ids_, mfem::Geometry::TETRAHEDRON);
+    fill_output_lists(a.hex_ids_, a.mfem_hex_ids_, b.hex_ids_, b.mfem_hex_ids_, mfem::Geometry::CUBE);
   }
 
   return combined;
