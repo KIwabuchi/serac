@@ -101,6 +101,12 @@ inline void check_for_unsupported_elements(const mfem::Mesh& mesh)
   }
 }
 
+/**
+ * @brief function for verifying that DG spaces aren't used on interior face integrals over meshes that contain "shared" faces
+ * 
+ * sam: I would like to support these "shared" faces, but apparently mfem handles them in a fundamentally different way than
+ *      the "finite element operator decomposition" pattern used by everything else (see: "ExchangeFaceNbrData")
+ */
 inline void check_interior_face_compatibility(const mfem::Mesh& mesh, const FunctionSpace space)
 {
   if (space.family == Family::L2) {

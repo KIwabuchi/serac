@@ -29,8 +29,6 @@
 
 namespace serac {
 
-using mesh_t = mfem::Mesh;
-
 /**
  * @brief gather vertex coordinates for a list of vertices
  *

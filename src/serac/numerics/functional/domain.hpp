@@ -89,6 +89,11 @@ struct Domain {
   std::vector<int> mfem_hex_ids_;
   /// @endcond
 
+  /**
+   * @brief a collection of restriction operators for the different test/trial spaces appearing in 
+   *        integrals evaluated over this Domain. These are stored on the Domain itself to avoid duplicating
+   *        these restriction operators in each Integral over a given Domain.
+   */
   std::map<FunctionSpace, BlockElementRestriction> restriction_operators;
 
   /**
@@ -216,10 +221,13 @@ struct Domain {
   /// @brief get mfem degree of freedom list for a given FiniteElementSpace
   mfem::Array<int> dof_list(const fes_t* fes) const;
 
-  /// @brief TODO
+  /**
+   * @brief create a restriction operator over this domain, using its FunctionSpace as a key
+   * @note if a restriction for the given key (i.e. FunctionSpace) already exists, this function does nothing
+   */
   void insert_restriction(const fes_t* fes, FunctionSpace space);
 
-  /// @brief TODO
+  /// @brief getter for accessing a restriction operator by its function space
   const BlockElementRestriction& get_restriction(FunctionSpace space);
 
   /// @brief Add an element to the domain
