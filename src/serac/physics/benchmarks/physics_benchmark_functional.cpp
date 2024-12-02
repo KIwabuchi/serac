@@ -36,6 +36,8 @@ void functional_test(int parallel_refinement)
   using space         = serac::H1<p, components>;
   auto [fespace, fec] = serac::generateParFiniteElementSpace<space>(mesh.get());
 
+  Domain whole_domain = EntireDomain(*mesh);
+
   serac::Functional<space(space)> residual(fespace.get(), {fespace.get()});
 
   // Add the total domain residual term to the functional
@@ -46,7 +48,7 @@ void functional_test(int parallel_refinement)
         auto [u, du_dx] = phi;
         return serac::tuple{u, du_dx};
       },
-      *mesh);
+      whole_domain);
 
   // Set a random state to evaluate the residual
   mfem::ParGridFunction u_global(fespace.get());
