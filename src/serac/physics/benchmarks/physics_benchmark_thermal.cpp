@@ -64,7 +64,7 @@ void functional_test_static()
     cond = {{{1.5, 0.01, 0.0}, {0.01, 1.0, 0.0}, {0.0, 0.0, 1.0}}};
   }
 
-  Domain whole_domain = EntireDomain(pmesh);
+  serac::Domain whole_domain = serac::EntireDomain(pmesh);
 
   serac::heat_transfer::LinearConductor<dim> mat(1.0, 1.0, cond);
   thermal_solver.setMaterial(mat, whole_domain);
@@ -122,7 +122,7 @@ void functional_test_dynamic()
       serac::heat_transfer::default_nonlinear_options, serac::heat_transfer::default_linear_options,
       serac::heat_transfer::default_timestepping_options, "thermal_functional", "default_mesh");
 
-  Domain whole_domain = EntireDomain(pmesh);
+  serac::Domain whole_domain = serac::EntireDomain(pmesh);
 
   // Define an isotropic conductor material model
   serac::heat_transfer::LinearIsotropicConductor mat(1.0, 1.0, 1.0);

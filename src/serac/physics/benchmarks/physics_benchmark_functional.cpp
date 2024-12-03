@@ -36,7 +36,7 @@ void functional_test(int parallel_refinement)
   using space         = serac::H1<p, components>;
   auto [fespace, fec] = serac::generateParFiniteElementSpace<space>(mesh.get());
 
-  Domain whole_domain = EntireDomain(*mesh);
+  serac::Domain whole_domain = serac::EntireDomain(*mesh);
 
   serac::Functional<space(space)> residual(fespace.get(), {fespace.get()});
 
