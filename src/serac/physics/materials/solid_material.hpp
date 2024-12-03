@@ -79,11 +79,8 @@ struct StVenantKirchhoff {
     const auto            E = greenStrain(grad_u);
 
     // stress
-    const auto S     = K * tr(E) * I + 2.0 * G * dev(E);
-    const auto P     = dot(F, S);
-    const auto sigma = dot(P, transpose(F)) / det(F);
-
-    return sigma;
+    const auto S = K * tr(E) * I + 2.0 * G * dev(E);
+    return dot(F, S);
   }
 
   double density;  ///< density
@@ -115,10 +112,15 @@ struct NeoHookean {
     using std::log1p;
     constexpr auto I         = Identity<dim>();
     auto           lambda    = K - (2.0 / 3.0) * G;
-    auto           B_minus_I = du_dX * transpose(du_dX) + transpose(du_dX) + du_dX;
-    auto           J_minus_1 = detApIm1(du_dX);
-    auto           J         = J_minus_1 + 1;
-    return (lambda * log1p(J_minus_1) * I + G * B_minus_I) / J;
+    auto           B_minus_I = dot(du_dX, transpose(du_dX)) + transpose(du_dX) + du_dX;
+
+    auto logJ = log1p(detApIm1(du_dX));
+    // Kirchoff stress, in form that avoids cancellation error when F is near I
+    auto TK = lambda * logJ * I + G * B_minus_I;
+
+    // Pull back to Piola
+    auto F = du_dX + I;
+    return dot(TK, inv(transpose(F)));
   }
 
   double density;  ///< mass density
@@ -313,15 +315,26 @@ struct J2 {
 
       s      = s - 2.0 * G * delta_eqps * Np;
       auto A = exp_symm(-delta_eqps * Np);
-      Fe     = dot(Fe, A);
+
+      auto Fpinv = dot(state.Fpinv, A);
+
       state.accumulated_plastic_strain += get_value(delta_eqps);
-      state.Fpinv = dot(state.Fpinv, get_value(A));
+      state.Fpinv = get_value(Fpinv);
+      // Mandel stress
+      auto M = s + p * I;
+      // convert to Piola
+      Fe     = dot(Fe, A);
+      auto P = transpose(dot(dot(Fpinv, M), inv(Fe)));
+      return P;
+    } else {
+      // I want to unify this branch with the yielding branch, but I'd need to declare Fpinv above,
+      // and I don't know how to declare its type. BT 11/5/24
+      // Mandel stress
+      auto M = s + p * I;
+      // convert to Piola
+      auto P = transpose(dot(dot(state.Fpinv, M), inv(Fe)));
+      return P;
     }
-    // Mandel stress
-    auto M = s + p * I;
-    // convert to Cauchy
-    auto FeT = transpose(Fe);
-    return dot(dot(inv(FeT), M), FeT) / det(F);
   }
 };
 

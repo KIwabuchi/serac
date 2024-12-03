@@ -142,10 +142,8 @@ public:
     auto traction = [material, Hdot](auto, auto n0, auto t) {
       auto                     H = Hdot * t;
       typename Material::State state;  // needs to be reconfigured for mats with state
-      tensor<double, dim, dim> sigma = material(state, H);
-      auto                     F     = Identity<dim>() + H;
-      auto                     J     = det(F);
-      auto                     P     = J * dot(sigma, inv(transpose(F)));
+      tensor<double, dim, dim> P = material(state, H);
+
       // We don't have a good way to restrict the tractions to the
       // complement of the essential boundary segments.
       // The following matches the case when the top and left surfaces
@@ -309,7 +307,7 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
 
   SolidMechanics<p, dim> solid(nonlin_opts, serac::solid_mechanics::default_linear_options,
                                TimesteppingOptions{TimestepMethod::Newmark, DirichletEnforcementMethod::DirectControl},
-                               GeometricNonlinearities::On, "solid_dynamics", mesh_tag);
+                               "solid_dynamics", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = 1.0, .G = 1.0};
   solid.setMaterial(mat);

@@ -76,8 +76,8 @@ TEST(LiquidCrystalElastomer, Bertoldi)
 #endif
 
   SolidMechanics<p, dim, Parameters<H1<p>, L2<p>, L2<p> > > solid_solver(
-      nonlinear_options, linear_options, solid_mechanics::default_quasistatic_options, GeometricNonlinearities::Off,
-      "lce_solid_functional", mesh_tag, {"order", "eta", "gamma"});
+      nonlinear_options, linear_options, solid_mechanics::default_quasistatic_options, "lce_solid_functional", mesh_tag,
+      {"order", "eta", "gamma"});
 
   // Material properties
   double density         = 1.0;
