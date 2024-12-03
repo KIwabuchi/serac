@@ -36,7 +36,7 @@ void functional_test_static()
 
   auto mesh =
       serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-  
+
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "default_mesh");
 
   // Define a boundary attribute set
@@ -111,8 +111,8 @@ void functional_test_dynamic()
 
   auto mesh =
       serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-      
-  auto & pmesh = serac::StateManager::setMesh(std::move(mesh), "default_mesh");
+
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "default_mesh");
 
   // Define a boundary attribute set
   std::set<int> ess_bdr = {1};
