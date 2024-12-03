@@ -238,9 +238,9 @@ void functional_solid_test_euler(NonlinSolve nonlinSolve, Prec prec)
 
   auto [nonlinear_options, linear_options] = get_opts(nonlinSolve, prec, 3 * Nx * Ny * Nz, 1e-9);
 
-  auto seracSolid = std::make_unique<seracSolidType>(
-      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options,
-      serac::GeometricNonlinearities::On, "serac_solid", meshTag, std::vector<std::string>{});
+  auto seracSolid = std::make_unique<seracSolidType>(nonlinear_options, linear_options,
+                                                     serac::solid_mechanics::default_quasistatic_options, "serac_solid",
+                                                     meshTag, std::vector<std::string>{});
 
   serac::solid_mechanics::NeoHookean material{density, bulkMod, shearMod};
   seracSolid->setMaterial(serac::DependsOn<>{}, material);
@@ -316,9 +316,9 @@ void functional_solid_test_nonlinear_buckle(NonlinSolve nonlinSolve, Prec prec, 
 
   auto [nonlinear_options, linear_options] = get_opts(nonlinSolve, prec, 3 * Nx * Ny * Nz, 1e-11);
 
-  auto seracSolid = std::make_unique<seracSolidType>(
-      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options,
-      serac::GeometricNonlinearities::On, "serac_solid", meshTag, std::vector<std::string>{});
+  auto seracSolid = std::make_unique<seracSolidType>(nonlinear_options, linear_options,
+                                                     serac::solid_mechanics::default_quasistatic_options, "serac_solid",
+                                                     meshTag, std::vector<std::string>{});
 
   serac::solid_mechanics::NeoHookean material{density, bulkMod, shearMod};
   seracSolid->setMaterial(serac::DependsOn<>{}, material);
@@ -382,9 +382,11 @@ int main(int argc, char* argv[])
     functional_solid_test_nonlinear_buckle(NonlinSolve::NEWTON, Prec::MULTIGRID, problemSize);
     SERAC_MARK_END("Multigrid Preconditioner");
 
+#ifdef SERAC_USE_PETSC
     SERAC_MARK_BEGIN("Petsc Multigrid Preconditioner");
     functional_solid_test_nonlinear_buckle(NonlinSolve::NEWTON, Prec::PETSC_MULTIGRID, problemSize);
     SERAC_MARK_END("Petsc Multigrid Preconditioner");
+#endif
   } else {
     SERAC_SET_METADATA("nonlinear solver", nonlinSolveToString(nonlinSolve));
     SERAC_SET_METADATA("preconditioner", precToString(prec));

@@ -4,14 +4,6 @@
 #
 # SPDX-License-Identifier: (BSD-3-Clause)
 
-add_subdirectory(serac)
-add_subdirectory(drivers)
-add_subdirectory(tools)
-
-if (ENABLE_DOCS)
-    add_subdirectory(docs)
-endif()
-
-if(SERAC_ENABLE_TESTS)
-    add_subdirectory(tests)
-endif()
+blt_add_executable(NAME       partitioner
+                   SOURCES    partitioner.cpp
+                   DEPENDS_ON serac_mesh)

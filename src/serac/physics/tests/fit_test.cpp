@@ -57,9 +57,9 @@ void stress_extrapolation_test()
 
   FiniteElementState sigma_J2(pmesh, output_space{}, "sigma_J2");
 
-  SolidMechanics<p, dim, serac::Parameters<output_space> > solid_solver(
-      nonlinear_options, linear_options, solid_mechanics::default_quasistatic_options, GeometricNonlinearities::Off,
-      "solid_mechanics", mesh_tag, {"sigma_J2"});
+  SolidMechanics<p, dim, serac::Parameters<output_space> > solid_solver(nonlinear_options, linear_options,
+                                                                        solid_mechanics::default_quasistatic_options,
+                                                                        "solid_mechanics", mesh_tag, {"sigma_J2"});
 
   solid_mechanics::NeoHookean mat{
       1.0,    // density
