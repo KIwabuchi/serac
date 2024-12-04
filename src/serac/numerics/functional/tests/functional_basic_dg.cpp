@@ -24,76 +24,6 @@
 using namespace serac;
 using namespace serac::profiling;
 
-//
-// patch2D_tris_and_quads.mesh
-//
-//   o---------------------o
-//   | *      0          * |
-//   |    *           *    |
-//   |      o ----- o      |
-//   |  0   | 0 . ^ |      |
-//   |      | *   1 |  1   |
-//   |      o ----- o      |
-//   |   *            *    |
-//   | *          1      * |
-//   o---------------------o
-//
-
-// [   ---   L    ---   |  --  FND --  ]
-//                         ^^
-
-#if 0
-void ParNonlinearForm::Mult(const Vector &x, Vector &y) const
-{
-   NonlinearForm::Mult(x, y); // x --(P)--> aux1 --(A_local)--> aux2
-
-   if (fnfi.Size())
-   {
-      MFEM_VERIFY(!NonlinearForm::ext, "Not implemented (extensions + faces");
-      // Terms over shared interior faces in parallel.
-      ParFiniteElementSpace *pfes = ParFESpace();
-      ParMesh *pmesh = pfes->GetParMesh();
-      FaceElementTransformations *tr;
-      const FiniteElement *fe1, *fe2;
-      Array<int> vdofs1, vdofs2;
-      Vector el_x, el_y;
-
-      aux1.HostReadWrite();
-      X.MakeRef(aux1, 0); // aux1 contains P.x
-      X.ExchangeFaceNbrData();
-      const int n_shared_faces = pmesh->GetNSharedFaces();
-      for (int i = 0; i < n_shared_faces; i++)
-      {
-         tr = pmesh->GetSharedFaceTransformations(i, true);
-         int Elem2NbrNo = tr->Elem2No - pmesh->GetNE();
-
-         fe1 = pfes->GetFE(tr->Elem1No);
-         fe2 = pfes->GetFaceNbrFE(Elem2NbrNo);
-
-         pfes->GetElementVDofs(tr->Elem1No, vdofs1);
-         pfes->GetFaceNbrElementVDofs(Elem2NbrNo, vdofs2);
-
-         el_x.SetSize(vdofs1.Size() + vdofs2.Size());
-         X.GetSubVector(vdofs1, el_x.GetData());
-         X.FaceNbrData().GetSubVector(vdofs2, el_x.GetData() + vdofs1.Size());
-
-         for (int k = 0; k < fnfi.Size(); k++)
-         {
-            fnfi[k]->AssembleFaceVector(*fe1, *fe2, *tr, el_x, el_y);
-            aux2.AddElementVector(vdofs1, el_y.GetData());
-         }
-      }
-   }
-
-   P->MultTranspose(aux2, y);
-
-   const int N = ess_tdof_list.Size();
-   const auto idx = ess_tdof_list.Read();
-   auto Y_RW = y.ReadWrite();
-   mfem::forall(N, [=] MFEM_HOST_DEVICE (int i) { Y_RW[idx[i]] = 0.0; });
-}
-#endif
-
 template <int dim, int p>
 void L2_test(std::string meshfile)
 {
@@ -145,8 +75,6 @@ void L2_test(std::string meshfile)
 }
 
 TEST(basic, L2_test_tris_and_quads_linear) { L2_test<2, 1>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }
-
-#if 0
 TEST(basic, L2_test_tris_and_quads_quadratic) { L2_test<2, 2>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }
 
 TEST(basic, L2_test_tets_linear) { L2_test<3, 1>(SERAC_REPO_DIR "/data/meshes/patch3D_tets.mesh"); }
@@ -263,7 +191,6 @@ void L2_scalar_valued_test(std::string meshfile)
 TEST(basic, L2_mixed_scalar_test_tris_and_quads_linear) { L2_scalar_valued_test<2, 1>(SERAC_REPO_DIR "/data/meshes/patch2D_tris_and_quads.mesh"); }
 
 TEST(basic, L2_mixed_scalar_test_tets_and_hexes_linear) { L2_scalar_valued_test<3, 1>(SERAC_REPO_DIR "/data/meshes/patch3D_tets_and_hexes.mesh"); }
-#endif
 
 int main(int argc, char* argv[])
 {

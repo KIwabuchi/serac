@@ -329,11 +329,7 @@ void parametrized_test(int permutation)
   auto H1_dofs    = GetFaceDofs(H1_fes.get(), face_geom, FaceType::INTERIOR);
   auto Hcurl_dofs = GetFaceDofs(Hcurl_fes.get(), face_geom, FaceType::INTERIOR);
 
-#if 0
-  auto L2_dofs = GetFaceDofs(L2_fes.get(), face_geom, FaceType::INTERIOR);
-#else
   auto L2_dofs = GetFaceDofs(L2_fes.get(), face_geom, face_ids);
-#endif
 
   // verify that the dofs for the L2 faces are aligned properly
   int dofs_per_side = L2_dofs.shape()[1] / 2;
@@ -387,7 +383,6 @@ void parametrized_test(int permutation)
 ////////////////////////////////////////////////////////////////////////////////
 
 TEST(DomainInterior, TriMesh10) { parametrized_test<mfem::Geometry::TRIANGLE, 1>(0); }
-#if 1
 TEST(DomainInterior, TriMesh11) { parametrized_test<mfem::Geometry::TRIANGLE, 1>(1); }
 TEST(DomainInterior, TriMesh12) { parametrized_test<mfem::Geometry::TRIANGLE, 1>(2); }
 
@@ -533,7 +528,6 @@ TEST(DomainInterior, HexMesh320) { parametrized_test<mfem::Geometry::CUBE, 3>(20
 TEST(DomainInterior, HexMesh321) { parametrized_test<mfem::Geometry::CUBE, 3>(21); }
 TEST(DomainInterior, HexMesh322) { parametrized_test<mfem::Geometry::CUBE, 3>(22); }
 TEST(DomainInterior, HexMesh323) { parametrized_test<mfem::Geometry::CUBE, 3>(23); }
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

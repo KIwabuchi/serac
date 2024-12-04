@@ -19,9 +19,6 @@
 #include "serac/numerics/functional/interior_face_integral_kernels.hpp"
 #include "serac/numerics/functional/differentiate_wrt.hpp"
 
-// TODO REMOVE AFTER DEBUGGING
-#include "serac/infrastructure/mpi_fstream.hpp"
-
 namespace serac {
 
 /// @brief a class for representing a Integral calculations and their derivatives

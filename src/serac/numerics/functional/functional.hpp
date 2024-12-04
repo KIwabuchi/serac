@@ -606,7 +606,6 @@ private:
       return df_;
     }
 
-#if 1
     void initialize_sparsity_pattern()
     {
       using row_col = std::tuple<int, int>;
@@ -778,108 +777,6 @@ private:
 
       return A;
     };
-#else
-    /// @brief assemble element matrices and form an mfem::HypreParMatrix
-    std::unique_ptr<mfem::HypreParMatrix> assemble()
-    {
-      // the CSR graph (sparsity pattern) is reusable, so we cache
-      // that and ask mfem to not free that memory in ~SparseMatrix()
-      constexpr bool sparse_matrix_frees_graph_ptrs = false;
-
-      // the CSR values are NOT reusable, so we pass ownership of
-      // them to the mfem::SparseMatrix, to be freed in ~SparseMatrix()
-      constexpr bool sparse_matrix_frees_values_ptr = true;
-
-      constexpr bool col_ind_is_sorted = true;
-
-      if (!lookup_tables.initialized) {
-        lookup_tables.init(form_.G_test_[Domain::Type::Elements],
-                           form_.G_trial_[Domain::Type::Elements][which_argument]);
-      }
-
-      double* values = new double[lookup_tables.nnz]{};
-
-      std::map<mfem::Geometry::Type, ExecArray<double, 3, exec>> element_gradients[Domain::num_types];
-
-      for (auto& integral : form_.integrals_) {
-        auto& K_elem = element_gradients[integral.domain_.type_];
-        auto& test_restrictions = form_.G_test_[integral.domain_.type_].restrictions;
-        auto& trial_restrictions = form_.G_trial_[integral.domain_.type_][which_argument].restrictions;
-
-        if (K_elem.empty()) {
-          for (auto& [geom, test_restriction] : test_restrictions) {
-            auto& trial_restriction = trial_restrictions[geom];
-
-            K_elem[geom] = ExecArray<double, 3, exec>(test_restriction.num_elements,
-                                                      trial_restriction.nodes_per_elem * trial_restriction.components,
-                                                      test_restriction.nodes_per_elem * test_restriction.components);
-
-            detail::zero_out(K_elem[geom]);
-          }
-        }
-
-        integral.ComputeElementGradients(K_elem, which_argument);
-      }
-
-      for (auto type : {Domain::Type::Elements, Domain::Type::BoundaryElements}) {
-        auto& K_elem = element_gradients[type];
-        auto& test_restrictions = form_.G_test_[type].restrictions;
-        auto& trial_restrictions = form_.G_trial_[type][which_argument].restrictions;
-
-        if (!K_elem.empty()) {
-          for (auto [geom, elem_matrices] : K_elem) {
-            std::vector<DoF> test_vdofs(test_restrictions[geom].nodes_per_elem * test_restrictions[geom].components);
-            std::vector<DoF> trial_vdofs(trial_restrictions[geom].nodes_per_elem * trial_restrictions[geom].components);
-
-            for (axom::IndexType e = 0; e < elem_matrices.shape()[0]; e++) {
-              test_restrictions[geom].GetElementVDofs(e, test_vdofs);
-              trial_restrictions[geom].GetElementVDofs(e, trial_vdofs);
-
-              for (uint32_t i = 0; i < uint32_t(elem_matrices.shape()[1]); i++) {
-                int col = int(trial_vdofs[i].index());
-
-                for (uint32_t j = 0; j < uint32_t(elem_matrices.shape()[2]); j++) {
-                  int row = int(test_vdofs[j].index());
-
-                  int sign = test_vdofs[j].sign() * trial_vdofs[i].sign();
-
-                  // note: col / row appear backwards here, because the element matrix kernel
-                  //       is actually transposed, as a result of being row-major storage.
-                  //
-                  //       This is kind of confusing, and will be fixed in a future refactor
-                  //       of the element gradient kernel implementation
-                  [[maybe_unused]] auto nz = lookup_tables(row, col);
-                  values[lookup_tables(row, col)] += sign * elem_matrices(e, i, j);
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // Copy the column indices to an auxilliary array as MFEM can mutate these during HypreParMatrix construction
-      col_ind_copy_ = lookup_tables.col_ind;
-
-      auto J_local =
-          mfem::SparseMatrix(lookup_tables.row_ptr.data(), col_ind_copy_.data(), values, form_.output_L_.Size(),
-                             form_.input_L_[which_argument].Size(), sparse_matrix_frees_graph_ptrs,
-                             sparse_matrix_frees_values_ptr, col_ind_is_sorted);
-
-      auto* R = form_.test_space_->Dof_TrueDof_Matrix();
-
-      auto* A =
-          new mfem::HypreParMatrix(test_space_->GetComm(), test_space_->GlobalVSize(), trial_space_->GlobalVSize(),
-                                   test_space_->GetDofOffsets(), trial_space_->GetDofOffsets(), &J_local);
-
-      auto* P = trial_space_->Dof_TrueDof_Matrix();
-
-      std::unique_ptr<mfem::HypreParMatrix> K(mfem::RAP(R, A, P));
-
-      delete A;
-
-      return K;
-    };
-#endif
 
     friend auto assemble(Gradient& g) { return g.assemble(); }
 
