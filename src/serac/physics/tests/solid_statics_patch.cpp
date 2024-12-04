@@ -22,32 +22,13 @@
 
 namespace serac {
 
-template <int dim>
-constexpr tensor<double, dim, dim> make_patch_test_displacement_gradient()
-{
-  // clang-format off
-  if constexpr (dim == 2) {
-    return {{{0.110791568544027, 0.230421268325901},
-             {0.198344644470483, 0.060514559793513}}};
-  } else {
-    return {{{0.110791568544027, 0.230421268325901, 0.15167673653354},
-             {0.198344644470483, 0.060514559793513, 0.084137393813728},
-             {0.011544253485023, 0.060942846497753, 0.186383473579596}}};
-  }
-  // clang-format on
-}
+// clang-format off
+constexpr tensor<double, 3, 3> A3D{{{0.110791568544027, 0.230421268325901, 0.15167673653354},
+                                    {0.198344644470483, 0.060514559793513, 0.084137393813728},
+                                    {0.011544253485023, 0.060942846497753, 0.186383473579596}}};
 
-template <int dim>
-constexpr tensor<double, dim> make_patch_test_displacement()
-{
-  // clang-format off
-  if constexpr (dim == 2) {
-    return {{0.765645367640828, 0.992487355850465}};
-  } else {
-    return {{0.765645367640828, 0.992487355850465, 0.162199373722092}};
-  }
-  // clang-format on
-}
+constexpr tensor<double, 3> B3D{{0.765645367640828, 0.992487355850465, 0.162199373722092}};
+// clang-format on
 
 /**
  * @brief Exact displacement solution that is an affine function
@@ -57,7 +38,9 @@ constexpr tensor<double, dim> make_patch_test_displacement()
 template <int dim>
 class AffineSolution {
 public:
-  AffineSolution() : A(make_patch_test_displacement_gradient<dim>()), b(make_patch_test_displacement<dim>()) {};
+  AffineSolution()
+    : A(make_tensor<dim, dim>([](int i, int j) { return A3D[i][j]; })),
+      b(make_tensor<dim>([](int i) { return B3D[i]; })) {};
 
   tensor<double, dim> eval(tensor<double, dim> X) const { return A*X + b; };
 
@@ -108,9 +91,7 @@ public:
         return contains(essential_boundary_attrs, attr);
       }
     );
-    sf.setDisplacementBCs(ebc_func, essential_boundary, 0);
-    sf.setDisplacementBCs(ebc_func, essential_boundary, 1);
-    if constexpr (dim == 3) sf.setDisplacementBCs(ebc_func, essential_boundary, 2);
+    for (int i = 0; i < dim; i++) sf.setDisplacementBCs(ebc_func, essential_boundary, i);
 
     // natural BCs
     typename Material::State state;
@@ -444,44 +425,33 @@ double pressure_error()
   // Define the essential boundary conditions corresponding to 10% uniaxial strain everywhere
   // except the pressure loaded surface
   if constexpr (dim == 2) {
-    using FaceVertices = std::vector<vec2>;
     if (element_type::geometry == mfem::Geometry::TRIANGLE) {
-
-      Domain boundaryA = Domain::ofBoundaryElements(pmesh, 
-        [](FaceVertices, int attr) { return attr == 4; });
+      Domain boundaryA = Domain::ofBoundaryElements(pmesh, by_attr<dim>(4));
       solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 0);
       solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 1);
 
       Domain boundaryB = Domain::ofBoundaryElements(pmesh, 
-        [](FaceVertices, int attr) { return (attr == 1) || (attr == 3); });
-      solid.setDisplacementBCs([](auto X, auto){ return 0.0*X; }, boundaryB, 1);
-
+        [](std::vector<vec2>, int attr) { return (attr == 1) || (attr == 3); });
+      solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, boundaryB, 1);
     } else if (element_type::geometry == mfem::Geometry::SQUARE) {
-      Domain boundaryA = Domain::ofBoundaryElements(pmesh, 
-        [](FaceVertices, int attr) { return attr == 1; });
+      Domain boundaryA = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
       solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 0);
       solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 1);
 
-      Domain boundaryB = Domain::ofBoundaryElements(pmesh, 
-        [](FaceVertices, int attr) { return (attr == 2) || (attr == 4); });
-      solid.setDisplacementBCs([](auto X, auto){ return 0.0*X; }, boundaryB, 1);
+      Domain boundaryB = Domain::ofBoundaryElements(pmesh, [](std::vector<vec2>, int attr) { return (attr == 2) || (attr == 4); });
+      solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, boundaryB, 1);
     }
   } else {
-    using FaceVertices = std::vector<vec3>;
-
-    Domain boundaryA = Domain::ofBoundaryElements(pmesh, 
-        [](FaceVertices, int attr) { return attr == 1; });
+    Domain boundaryA = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
     solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 0);
     solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 1);
     solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 2);
 
-    Domain boundaryB = Domain::ofBoundaryElements(pmesh, 
-        [](FaceVertices, int attr) { return (attr == 2) || (attr == 5); });
-    solid.setDisplacementBCs([](auto X, auto){ return 0.0*X; }, boundaryB, 1);
+    Domain boundaryB = Domain::ofBoundaryElements(pmesh, [](std::vector<vec3>, int attr) { return (attr == 2) || (attr == 5); });
+    solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, boundaryB, 1);
 
-    Domain boundaryC = Domain::ofBoundaryElements(pmesh,
-        [](FaceVertices, int attr) { return (attr == 3) || (attr == 6); });
-    solid.setDisplacementBCs([](auto X, auto){ return 0.0*X; }, boundaryC, 2);
+    Domain boundaryC = Domain::ofBoundaryElements(pmesh, [](std::vector<vec3>, int attr) { return (attr == 3) || (attr == 6); });
+    solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, boundaryC, 2);
   }
 
   // Finalize the data structures
