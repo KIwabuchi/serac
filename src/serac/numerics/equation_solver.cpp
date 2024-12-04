@@ -361,6 +361,15 @@ public:
     }
   }
 
+  //template <typename HessVecFunc>
+  //double computeEnergy(const mfem::Vector& r, const HessVecFunc& H, const mfem::Vector& z) const {
+  //  double rz = Dot(r,z);
+  //  mfem::Vector tmp(r);
+  //  tmp *= 0.0;
+  //  H(z,tmp);
+  //  return rz + 0.5 * Dot(z, tmp);
+  //}
+
   /// Minimize quadratic sub-problem given residual vector, the action of the stiffness and a preconditioner
   template <typename HessVecFunc, typename PrecondFunc>
   void solveTrustRegionModelProblem(const mfem::Vector& r0, mfem::Vector& rCurrent, HessVecFunc hess_vec_func,
@@ -368,7 +377,7 @@ public:
                                     TrustRegionResults& results) const
   {
     SERAC_MARK_FUNCTION;
-    // minimize r@z + 0.5*z@J@z
+    // minimize r0@z + 0.5*z@J@z
     results.interior_status     = TrustRegionResults::Status::Interior;
     results.cg_iterations_count = 0;
 
@@ -380,20 +389,26 @@ public:
 
     const double cg_tol_squared = settings.cg_tol * settings.cg_tol;
 
-    if (Dot(r0, r0) <= cg_tol_squared && cgIter >= settings.min_cg_iterations) {
+    if (Dot(r0, r0) <= cg_tol_squared && settings.min_cg_iterations==0) {
       return;
     }
 
     rCurrent = r0;
     precond(rCurrent, Pr);
+    // std::cout << std::setprecision(16) << "r0 = " << r0.Norml2() << " " << rCurrent.Norml2() << std::endl;
+
     d = 0.0;
     add(d, -1.0, Pr, d);  // d = -Pr
+    // d = Pr; // d = -Pr
+    // d *= -1.0;
 
     z          = 0.0;
     double zz  = 0.;
     double rPr = Dot(rCurrent, Pr);
     double zd  = 0.0;
     double dd  = Dot(d, d);
+
+    //std::cout << "initial energy = " << computeEnergy(r0, hess_vec_func, z) << std::endl;
 
     for (cgIter = 1; cgIter <= settings.max_cg_iterations; ++cgIter) {
       hess_vec_func(d, Hd);
@@ -405,18 +420,29 @@ public:
       double zzNp1 = Dot(zPred, zPred);  // can optimize this eventually
 
       if (curvature <= 0) {
+        //printf("negative curvature\n");
         // mfem::out << "negative curvature found.\n";
+        //scratch = z;
+        //scratch *= 1e-4;
+        //std::cout << "energy toward boundary = " << computeEnergy(r0, hess_vec_func, scratch) << " step size = " << std::sqrt(Dot(z,z)) << std::endl;
         projectToBoundaryWithCoefs(z, d, trSize, zz, zd, dd);
+        //std::cout << "energy at boundary = " << computeEnergy(r0, hess_vec_func, z) << " step size = " << std::sqrt(Dot(z,z)) << std::endl;
+        //std::cout << "curvature, d norm = " << curvature << " " << std::sqrt(Dot(z,z)) << std::endl;
         results.interior_status = TrustRegionResults::Status::NegativeCurvature;
         return;
       } else if (zzNp1 > (trSize * trSize)) {
+        //printf("on boundary\n");
         // mfem::out << "step outside trust region.\n";
+
         projectToBoundaryWithCoefs(z, d, trSize, zz, zd, dd);
+        // std::cout << "energy at boundary = " << computeEnergy(r0, hess_vec_func, z) << " " << std::sqrt(Dot(z,z)) << std::endl;
         results.interior_status = TrustRegionResults::Status::OnBoundary;
         return;
       }
 
       z = zPred;
+
+      //std::cout << "energy at " << cgIter << " = " << computeEnergy(r0, hess_vec_func, z) << " " << std::sqrt(Dot(z,z)) << std::endl;
 
       hess_vec_func(d, Hd);
       add(rCurrent, alphaCg, Hd, rCurrent);
@@ -436,6 +462,7 @@ public:
       zd = Dot(z, d);
       dd = Dot(d, d);
     }
+    cgIter--; // if all cg iterations are taken, correct for output
   }
 
   /// assemble the jacobian
@@ -587,6 +614,8 @@ public:
         solveTrustRegionModelProblem(r, scratch, hess_vec_func, precond_func, settings, tr_size, trResults);
       }
       cumulative_cg_iters_from_last_precond_update += trResults.cg_iterations_count;
+
+      if (it==20) exit(1);
 
       bool happyAboutTrSize = false;
       int  lineSearchIter   = 0;
