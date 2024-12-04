@@ -19,7 +19,6 @@
 #include "serac/physics/materials/solid_material.hpp"
 #include "serac/physics/boundary_conditions/boundary_condition_manager.hpp"
 
-
 const std::string MESHTAG = "mesh";
 
 static constexpr int dim = 2;
@@ -85,9 +84,6 @@ std::vector<serac::FiniteElementState> applyLinearOperator(const Mat& A, const s
 }
 
 
-
-
-
 auto createDiagonalTestMatrix(serac::FiniteElementState& x)
 {
   const int local_rows = x.Size();
@@ -139,6 +135,7 @@ TEST_F(MeshFixture, QR)
   }
   std::vector<serac::FiniteElementState> states = {u1,u2,u3}; //,u4};
 
+  /*
   for (int s=0; s < states.size(); ++s) {
     for (int i=0; i < u1.Size(); ++i) {
       std::cout << states[s][i] << " ";
@@ -155,14 +152,13 @@ TEST_F(MeshFixture, QR)
     std::cout << b[i] << " ";
   }
   printf("\n");
+  */
 
   auto A_parallel = createDiagonalTestMatrix(a);
   std::vector<serac::FiniteElementState> Astates = applyLinearOperator(A_parallel, states);
 
   double delta = 3.4; //0.001;
   auto [sol, leftvecs, leftvals] = serac::solveSubspaceProblem(states, Astates, b, delta, 1);
-
-  std::cout << "solution norm 2 = " << std::sqrt(serac::innerProduct(sol, sol)) << std::endl;
 
   MatDestroy(&A_parallel);
 }

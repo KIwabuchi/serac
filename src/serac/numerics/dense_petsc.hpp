@@ -229,11 +229,11 @@ auto eigh(const DenseMat& Adense)
 
   EPSType type;
   EPSGetType(eps, &type);
-  PetscPrintf(PETSC_COMM_SELF," Solution method: %s\n\n",type);
+  //PetscPrintf(PETSC_COMM_SELF," Solution method: %s\n\n",type);
   EPSGetDimensions(eps, &jsize, NULL, NULL);
-  SLIC_WARNING_IF(isize!=jsize, "The requested and achieved number of eigenvalues do not match it eigh call");
-  PetscPrintf(PETSC_COMM_SELF," Number of requested eigenvalues: %" PetscInt_FMT "\n",isize);
-  PetscPrintf(PETSC_COMM_SELF," Number of requested eigenvalues: %" PetscInt_FMT "\n",jsize);
+  SLIC_WARNING_IF(isize!=jsize, "The requested and achieved number of eigenvalues do not match eigh call");
+  //PetscPrintf(PETSC_COMM_SELF," Number of requested eigenvalues: %" PetscInt_FMT "\n",isize);
+  //PetscPrintf(PETSC_COMM_SELF," Number of requested eigenvalues: %" PetscInt_FMT "\n",jsize);
 
   DenseVec eigenvalues(isize);
   std::vector<DenseVec> eigenvectors;

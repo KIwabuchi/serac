@@ -13,6 +13,7 @@ set(numerics_headers
     stdfunction_operator.hpp
     petsc_solvers.hpp
     trust_region_solver.hpp
+    dense_petsc.hpp
     )
 
 set(numerics_sources
