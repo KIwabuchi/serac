@@ -77,11 +77,8 @@ struct Integral {
         (with_AD) ? evaluation_with_AD_[functional_to_integral_index_.at(differentiation_index)] : evaluation_;
     for (auto& [geometry, func] : kernels) {
       std::vector<const double*> inputs(active_trial_spaces_.size());
-      mpi::out << geometry << std::endl;
       for (std::size_t i = 0; i < active_trial_spaces_.size(); i++) {
         inputs[i] = input_E[uint32_t(active_trial_spaces_[i])].GetBlock(geometry).Read();
-        mpi::out << "input_E[" << i
-                 << "].Size(): " << input_E[uint32_t(active_trial_spaces_[i])].GetBlock(geometry).Size() << std::endl;
       }
       func(t, inputs, output_E.GetBlock(geometry).ReadWrite(), update_state);
     }

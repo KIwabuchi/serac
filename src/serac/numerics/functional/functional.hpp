@@ -499,12 +499,10 @@ public:
       Domain& dom = integral.domain_;
 
       const serac::BlockElementRestriction& G_test = dom.get_restriction(test_function_space_);
-      mpi::out << "G_test.ESize() " << G_test.ESize() << std::endl;
 
       for (auto i : integral.active_trial_spaces_) {
         const serac::BlockElementRestriction& G_trial = dom.get_restriction(trial_function_spaces_[i]);
         input_E_buffer_[i].SetSize(int(G_trial.ESize()));
-        mpi::out << "G_trial.ESize() " << G_trial.ESize() << std::endl;
         input_E_[i].Update(input_E_buffer_[i], G_trial.bOffsets());
         G_trial.Gather(input_L_[i], input_E_[i]);
       }

@@ -167,10 +167,6 @@ void evaluation_kernel_impl(trial_element_type trial_elements, test_element, dou
   [[maybe_unused]] tuple u = {
       reinterpret_cast<const typename decltype(type<indices>(trial_elements))::dof_type_if*>(inputs[indices])...};
 
-  ((mpi::out << "sizeof(dof_type_if) / sizeof(double): " << sizeof(decltype(get<indices>(u)[0])) / sizeof(double)
-             << std::endl),
-   ...);
-
   // for each element in the domain
   for (uint32_t e = 0; e < num_elements; e++) {
     mpi::out << "e: " << e << " / " << num_elements << std::endl;
