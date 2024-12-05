@@ -23,9 +23,9 @@
 
 namespace serac {
 
-class ContactTest : public testing::TestWithParam<std::pair<ContactEnforcement, std::string>> {};
+class ContactPatchTied : public testing::TestWithParam<std::pair<ContactEnforcement, std::string>> {};
 
-TEST_P(ContactTest, patch)
+TEST_P(ContactPatchTied, patch)
 {
   // NOTE: p must be equal to 1 for now
   constexpr int p   = 1;
@@ -41,19 +41,20 @@ TEST_P(ContactTest, patch)
   // Construct the appropriate dimension mesh and give it to the data store
   std::string filename = SERAC_REPO_DIR "/data/meshes/twohex_for_contact.mesh";
 
-  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), 2, 0);
+  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), 3, 0);
   StateManager::setMesh(std::move(mesh), "patch_mesh");
 
-#ifdef SERAC_USE_PETSC
-  LinearSolverOptions linear_options{
-      .linear_solver        = LinearSolver::PetscGMRES,
-      .preconditioner       = Preconditioner::Petsc,
-      .petsc_preconditioner = PetscPCType::HMG,
-      .absolute_tol         = 1e-16,
-      .print_level          = 1,
-  };
-#elif defined(MFEM_USE_STRUMPACK)
-  // #ifdef MFEM_USE_STRUMPACK
+// TODO: investigate performance with Petsc
+// #ifdef SERAC_USE_PETSC
+//   LinearSolverOptions linear_options{
+//       .linear_solver        = LinearSolver::PetscGMRES,
+//       .preconditioner       = Preconditioner::Petsc,
+//       .petsc_preconditioner = PetscPCType::HMG,
+//       .absolute_tol         = 1e-12,
+//       .print_level          = 1,
+//   };
+// #elif defined(MFEM_USE_STRUMPACK)
+#ifdef MFEM_USE_STRUMPACK
   LinearSolverOptions linear_options{.linear_solver = LinearSolver::Strumpack, .print_level = 1};
 #else
   LinearSolverOptions linear_options{};
@@ -62,14 +63,14 @@ TEST_P(ContactTest, patch)
 #endif
 
   NonlinearSolverOptions nonlinear_options{.nonlin_solver  = NonlinearSolver::Newton,
-                                           .relative_tol   = 1.0e-12,
-                                           .absolute_tol   = 1.0e-12,
+                                           .relative_tol   = 1.0e-10,
+                                           .absolute_tol   = 1.0e-10,
                                            .max_iterations = 20,
                                            .print_level    = 1};
 
   ContactOptions contact_options{.method      = ContactMethod::SingleMortar,
                                  .enforcement = GetParam().first,
-                                 .type        = ContactType::Frictionless,
+                                 .type        = ContactType::TiedNormal,
                                  .penalty     = 1.0e4};
 
   SolidMechanicsContact<p, dim> solid_solver(nonlinear_options, linear_options,
@@ -81,8 +82,10 @@ TEST_P(ContactTest, patch)
   solid_solver.setMaterial(mat);
 
   // Define the function for the initial displacement and boundary condition
-  auto zero_disp_bc    = [](const mfem::Vector&) { return 0.0; };
-  auto nonzero_disp_bc = [](const mfem::Vector&) { return -0.01; };
+  auto zero_disp_bc = [](const mfem::Vector&) { return 0.0; };
+  // NOTE: Tribol will miss this contact if warm start doesn't account for contact
+  constexpr double max_disp        = 0.2;
+  auto             nonzero_disp_bc = [](const mfem::Vector&, double t) { return -max_disp * t; };
 
   // Define a boundary attribute set and specify initial / boundary conditions
   solid_solver.setDisplacementBCs({1}, zero_disp_bc, 0);
@@ -100,29 +103,33 @@ TEST_P(ContactTest, patch)
   solid_solver.outputStateToDisk(paraview_name);
 
   // Perform the quasi-static solve
-  double dt = 1.0;
-  solid_solver.advanceTimestep(dt);
+  constexpr int n_steps = 1;
+  double        dt      = 1.0 / static_cast<double>(n_steps);
+  for (int i{0}; i < n_steps; ++i) {
+    solid_solver.advanceTimestep(dt);
 
-  // Output the sidre-based plot files
-  solid_solver.outputStateToDisk(paraview_name);
+    // Output the sidre-based plot files
+    solid_solver.outputStateToDisk(paraview_name);
+  }
 
   // Check the l2 norm of the displacement dofs
   auto                            c = (3.0 * K - 2.0 * G) / (3.0 * K + G);
   mfem::VectorFunctionCoefficient elasticity_sol_coeff(3, [c](const mfem::Vector& x, mfem::Vector& u) {
-    u[0] = 0.25 * 0.01 * c * x[0];
-    u[1] = 0.25 * 0.01 * c * x[1];
-    u[2] = -0.5 * 0.01 * x[2];
+    u[0] = 0.25 * max_disp * c * x[0];
+    u[1] = 0.25 * max_disp * c * x[1];
+    u[2] = -0.5 * max_disp * x[2];
   });
-  mfem::ParFiniteElementSpace     elasticity_fes(solid_solver.reactions().space());
+  mfem::ParFiniteElementSpace     elasticity_fes(solid_solver.displacement().space());
   mfem::ParGridFunction           elasticity_sol(&elasticity_fes);
   elasticity_sol.ProjectCoefficient(elasticity_sol_coeff);
   mfem::ParGridFunction approx_error(elasticity_sol);
   approx_error -= solid_solver.displacement().gridFunction();
   auto approx_error_l2 = mfem::ParNormlp(approx_error, 2, MPI_COMM_WORLD);
-  EXPECT_NEAR(0.0, approx_error_l2, 1.0e-3);
+  // At 10% strain, linear elastic approximation breaks down, so larger error is expected here.
+  EXPECT_NEAR(0.0, approx_error_l2, 0.13);
 }
 
-INSTANTIATE_TEST_SUITE_P(tribol, ContactTest,
+INSTANTIATE_TEST_SUITE_P(tribol, ContactPatchTied,
                          testing::Values(std::make_pair(ContactEnforcement::Penalty, "penalty"),
                                          std::make_pair(ContactEnforcement::LagrangeMultiplier,
                                                         "lagrange_multiplier")));
