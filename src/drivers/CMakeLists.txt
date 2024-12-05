@@ -11,7 +11,7 @@ blt_add_executable( NAME        serac_driver
                     )
 
 if (SERAC_ENABLE_TESTS)
-    set(input_files_dir ${CMAKE_CURRENT_SOURCE_DIR}/../../data/input_files/tests)
+    set(input_files_dir ${PROJECT_SOURCE_DIR}/data/input_files/tests)
 
     # Run basic test for the Serac driver
     blt_add_test(NAME          serac_driver_solid
