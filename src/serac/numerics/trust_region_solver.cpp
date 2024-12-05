@@ -11,7 +11,7 @@
 
 namespace serac {
 
-int GlobalSize(const mfem::Vector& parallel_v, const MPI_Comm& comm)
+int globalSize(const mfem::Vector& parallel_v, const MPI_Comm& comm)
 {
   int local_size = parallel_v.Size();
   int global_size;
@@ -22,8 +22,8 @@ int GlobalSize(const mfem::Vector& parallel_v, const MPI_Comm& comm)
 struct BasisVectors
 {
   // construct with a representative state to set sizes
-  BasisVectors(const serac::FiniteElementState& state) 
-    : local_rows(state.Size()), global_rows(state.GlobalSize())
+  BasisVectors(const mfem::Vector& state) 
+    : local_rows(state.Size()), global_rows(globalSize(state, PETSC_COMM_WORLD))
   {
     VecCreateMPI(PETSC_COMM_WORLD, local_rows, global_rows, &v);
 
@@ -41,14 +41,14 @@ struct BasisVectors
     VecDestroy(&v);
   }
 
-  BV constructBases(const std::vector<serac::FiniteElementState>& states) const {
+  BV constructBases(const std::vector<mfem::Vector*>& states) const {
     size_t num_cols = states.size();
     BV Q;
     BVCreate(PETSC_COMM_SELF, &Q);
     BVSetType(Q, BVVECS);
     BVSetSizesFromVec(Q, v, static_cast<int>(num_cols));
     for (size_t c=0; c < num_cols; ++c) {
-      VecSetValues(v, local_rows, &col_indices[0], &states[c][0], INSERT_VALUES);
+      VecSetValues(v, local_rows, &col_indices[0], &(*states[c])[0], INSERT_VALUES);
       VecAssemblyBegin(v);
       VecAssemblyEnd(v);
       int c_int = static_cast<int>(c);
@@ -67,10 +67,10 @@ private:
 };
 
 
-Vec petscVec(const serac::FiniteElementState& s)
+Vec petscVec(const mfem::Vector& s)
 {
   const int local_rows = s.Size();
-  const int global_rows = s.GlobalSize();
+  const int global_rows = globalSize(s, PETSC_COMM_WORLD);
 
   Vec v;
   VecCreateMPI(PETSC_COMM_WORLD, local_rows, global_rows, &v);
@@ -92,7 +92,7 @@ Vec petscVec(const serac::FiniteElementState& s)
   return v;
 }
 
-void copy(const Vec& v, serac::FiniteElementState& s)
+void copy(const Vec& v, mfem::Vector& s)
 {
   const int local_rows = s.Size();
   PetscInt iStart, iEnd;
@@ -183,7 +183,7 @@ auto eigenOrthonormalize(const std::vector<serac::FiniteElementState>& states)
 }
 */
 
-Mat dot(const std::vector<serac::FiniteElementState>& s, const std::vector<serac::FiniteElementState>& As)
+Mat dot(const std::vector<mfem::Vector*>& s, const std::vector<mfem::Vector*>& As)
 {
   SLIC_ERROR_IF(s.size() != As.size(), "Search directions and their linear operator result must have same number of columns");
   size_t num_cols = s.size();
@@ -192,7 +192,7 @@ Mat dot(const std::vector<serac::FiniteElementState>& s, const std::vector<serac
   MatCreateSeqDense(PETSC_COMM_SELF, num_cols_int, num_cols_int, NULL, &sAs);
   for (size_t i=0; i < num_cols; ++i) {
     for (size_t j=0; j < num_cols; ++j) {
-      MatSetValue(sAs, static_cast<int>(i), static_cast<int>(j), serac::innerProduct(s[i], As[j]), INSERT_VALUES); 
+      MatSetValue(sAs, static_cast<int>(i), static_cast<int>(j), mfem::InnerProduct(PETSC_COMM_WORLD, *s[i], *As[j]), INSERT_VALUES); 
     }
   }
   MatAssemblyBegin(sAs, MAT_FINAL_ASSEMBLY);
@@ -200,20 +200,20 @@ Mat dot(const std::vector<serac::FiniteElementState>& s, const std::vector<serac
   return sAs;
 }
 
-Vec dot(const std::vector<serac::FiniteElementState>& s, const serac::FiniteElementState& b)
+Vec dot(const std::vector<mfem::Vector*>& s, const mfem::Vector& b)
 {
   size_t num_cols = s.size();
   Vec sb;
   VecCreateSeq(PETSC_COMM_SELF, static_cast<int>(num_cols), &sb);
   for (size_t i=0; i < num_cols; ++i) {
-    VecSetValue(sb, static_cast<int>(i), serac::innerProduct(s[i], b), INSERT_VALUES); 
+    VecSetValue(sb, static_cast<int>(i), mfem::InnerProduct(PETSC_COMM_WORLD, *s[i], b), INSERT_VALUES); 
   }
   return sb;
 }
 
-auto qr(const std::vector<serac::FiniteElementState>& states)
+auto qr(const std::vector<mfem::Vector*>& states)
 {
-  BasisVectors bvs(states[0]);
+  BasisVectors bvs(*states[0]);
   BV Q = bvs.constructBases(states);
 
   Mat R;
@@ -368,10 +368,10 @@ auto exactTrustRegionSolve(const DenseMat& A, const DenseVec& b, double delta, i
 
 
 // returns the solution, as well as a list of the N leftmost eigenvectors
-std::tuple<FiniteElementState, std::vector<FiniteElementState>, std::vector<double>> 
-solveSubspaceProblem(const std::vector<FiniteElementState>& states, 
-                     const std::vector<FiniteElementState>& Astates, 
-                     const FiniteElementState& b, double delta, int num_leftmost)
+std::tuple<mfem::Vector, std::vector<mfem::Vector>, std::vector<double>> 
+solveSubspaceProblem(const std::vector<mfem::Vector*>& states, 
+                     const std::vector<mfem::Vector*>& Astates, 
+                     const mfem::Vector& b, double delta, int num_leftmost)
 {
   DenseMat sAs = dot(states, Astates);
 
@@ -391,10 +391,10 @@ solveSubspaceProblem(const std::vector<FiniteElementState>& states,
 
   std::vector<double> reduced_x_vec = reduced_x.getValues();
   BVMultVec(Q_parallel, 1.0, 1.0, x_parallel, &reduced_x_vec[0]);
-  FiniteElementState sol(b);
+  mfem::Vector sol(b);
   copy(x_parallel, sol);
 
-  std::vector<FiniteElementState> leftmosts;
+  std::vector<mfem::Vector> leftmosts;
   for (int i=0; i < num_leftmost; ++i) {
     auto reduced_leftvec = leftvecs[i].getValues();
     BVMultVec(Q_parallel, 1.0, 1.0, x_parallel, &reduced_leftvec[0]);

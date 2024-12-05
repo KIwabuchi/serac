@@ -22,12 +22,18 @@
 
 namespace serac {
 
-int GlobalSize(const mfem::Vector& parallel_v, const MPI_Comm& comm);
+int globalSize(const mfem::Vector& parallel_v, const MPI_Comm& comm);
+double innerProduct(const mfem::Vector& a, const mfem::Vector& b, const MPI_Comm& comm);
 
-std::tuple<FiniteElementState, std::vector<FiniteElementState>, std::vector<double>> 
-solveSubspaceProblem(const std::vector<FiniteElementState>& directions,
-                     const std::vector<FiniteElementState>& Adirections,
-                     const FiniteElementState& b,
+// std::tuple<FiniteElementState, std::vector<FiniteElementState>, std::vector<double>> 
+// solveSubspaceProblem(const std::vector<FiniteElementState>& directions,
+//                      const std::vector<FiniteElementState>& Adirections,
+//                      const FiniteElementState& b,
+//                      double delta, int num_leftmost);
+std::tuple<mfem::Vector, std::vector<mfem::Vector>, std::vector<double>> 
+solveSubspaceProblem(const std::vector<mfem::Vector*>& directions,
+                     const std::vector<mfem::Vector*>& Adirections,
+                     const mfem::Vector& b,
                      double delta, int num_leftmost);
 
 }

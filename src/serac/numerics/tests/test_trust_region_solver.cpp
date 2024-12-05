@@ -21,7 +21,6 @@
 
 const std::string MESHTAG = "mesh";
 
-static constexpr int dim = 2;
 static constexpr int scalar_field_order = 1;
 
 struct MeshFixture : public testing::Test
@@ -43,15 +42,15 @@ struct MeshFixture : public testing::Test
   mfem::ParMesh* mesh;
 };
 
-std::vector<serac::FiniteElementState> applyLinearOperator(const Mat& A, const std::vector<serac::FiniteElementState>& states)
+std::vector<mfem::Vector> applyLinearOperator(const Mat& A, const std::vector<mfem::Vector*>& states)
 {
-  std::vector<serac::FiniteElementState> Astates;
+  std::vector<mfem::Vector> Astates;
   for (auto s : states) {
-    Astates.emplace_back(s);
+    Astates.emplace_back(*s);
   }
 
-  int local_rows(states[0].Size());
-  int global_rows(GlobalSize(states[0], states[0].comm()));
+  int local_rows(states[0]->Size());
+  int global_rows(serac::globalSize(*states[0], PETSC_COMM_WORLD));
   
   Vec x;
   Vec y;
@@ -70,7 +69,7 @@ std::vector<serac::FiniteElementState> applyLinearOperator(const Mat& A, const s
 
   size_t num_cols = states.size();
   for (size_t c=0; c < num_cols; ++c) {
-    VecSetValues(x, local_rows, &col_indices[0], &states[c][0], INSERT_VALUES);
+    VecSetValues(x, local_rows, &col_indices[0], &(*states[c])[0], INSERT_VALUES);
     VecAssemblyBegin(x);
     VecAssemblyEnd(x);
     MatMult(A, x, y);
@@ -89,7 +88,7 @@ auto createDiagonalTestMatrix(mfem::Vector& x)
 {
   const int local_rows = x.Size();
   mfem::Vector one = x; one = 1.0;
-  const int global_rows = serac::GlobalSize(x, PETSC_COMM_WORLD);
+  const int global_rows = serac::globalSize(x, PETSC_COMM_WORLD);
 
   Vec b;
   VecCreateMPI(PETSC_COMM_WORLD, local_rows, global_rows, &b);
@@ -135,7 +134,7 @@ TEST_F(MeshFixture, QR)
     a[i] = 2*i + 0.01 * i * i + 1.25;
     b[i] = -i + 0.02 * i * i + 0.1;
   }
-  std::vector<serac::FiniteElementState> states = {u1,u2,u3}; //,u4};
+  std::vector<mfem::Vector*> states = {&u1,&u2,&u3}; //,u4};
 
   /*
   for (int s=0; s < states.size(); ++s) {
@@ -157,10 +156,15 @@ TEST_F(MeshFixture, QR)
   */
 
   auto A_parallel = createDiagonalTestMatrix(a);
-  std::vector<serac::FiniteElementState> Astates = applyLinearOperator(A_parallel, states);
+  std::vector<mfem::Vector> Astates = applyLinearOperator(A_parallel, states);
+
+  std::vector<mfem::Vector*> AstatePtrs;
+  for (size_t i=0; i < Astates.size(); ++i) {
+    AstatePtrs.push_back(&Astates[i]);
+  }
 
   double delta = 3.4; //0.001;
-  auto [sol, leftvecs, leftvals] = serac::solveSubspaceProblem(states, Astates, b, delta, 1);
+  auto [sol, leftvecs, leftvals] = serac::solveSubspaceProblem(states, AstatePtrs, b, delta, 1);
 
   MatDestroy(&A_parallel);
 }
