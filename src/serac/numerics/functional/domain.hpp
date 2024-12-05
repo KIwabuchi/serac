@@ -83,7 +83,7 @@ struct Domain {
   /// @endcond
 
   /// @brief construct an "empty" domain, to later be populated later with addElement member functions
-  Domain(const mfem::Mesh& m, int d, Type type = Domain::Type::Elements) : mesh_(m), dim_(d), type_(type) {}
+  Domain(const mfem::Mesh& m, int d, Type type) : mesh_(m), dim_(d), type_(type) {}
 
   /**
    * @brief create a domain from some subset of the vertices in an mfem::Mesh
