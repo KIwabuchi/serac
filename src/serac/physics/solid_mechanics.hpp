@@ -44,12 +44,6 @@ void adjoint_integrate(double dt_n, double dt_np1, mfem::HypreParMatrix* m_mat, 
 }  // namespace detail
 
 /**
- * @brief Convenience function for zero displacements, tractions, or body forces
- */
-template <int dim>
-tensor<double, dim> zero_vector_function(tensor<double, dim>, ...) { return tensor<double, dim>{}; };
-
-/**
  * @brief default method and tolerances for solving the
  * systems of linear equations that show up in implicit
  * solid mechanics simulations
@@ -462,6 +456,20 @@ public:
   }
 
   /**
+   * @brief Shortcut to set one component of displacements to zero for all time
+   *
+   * @param[in] domain Domain to apply the homogeneous boundary condition to
+   * @param[in] component Index of the displacement component that will be constrained
+   *
+   * @note This method must be called prior to completeSetup()
+   */
+  void setFixedBCs(const Domain& domain, int component)
+  {
+    auto zero_vector_function = [](tensor<double, dim>, double) { return tensor<double, dim>{}; };
+    setDisplacementBCs(zero_vector_function, domain, component);
+  }
+
+  /**
    * @brief Shortcut to set all displacements to zero for all time
    *
    * @param[in] domain Domain to apply the homogeneous boundary condition to
@@ -470,10 +478,7 @@ public:
    */
   void setFixedBCs(const Domain& domain)
   {
-    auto zero_vector_function = [](tensor<double, dim>, double) { return tensor<double, dim>{}; };
-    for (int i = 0; i < dim; ++i) {
-      setDisplacementBCs(zero_vector_function, domain, i);
-    }
+    for (int i = 0; i < dim; ++i) setFixedBCs(domain, i);
   }
 
   /**
