@@ -13,6 +13,44 @@
 #include "serac/serac_config.hpp"
 #include "serac/numerics/functional/functional.hpp"
 
+template <typename T>
+void debug_sparse_matrix(serac::Functional<T>& f, double t, const mfem::Vector& U,
+                         [[maybe_unused]] double epsilon = 1.0e-4)
+{
+  mfem::Vector dU(U.Size());
+  dU = 0.0;
+
+  auto [value, dfdU]                                = f(t, serac::differentiate_wrt(U));
+  std::unique_ptr<mfem::HypreParMatrix> dfdU_matrix = assemble(dfdU);
+
+  std::cout << "{";
+  for (int i = 0; i < U.Size(); i++) {
+    dU[i]               = 1;
+    mfem::Vector df_jvp = dfdU(dU);  // matrix-free
+
+    std::cout << "{";
+    for (int j = 0; j < df_jvp.Size(); j++) {
+      std::cout << df_jvp[j];
+      if (j != df_jvp.Size() - 1) {
+        std::cout << ",";
+      } else {
+        std::cout << " ";
+      }
+    }
+    std::cout << "}";
+    if (i != U.Size() - 1) {
+      std::cout << ",\n";
+    } else {
+      std::cout << "\n";
+    }
+
+    dU[i] = 0;
+  }
+  std::cout << "}" << std::endl;
+
+  dfdU_matrix->Print("K.mtx");
+}
+
 template <typename T, serac::ExecutionSpace exec = serac::ExecutionSpace::CPU>
 void check_gradient(serac::Functional<T, exec>& f, double t, mfem::Vector& U, double epsilon = 1.0e-4)
 {
@@ -98,7 +136,7 @@ void check_gradient(serac::Functional<T>& f, double t, const mfem::Vector& U, co
   mfem::Vector dU(U.Size());
   dU.Randomize(seed);
 
-  mfem::Vector ddU_dt(U.Size());
+  mfem::Vector ddU_dt(dU_dt.Size());
   ddU_dt.Randomize(seed + 1);
 
   {
@@ -111,9 +149,12 @@ void check_gradient(serac::Functional<T>& f, double t, const mfem::Vector& U, co
     mfem::Vector df_jvp2(df_jvp1.Size());
     dfdU_matrix->Mult(dU, df_jvp2);  // sparse matvec
 
-    if (df_jvp1.Norml2() != 0) {
+    if (df_jvp1.Norml2() < 1.0e-13) {
+      double absolute_error = df_jvp1.DistanceTo(df_jvp2.GetData());
+      EXPECT_NEAR(0., absolute_error, 5.e-14);
+    } else {
       double relative_error = df_jvp1.DistanceTo(df_jvp2.GetData()) / df_jvp1.Norml2();
-      EXPECT_NEAR(0., relative_error, 5.e-6);
+      EXPECT_NEAR(0., relative_error, 5.e-14);
     }
 
     // {f(x - 2 * h), f(x - h), f(x), f(x + h), f(x + 2 * h)}
@@ -171,8 +212,13 @@ void check_gradient(serac::Functional<T>& f, double t, const mfem::Vector& U, co
     mfem::Vector df_jvp2(df_jvp1.Size());
     df_ddU_dt_matrix->Mult(ddU_dt, df_jvp2);  // sparse matvec
 
-    double relative_error = df_jvp1.DistanceTo(df_jvp2.GetData()) / df_jvp1.Norml2();
-    EXPECT_NEAR(0., relative_error, 5.e-14);
+    if (df_jvp1.Norml2() < 1.0e-13) {
+      double absolute_error = df_jvp1.DistanceTo(df_jvp2.GetData());
+      EXPECT_NEAR(0., absolute_error, 5.e-14);
+    } else {
+      double relative_error = df_jvp1.DistanceTo(df_jvp2.GetData()) / df_jvp1.Norml2();
+      EXPECT_NEAR(0., relative_error, 5.e-14);
+    }
 
     // {f(x - 2 * h), f(x - h), f(x), f(x + h), f(x + 2 * h)}
     mfem::Vector f_values[5];

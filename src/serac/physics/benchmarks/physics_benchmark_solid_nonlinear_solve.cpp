@@ -242,8 +242,10 @@ void functional_solid_test_euler(NonlinSolve nonlinSolve, Prec prec)
                                                      serac::solid_mechanics::default_quasistatic_options, "serac_solid",
                                                      meshTag, std::vector<std::string>{});
 
+  Domain whole_domain = EntireDomain(*meshPtr);
+
   serac::solid_mechanics::NeoHookean material{density, bulkMod, shearMod};
-  seracSolid->setMaterial(serac::DependsOn<>{}, material);
+  seracSolid->setMaterial(material, whole_domain);
 
   serac::Domain backSurface =
       serac::Domain::ofBoundaryElements(*meshPtr, serac::by_attr<DIM>(3));  // 4,5 with traction makes a twist
@@ -320,8 +322,10 @@ void functional_solid_test_nonlinear_buckle(NonlinSolve nonlinSolve, Prec prec, 
                                                      serac::solid_mechanics::default_quasistatic_options, "serac_solid",
                                                      meshTag, std::vector<std::string>{});
 
+  Domain whole_domain = EntireDomain(*meshPtr);
+
   serac::solid_mechanics::NeoHookean material{density, bulkMod, shearMod};
-  seracSolid->setMaterial(serac::DependsOn<>{}, material);
+  seracSolid->setMaterial(material, whole_domain);
 
   // fix displacement on side surface
   seracSolid->setDisplacementBCs({2, 3, 4, 5}, [](const mfem::Vector&, mfem::Vector& u) { u = 0.0; });

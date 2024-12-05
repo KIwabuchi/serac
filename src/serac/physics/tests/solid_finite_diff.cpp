@@ -73,7 +73,8 @@ TEST(SolidMechanics, FiniteDifferenceParameter)
   constexpr int bulk_parameter_index = 0;
 
   solid_mechanics::ParameterizedNeoHookeanSolid mat{1.0, 0.0, 0.0};
-  solid_solver.setMaterial(DependsOn<0, 1>{}, mat);
+  Domain                                        whole_mesh = EntireDomain(pmesh);
+  solid_solver.setMaterial(DependsOn<0, 1>{}, mat, whole_mesh);
 
   // Define the function for the initial displacement and boundary condition
   auto bc = [](const mfem::Vector&, mfem::Vector& bc_vec) -> void { bc_vec = 0.0; };
@@ -93,7 +94,7 @@ TEST(SolidMechanics, FiniteDifferenceParameter)
   }
 
   solid_mechanics::ConstantBodyForce<dim> force{constant_force};
-  solid_solver.addBodyForce(force, EntireDomain(pmesh));
+  solid_solver.addBodyForce(force, whole_mesh);
 
   // Finalize the data structures
   solid_solver.completeSetup();
@@ -221,7 +222,8 @@ void finite_difference_shape_test(LoadingType load)
                                       solid_mechanics::default_quasistatic_options, "solid_functional", mesh_tag);
 
   solid_mechanics::NeoHookean mat{1.0, 1.0, 1.0};
-  solid_solver.setMaterial(mat);
+  Domain                      whole_mesh = EntireDomain(pmesh);
+  solid_solver.setMaterial(mat, whole_mesh);
 
   FiniteElementState shape_displacement(pmesh, H1<SHAPE_ORDER, dim>{});
 
@@ -235,38 +237,20 @@ void finite_difference_shape_test(LoadingType load)
   solid_solver.setDisplacementBCs(ess_bdr, bc);
   solid_solver.setDisplacement(bc);
 
-  if (load == LoadingType::BodyForce) {
-    tensor<double, dim> constant_force;
+  Domain top_face = Domain::ofBoundaryElements(pmesh, [](std::vector<vec2> vertices, int /*attr*/) {
+    return average(vertices)[1] > 0.99;  // select faces by y-coordinate
+  });
 
-    constant_force[0] = 0.0;
+  if (load == LoadingType::BodyForce) {
+    tensor<double, dim> constant_force{};
     constant_force[1] = 1.0e-1;
 
-    if (dim == 3) {
-      constant_force[2] = 0.0;
-    }
-
     solid_mechanics::ConstantBodyForce<dim> force{constant_force};
-    solid_solver.addBodyForce(force, EntireDomain(pmesh));
+    solid_solver.addBodyForce(force, whole_mesh);
   } else if (load == LoadingType::Pressure) {
-    solid_solver.setPressure(
-        [](auto& X, double) {
-          if (X[1] > 0.99) {
-            return 0.1;
-          }
-          return 0.0;
-        },
-        EntireBoundary(pmesh));
+    solid_solver.setPressure([](auto /*X*/, double /*t*/) { return 0.1; }, top_face);
   } else if (load == LoadingType::Traction) {
-    solid_solver.setTraction(
-        [](auto& X, auto, double) {
-          auto traction = 0.0 * X;
-          if (X[1] > 0.99) {
-            traction[0] = 1.0e-2;
-            traction[1] = 1.0e-2;
-          }
-          return traction;
-        },
-        EntireBoundary(pmesh));
+    solid_solver.setTraction([](auto /*X*/, auto /*n*/, double /*t*/) { return vec2{0.01, 0.01}; }, top_face);
   }
 
   // Finalize the data structures

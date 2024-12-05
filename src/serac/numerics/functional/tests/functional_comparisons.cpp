@@ -143,8 +143,10 @@ void functional_test(mfem::ParMesh& mesh, H1<p> test, H1<p> trial, Dimension<dim
   // Construct the new functional object using the known test and trial spaces
   Functional<test_space(trial_space), exec_space> residual(fespace.get(), {fespace.get()});
 
+  Domain dom = EntireDomain(mesh);
+
   // Add the total domain residual term to the functional
-  residual.AddDomainIntegral(Dimension<dim>{}, DependsOn<0>{}, SourceFluxFunctor{}, mesh);
+  residual.AddDomainIntegral(Dimension<dim>{}, DependsOn<0>{}, SourceFluxFunctor{}, dom);
 
   // Compute the residual using standard MFEM methods
   // mfem::Vector r1 = (*J_mfem) * U - (*F);
@@ -263,7 +265,9 @@ void functional_test(mfem::ParMesh& mesh, H1<p, dim> test, H1<p, dim> trial, Dim
 
   Functional<test_space(trial_space), exec_space> residual(fespace.get(), {fespace.get()});
 
-  residual.AddDomainIntegral(Dimension<dim>{}, DependsOn<0>{}, StressFunctor<dim>{}, mesh);
+  Domain domain = EntireDomain(mesh);
+
+  residual.AddDomainIntegral(Dimension<dim>{}, DependsOn<0>{}, StressFunctor<dim>{}, domain);
 
   // mfem::Vector r1 = (*J_mfem) * U - (*F);
   mfem::Vector r1(U.Size());

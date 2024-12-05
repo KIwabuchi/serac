@@ -131,7 +131,8 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <int p, typename Material>
-  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundaries) const
+  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundaries,
+                  Domain& bdr_domain) const
   {
     // essential BCs
     auto ebc_func = [*this](const auto& X, double t, auto& u) { this->operator()(X, t, u); };
@@ -162,7 +163,7 @@ public:
       auto T = dot(P, n0);
       return T;
     };
-    solid.setTraction(traction, EntireBoundary(solid.mesh()));
+    solid.setTraction(traction, bdr_domain);
   }
 
 private:
@@ -224,7 +225,8 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <int p, typename Material>
-  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundaries) const
+  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundaries,
+                  Domain& domain) const
   {
     // essential BCs
     auto ebc_func = [*this](const auto& X, double t, auto& u) { this->operator()(X, t, u); };
@@ -234,7 +236,7 @@ public:
 
     // body force
     auto a = make_tensor<dim>([*this](int i) { return this->acceleration(i); });
-    solid.addBodyForce([&material, a](auto /* X */, auto /* t */) { return material.density * a; });
+    solid.addBodyForce([&material, a](auto /* X */, auto /* t */) { return material.density * a; }, domain);
   }
 
 private:
@@ -300,7 +302,7 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Construct a functional-based solid mechanics solver
   serac::NonlinearSolverOptions nonlin_opts{.relative_tol = 1.0e-13, .absolute_tol = 1.0e-13};
@@ -310,7 +312,9 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
                                "solid_dynamics", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = 1.0, .G = 1.0};
-  solid.setMaterial(mat);
+  Domain                      whole_domain   = EntireDomain(pmesh);
+  Domain                      whole_boundary = EntireBoundary(pmesh);
+  solid.setMaterial(mat, whole_domain);
 
   // initial conditions
   solid.setVelocity([exact_solution](const mfem::Vector& x, mfem::Vector& v) { exact_solution.velocity(x, 0.0, v); });
@@ -318,7 +322,13 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
   solid.setDisplacement([exact_solution](const mfem::Vector& x, mfem::Vector& u) { exact_solution(x, 0.0, u); });
 
   // forcing terms
-  exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc));
+  if constexpr (std::is_same<solution_type, ConstantAccelerationSolution<dim> >::value) {
+    exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc), whole_domain);
+  }
+
+  if constexpr (std::is_same<solution_type, AffineSolution<dim> >::value) {
+    exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc), whole_boundary);
+  }
 
   // Finalize the data structures
   solid.completeSetup();

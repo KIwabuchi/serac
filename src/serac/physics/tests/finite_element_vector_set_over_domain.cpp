@@ -18,16 +18,6 @@
 
 namespace serac {
 
-template <int dim>
-tensor<double, dim> average(std::vector<tensor<double, dim> >& positions)
-{
-  tensor<double, dim> total{};
-  for (auto x : positions) {
-    total += x;
-  }
-  return total / double(positions.size());
-}
-
 TEST(FiniteElementVector, SetScalarFieldOver2DDomain)
 {
   MPI_Barrier(MPI_COMM_WORLD);
