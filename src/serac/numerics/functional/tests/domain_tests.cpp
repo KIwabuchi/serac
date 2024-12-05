@@ -427,7 +427,7 @@ TEST(domain, of2dBoundaryElementsFindsDofs)
   auto find_top_boundary = [](std::vector<vec2> vertices, int /* attr */) {
     return std::all_of(vertices.begin(), vertices.end(), [](vec2 X) { return X[1] > 1.0 - 1e-2; });
   };
-  
+
   Domain d1 = Domain::ofBoundaryElements(mesh, find_top_boundary);
   EXPECT_EQ(d1.edge_ids_.size(), 1);
 
@@ -437,7 +437,6 @@ TEST(domain, of2dBoundaryElementsFindsDofs)
 
   EXPECT_EQ(dof_indices.Size(), 5);
 }
-
 
 TEST(domain, of3dBoundaryElementsFindsDofs)
 {
@@ -462,7 +461,7 @@ TEST(domain, of3dBoundaryElementsFindsDofs)
   auto find_ymax_boundary = [](std::vector<vec3> vertices, int /* attr */) {
     return std::all_of(vertices.begin(), vertices.end(), [](vec3 X) { return X[1] > 1.0 - 1e-2; });
   };
-  
+
   Domain d1 = Domain::ofBoundaryElements(mesh, find_ymax_boundary);
   EXPECT_EQ(d1.tri_ids_.size(), 2);
 
