@@ -89,6 +89,9 @@ def main():
     for cali_file in cali_files:
         if os.path.exists(cali_file):
             shutil.copy2(cali_file, spot_dir)
+            # Grant new caliper file user read/ write, group read/ write, and other read access
+            os.chmod(pjoin(spot_dir, cali_file),
+                     stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH)
 
     # Print SPOT url
     if on_rz():
