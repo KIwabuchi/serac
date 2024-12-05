@@ -2,6 +2,9 @@
 
 # Build and test Serac on team's shared MacMini, then report results to a set of emails
 
+# Update environment
+source ~/.bash_profile
+
 # Variables
 CI_ROOT_DIR="/Users/chapman39/dev/serac/ci"
 PROJECT_DIR="$CI_ROOT_DIR/repo"
@@ -21,7 +24,7 @@ git submodule update --init --recursive >> $OUTPUT_LOG 2>&1
 rm -rfv _serac_build_and_test* >> $OUTPUT_LOG 2>&1
 
 # Build and test Serac
-./scripts/llnl/build_src.py --host-config $HOST_CONFIG -v -j16 >> $OUTPUT_LOG 2>&1
+python ./scripts/llnl/build_src.py --host-config $HOST_CONFIG -v -j16 >> $OUTPUT_LOG 2>&1
 
 # Email variables
 if [ $? -eq 0 ]; then
