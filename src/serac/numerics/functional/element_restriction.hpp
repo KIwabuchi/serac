@@ -196,9 +196,6 @@ struct ElementRestriction {
   /// the number of nodes in each element
   uint64_t nodes_per_elem;
 
-  /// an array mapping from domain element ids [0, num_elements) to
-  std::vector<int> element_ids;
-
   /// a 2D array (num_elements-by-nodes_per_elem) holding the dof info extracted from the finite element space
   axom::Array<DoF, 2, axom::MemorySpace::Host> dof_info;
 

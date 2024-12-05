@@ -26,8 +26,6 @@
 
 #include "serac/numerics/functional/domain.hpp"
 
-#include "serac/infrastructure/mpi_fstream.hpp"
-
 #include <array>
 #include <vector>
 

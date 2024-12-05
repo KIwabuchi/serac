@@ -11,9 +11,6 @@
 #include "serac/numerics/functional/quadrature_data.hpp"
 #include "serac/numerics/functional/differentiate_wrt.hpp"
 
-// TODO REMOVE AFTER DEBUGGING
-#include "serac/infrastructure/mpi_fstream.hpp"
-
 namespace serac {
 
 namespace interior_face_integral {
@@ -169,7 +166,6 @@ void evaluation_kernel_impl(trial_element_type trial_elements, test_element, dou
 
   // for each element in the domain
   for (uint32_t e = 0; e < num_elements; e++) {
-    mpi::out << "e: " << e << " / " << num_elements << std::endl;
 
     // load the jacobians and positions for each quadrature point in this element
     auto J_e = J[e];
