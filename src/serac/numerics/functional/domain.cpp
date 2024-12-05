@@ -584,7 +584,7 @@ Domain set_operation(SET_OPERATION op, const Domain& a, const Domain& b)
   assert(a.dim_ == b.dim_);
   assert(a.type_ == b.type_);
 
-  Domain output{a.mesh_, a.dim_, a.type_};
+  Domain combined{a.mesh_, a.dim_, a.type_};
 
   using Ids         = std::vector<int>;
   auto apply_set_op = [&op](const Ids& x, const Ids& y) { return set_operation(op, x, y); };
