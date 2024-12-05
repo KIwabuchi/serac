@@ -472,7 +472,7 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const serac::fes_t* fes
   std::vector<Array2D<int> >     local_face_dofs = geom_local_face_dofs(p);
   std::vector<std::vector<int> > lex_perm        = lexicographic_permutations(p);
 
-  // sam: this function contains several comments that relate to an investigation into adopting 
+  // sam: this function contains several comments that relate to an investigation into adopting
   //      mfem's FaceNbrData pattern (which ended up being too invasive to implement initially).
   //      I leave some of the commented code here so Julian's recommendations are not lost.
   //

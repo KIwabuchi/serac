@@ -166,7 +166,6 @@ void evaluation_kernel_impl(trial_element_type trial_elements, test_element, dou
 
   // for each element in the domain
   for (uint32_t e = 0; e < num_elements; e++) {
-
     // load the jacobians and positions for each quadrature point in this element
     auto J_e = J[e];
     auto x_e = x[e];
