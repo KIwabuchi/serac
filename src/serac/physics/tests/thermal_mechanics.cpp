@@ -40,7 +40,7 @@ void functional_test_static_3D(double expected_norm)
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Define a boundary attribute set
   std::set<int> ess_bdr = {1};
@@ -73,7 +73,9 @@ void functional_test_static_3D(double expected_norm)
   GreenSaintVenantThermoelasticMaterial        material{rho, E, nu, c, alpha, theta_ref, k};
   GreenSaintVenantThermoelasticMaterial::State initial_state{};
   auto                                         qdata = thermal_solid_solver.createQuadratureDataBuffer(initial_state);
-  thermal_solid_solver.setMaterial(material, qdata);
+
+  Domain whole_domain = EntireDomain(pmesh);
+  thermal_solid_solver.setMaterial(material, whole_domain, qdata);
 
   // Define the function for the initial temperature and boundary condition
   auto one = [](const mfem::Vector&, double) -> double { return 1.0; };
@@ -122,7 +124,7 @@ void functional_test_shrinking_3D(double expected_norm)
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Define a boundary attribute set
   std::set<int> constraint_bdr = {1};
@@ -155,7 +157,9 @@ void functional_test_shrinking_3D(double expected_norm)
   GreenSaintVenantThermoelasticMaterial        material{rho, E, nu, c, alpha, theta_ref, k};
   GreenSaintVenantThermoelasticMaterial::State initial_state{};
   auto                                         qdata = thermal_solid_solver.createQuadratureDataBuffer(initial_state);
-  thermal_solid_solver.setMaterial(material, qdata);
+
+  Domain whole_domain = EntireDomain(pmesh);
+  thermal_solid_solver.setMaterial(material, whole_domain, qdata);
 
   // Define the function for the initial temperature
   double theta_0                   = 1.0;

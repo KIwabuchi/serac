@@ -33,7 +33,8 @@ struct finite_element<mfem::Geometry::TRIANGLE, L2<p, c> > {
   using residual_type =
       typename std::conditional<components == 1, tensor<double, ndof>, tensor<double, ndof, components> >::type;
 
-  using dof_type = tensor<double, c, ndof>;
+  using dof_type    = tensor<double, c, ndof>;
+  using dof_type_if = tensor<double, c, 2, ndof>;
 
   using value_type = typename std::conditional<components == 1, double, tensor<double, components> >::type;
   using derivative_type =
@@ -249,7 +250,8 @@ struct finite_element<mfem::Geometry::TRIANGLE, L2<p, c> > {
   }
 
   template <typename in_t, int q>
-  static auto batch_apply_shape_fn(int j, tensor<in_t, q*(q + 1) / 2> input, const TensorProductQuadratureRule<q>&)
+  static auto batch_apply_shape_fn(int j, const tensor<in_t, q*(q + 1) / 2>& input,
+                                   const TensorProductQuadratureRule<q>&)
   {
     using source_t = decltype(get<0>(get<0>(in_t{})) + dot(get<1>(get<0>(in_t{})), tensor<double, 2>{}));
     using flux_t   = decltype(get<0>(get<1>(in_t{})) + dot(get<1>(get<1>(in_t{})), tensor<double, 2>{}));
@@ -263,12 +265,42 @@ struct finite_element<mfem::Geometry::TRIANGLE, L2<p, c> > {
       double              phi_j      = shape_function(xi[i], j);
       tensor<double, dim> dphi_j_dxi = shape_function_gradient(xi[i], j);
 
-      auto& d00 = get<0>(get<0>(input(i)));
-      auto& d01 = get<1>(get<0>(input(i)));
-      auto& d10 = get<0>(get<1>(input(i)));
-      auto& d11 = get<1>(get<1>(input(i)));
+      const auto& d00 = get<0>(get<0>(input(i)));
+      const auto& d01 = get<1>(get<0>(input(i)));
+      const auto& d10 = get<0>(get<1>(input(i)));
+      const auto& d11 = get<1>(get<1>(input(i)));
 
       output[i] = {d00 * phi_j + dot(d01, dphi_j_dxi), d10 * phi_j + dot(d11, dphi_j_dxi)};
+    }
+
+    return output;
+  }
+
+  template <typename T, int q>
+  static auto batch_apply_shape_fn_interior_face(int jx, const tensor<T, q*(q + 1) / 2>& input,
+                                                 const TensorProductQuadratureRule<q>&)
+  {
+    constexpr auto xi = GaussLegendreNodes<q, mfem::Geometry::TRIANGLE>();
+
+    using source0_t = decltype(get<0>(get<0>(T{})) + get<1>(get<0>(T{})));
+    using source1_t = decltype(get<0>(get<1>(T{})) + get<1>(get<1>(T{})));
+
+    static constexpr int                   Q = q * (q + 1) / 2;
+    tensor<tuple<source0_t, source1_t>, Q> output;
+
+    for (int i = 0; i < Q; i++) {
+      int j = jx % ndof;
+      int s = jx / ndof;
+
+      double phi0_j = shape_function(xi[i], j) * (s == 0);
+      double phi1_j = shape_function(xi[i], j) * (s == 1);
+
+      const auto& d00 = get<0>(get<0>(input(i)));
+      const auto& d01 = get<1>(get<0>(input(i)));
+      const auto& d10 = get<0>(get<1>(input(i)));
+      const auto& d11 = get<1>(get<1>(input(i)));
+
+      output[i] = {d00 * phi0_j + d01 * phi1_j, d10 * phi0_j + d11 * phi1_j};
     }
 
     return output;
@@ -296,6 +328,33 @@ struct finite_element<mfem::Geometry::TRIANGLE, L2<p, c> > {
     }
 
     return output.flattened;
+  }
+
+  // overload for two-sided interior face kernels
+  template <int q>
+  SERAC_HOST_DEVICE static auto interpolate(const dof_type_if& X, const TensorProductQuadratureRule<q>&)
+  {
+    constexpr auto       xi                    = GaussLegendreNodes<q, mfem::Geometry::TRIANGLE>();
+    static constexpr int num_quadrature_points = q * (q + 1) / 2;
+
+    tensor<tuple<value_type, value_type>, num_quadrature_points> output{};
+
+    // apply the shape functions
+    for (int i = 0; i < c; i++) {
+      for (int j = 0; j < num_quadrature_points; j++) {
+        for (int k = 0; k < ndof; k++) {
+          if constexpr (c == 1) {
+            get<0>(output[j]) += X[i][0][k] * shape_function(xi[j], k);
+            get<1>(output[j]) += X[i][1][k] * shape_function(xi[j], k);
+          } else {
+            get<0>(output[j])[i] += X[i][0][k] * shape_function(xi[j], k);
+            get<1>(output[j])[i] += X[i][1][k] * shape_function(xi[j], k);
+          }
+        }
+      }
+    }
+
+    return output;
   }
 
   template <typename source_type, typename flux_type, int q>
@@ -336,6 +395,34 @@ struct finite_element<mfem::Geometry::TRIANGLE, L2<p, c> > {
           for (int k = 0; k < ndof; k++) {
             element_residual[j * step](i, k) +=
                 (source * shape_function(xi, k) + dot(flux, shape_function_gradient(xi, k))) * wt;
+          }
+        }
+      }
+    }
+  }
+
+  template <typename T, int q>
+  SERAC_HOST_DEVICE static void integrate(const tensor<tuple<T, T>, (q * (q + 1)) / 2>& qf_output,
+                                          const TensorProductQuadratureRule<q>&, dof_type_if* element_residual,
+                                          [[maybe_unused]] int step = 1)
+  {
+    constexpr int  ntrial                = size(T{}) / c;
+    constexpr int  num_quadrature_points = (q * (q + 1)) / 2;
+    constexpr auto integration_points    = GaussLegendreNodes<q, mfem::Geometry::TRIANGLE>();
+    constexpr auto integration_weights   = GaussLegendreWeights<q, mfem::Geometry::TRIANGLE>();
+
+    for (int j = 0; j < ntrial; j++) {
+      for (int i = 0; i < c; i++) {
+        for (int Q = 0; Q < num_quadrature_points; Q++) {
+          tensor<double, 2> xi = integration_points[Q];
+          double            wt = integration_weights[Q];
+
+          double source_0 = reinterpret_cast<const double*>(&get<0>(qf_output[Q]))[i * ntrial + j];
+          double source_1 = reinterpret_cast<const double*>(&get<1>(qf_output[Q]))[i * ntrial + j];
+
+          for (int k = 0; k < ndof; k++) {
+            element_residual[j * step](i, 0, k) += (source_0 * shape_function(xi, k)) * wt;
+            element_residual[j * step](i, 1, k) += (source_1 * shape_function(xi, k)) * wt;
           }
         }
       }

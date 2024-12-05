@@ -94,9 +94,9 @@ TEST(HeatTransfer, MoveShape)
     shape_displacement.project(shape_coef);
     thermal_solver.setShapeDisplacement(shape_displacement);
 
-    thermal_solver.setMaterial(mat);
-
-    thermal_solver.setSource(source, EntireDomain(StateManager::mesh(mesh_tag)));
+    Domain whole_domain = EntireDomain(pmesh);
+    thermal_solver.setMaterial(mat, whole_domain);
+    thermal_solver.setSource(source, whole_domain);
 
     // Finalize the data structures
     thermal_solver.completeSetup();
@@ -138,9 +138,9 @@ TEST(HeatTransfer, MoveShape)
     thermal_solver_no_shape.setTemperatureBCs(ess_bdr, zero);
     thermal_solver_no_shape.setTemperature(zero);
 
-    thermal_solver_no_shape.setMaterial(mat);
-
-    thermal_solver_no_shape.setSource(source, EntireDomain(StateManager::mesh(pure_mesh_tag)));
+    Domain whole_domain = EntireDomain(new_pmesh);
+    thermal_solver_no_shape.setMaterial(mat, whole_domain);
+    thermal_solver_no_shape.setSource(source, whole_domain);
 
     // Finalize the data structures
     thermal_solver_no_shape.completeSetup();

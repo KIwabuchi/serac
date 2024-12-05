@@ -37,7 +37,7 @@ constexpr double boundary_disp       = 0.013;
 constexpr double shear_modulus_value = 1.0;
 constexpr double bulk_modulus_value  = 1.0;
 
-std::unique_ptr<SolidMechanicsType> createNonlinearSolidMechanicsSolver(mfem::ParMesh&,
+std::unique_ptr<SolidMechanicsType> createNonlinearSolidMechanicsSolver(mfem::ParMesh&                pmesh,
                                                                         const NonlinearSolverOptions& nonlinear_opts,
                                                                         const SolidMaterial&          mat)
 {
@@ -57,27 +57,24 @@ std::unique_ptr<SolidMechanicsType> createNonlinearSolidMechanicsSolver(mfem::Pa
   solid->setParameter(0, user_defined_bulk_modulus);
   solid->setParameter(1, user_defined_shear_modulus);
 
-  solid->setMaterial(DependsOn<0, 1>{}, mat);
+  Domain whole_mesh = EntireDomain(pmesh);
+
+  solid->setMaterial(DependsOn<0, 1>{}, mat, whole_mesh);
+
+  solid->addBodyForce(
+      [](auto X, auto /* t */) {
+        auto Y = X;
+        Y[0]   = 0.1 + 0.1 * X[0] + 0.3 * X[1];
+        Y[1]   = -0.05 - 0.2 * X[0] + 0.15 * X[1];
+        return 0.1 * X + Y;
+      },
+      whole_mesh);
+
   solid->setDisplacementBCs({1}, [](const mfem::Vector&, mfem::Vector& disp) { disp = boundary_disp; });
-  solid->addBodyForce([](auto X, auto /* t */) {
-    auto Y = X;
-    Y[0]   = 0.1 + 0.1 * X[0] + 0.3 * X[1];
-    Y[1]   = -0.05 - 0.2 * X[0] + 0.15 * X[1];
-    return 0.1 * X + Y;
-  });
+
   solid->completeSetup();
 
   return solid;
-}
-
-template <int dim>
-tensor<double, dim> average(std::vector<tensor<double, dim>>& positions)
-{
-  tensor<double, dim> total{};
-  for (auto x : positions) {
-    total += x;
-  }
-  return total / double(positions.size());
 }
 
 FiniteElementState createReactionDirection(const BasePhysics& solid_solver, int direction)
