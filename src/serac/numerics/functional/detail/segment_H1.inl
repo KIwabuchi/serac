@@ -28,7 +28,8 @@ struct finite_element<mfem::Geometry::SEGMENT, H1<p, c> > {
   static constexpr int VALUE = 0, GRADIENT = 1;
   static constexpr int SOURCE = 0, FLUX = 1;
 
-  using dof_type = tensor<double, c, n>;
+  using dof_type    = tensor<double, c, n>;
+  using dof_type_if = dof_type;
 
   using value_type      = typename std::conditional<components == 1, double, tensor<double, components> >::type;
   using derivative_type = value_type;
@@ -109,10 +110,10 @@ struct finite_element<mfem::Geometry::SEGMENT, H1<p, c> > {
       double phi_j      = B(qx, jx);
       double dphi_j_dxi = G(qx, jx);
 
-      auto& d00 = get<0>(get<0>(input(qx)));
-      auto& d01 = get<1>(get<0>(input(qx)));
-      auto& d10 = get<0>(get<1>(input(qx)));
-      auto& d11 = get<1>(get<1>(input(qx)));
+      const auto& d00 = get<0>(get<0>(input(qx)));
+      const auto& d01 = get<1>(get<0>(input(qx)));
+      const auto& d10 = get<0>(get<1>(input(qx)));
+      const auto& d11 = get<1>(get<1>(input(qx)));
 
       output[qx] = {d00 * phi_j + d01 * dphi_j_dxi, d10 * phi_j + d11 * dphi_j_dxi};
     }

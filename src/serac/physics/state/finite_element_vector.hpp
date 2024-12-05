@@ -61,10 +61,12 @@ public:
    *
    * @tparam FunctionSpace what kind of interpolating functions to use
    * @param mesh The mesh used to construct the finite element state
+   * @param f metadata describing the kind of function space to define
    * @param name The name of the new finite element state field
    */
   template <typename FunctionSpace>
-  FiniteElementVector(mfem::ParMesh& mesh, FunctionSpace, const std::string& name = "") : mesh_(mesh), name_(name)
+  FiniteElementVector(mfem::ParMesh& mesh, [[maybe_unused]] FunctionSpace f, const std::string& name = "")
+      : mesh_(mesh), name_(name)
   {
     std::tie(space_, coll_) = serac::generateParFiniteElementSpace<FunctionSpace>(&mesh);
 

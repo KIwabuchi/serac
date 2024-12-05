@@ -43,7 +43,9 @@ endif()
 
 option(SERAC_ENABLE_PROFILING "Enable profiling functionality" OFF)
 
-cmake_dependent_option(SERAC_ENABLE_BENCHMARKS "Enable benchmark executables" ON "ENABLE_BENCHMARKS" OFF)
+if (ENABLE_BENCHMARKS)
+    set(SERAC_ENABLE_BENCHMARKS ON)
+endif()
 
 # User turned on benchmarking but explicitly turned off profiling. Error out.
 if ((ENABLE_BENCHMARKS OR SERAC_ENABLE_BENCHMARKS) AND NOT SERAC_ENABLE_PROFILING)

@@ -49,6 +49,8 @@ TEST(QoI, TetrahedronQuality)
 
   auto [fes, fec] = generateParFiniteElementSpace<shape_space>(mesh.get());
 
+  Domain whole_domain = EntireDomain(*mesh);
+
   // Define the shape-aware QOI objects
   serac::ShapeAwareFunctional<shape_space, double()> saf_qoi(fes.get(), {});
 
@@ -60,7 +62,7 @@ TEST(QoI, TetrahedronQuality)
         auto [x, dx_dxi] = position;
         return mu(dot(regular_tet_correction, dx_dxi));
       },
-      *mesh);
+      whole_domain);
 
   serac::Functional<double(shape_space)> qoi({fes.get()});
 
@@ -78,7 +80,7 @@ TEST(QoI, TetrahedronQuality)
         auto dx_dxi = dX_dxi + dot(du_dX, dX_dxi);
         return mu(dot(regular_tet_correction, dx_dxi));
       },
-      *mesh);
+      whole_domain);
 
   std::unique_ptr<mfem::HypreParVector> u(fes->NewTrueDofVector());
   *u = 0.0;

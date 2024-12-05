@@ -263,6 +263,7 @@ public:
     initializeSolidMechanicsStates();
   }
 
+#if 0
   /**
    * @brief Construct a new Nonlinear SolidMechanics Solver object
    *
@@ -352,6 +353,7 @@ public:
       }
     }
   }
+#endif
 
   /// @brief Destroy the SolidMechanics Functional object
   virtual ~SolidMechanics() {}
@@ -813,6 +815,7 @@ public:
    * @tparam active_parameters a list of indices, describing which parameters to pass to the q-function
    * @tparam StateType the type that contains the internal variables (if any) for q-function
    * @param qfunction a callable that returns a tuple of body-force and stress
+   * @param domain which elements should evaluate the provided qfunction
    * @param qdata the buffer of material internal variables at each quadrature point
    *
    * ~~~ {.cpp}
@@ -837,11 +840,11 @@ public:
    * @note This method must be called prior to completeSetup()
    */
   template <int... active_parameters, typename callable, typename StateType = Nothing>
-  void addCustomDomainIntegral(DependsOn<active_parameters...>, callable qfunction,
+  void addCustomDomainIntegral(DependsOn<active_parameters...>, callable qfunction, Domain& domain,
                                qdata_type<StateType> qdata = NoQData)
   {
     residual_->AddDomainIntegral(Dimension<dim>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{}, qfunction,
-                                 mesh_, qdata);
+                                 domain, qdata);
   }
 
   /**
@@ -910,7 +913,7 @@ public:
    * @note This method must be called prior to completeSetup()
    */
   template <int... active_parameters, typename MaterialType, typename StateType = Empty>
-  void setMaterial(DependsOn<active_parameters...>, const MaterialType& material, const Domain& domain,
+  void setMaterial(DependsOn<active_parameters...>, const MaterialType& material, Domain& domain,
                    qdata_type<StateType> qdata = EmptyQData)
   {
     static_assert(std::is_same_v<StateType, Empty> || std::is_same_v<StateType, typename MaterialType::State>,
@@ -927,26 +930,11 @@ public:
   }
 
   /// @overload
-  template <int... active_parameters, typename MaterialType, typename StateType = Empty>
-  void setMaterial(DependsOn<active_parameters...>, const MaterialType& material,
-                   qdata_type<StateType> qdata = EmptyQData)
-  {
-    setMaterial(DependsOn<active_parameters...>{}, material, EntireDomain(mesh_), qdata);
-  }
-
-  /// @overload
   template <typename MaterialType, typename StateType = Empty>
-  void setMaterial(const MaterialType& material, const Domain& domain,
+  void setMaterial(const MaterialType& material, Domain& domain,
                    std::shared_ptr<QuadratureData<StateType>> qdata = EmptyQData)
   {
     setMaterial(DependsOn<>{}, material, domain, qdata);
-  }
-
-  /// @overload
-  template <typename MaterialType, typename StateType = Empty>
-  void setMaterial(const MaterialType& material, std::shared_ptr<QuadratureData<StateType>> qdata = EmptyQData)
-  {
-    setMaterial(DependsOn<>{}, material, EntireDomain(mesh_), qdata);
   }
 
   /**
@@ -1016,8 +1004,8 @@ public:
    *
    * @tparam BodyForceType The type of the body force load
    * @param body_force A function describing the body force applied
-   * @param optional_domain The domain over which the body force is applied. If nothing is supplied the entire domain is
-   * used.
+   * @param domain which part of the mesh to apply the body force to
+   *
    * @pre body_force must be a object that can be called with the following arguments:
    *    1. `tensor<T,dim> x` the spatial coordinates for the quadrature point
    *    2. `double t` the time (note: time will be handled differently in the future)
@@ -1031,19 +1019,17 @@ public:
    * @note This method must be called prior to completeSetup()
    */
   template <int... active_parameters, typename BodyForceType>
-  void addBodyForce(DependsOn<active_parameters...>, BodyForceType body_force,
-                    const std::optional<Domain>& optional_domain = std::nullopt)
+  void addBodyForce(DependsOn<active_parameters...>, BodyForceType body_force, Domain& domain)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireDomain(mesh_);
     residual_->AddDomainIntegral(Dimension<dim>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
                                  BodyForceIntegrand<BodyForceType>(body_force), domain);
   }
 
   /// @overload
   template <typename BodyForceType>
-  void addBodyForce(BodyForceType body_force, const std::optional<Domain>& optional_domain = std::nullopt)
+  void addBodyForce(BodyForceType body_force, Domain& domain)
   {
-    addBodyForce(DependsOn<>{}, body_force, optional_domain);
+    addBodyForce(DependsOn<>{}, body_force, domain);
   }
 
   /**
@@ -1051,8 +1037,8 @@ public:
    *
    * @tparam TractionType The type of the traction load
    * @param traction_function A function describing the traction applied to a boundary
-   * @param optional_domain The domain over which the traction is applied. If nothing is supplied the entire boundary is
-   * used.
+   * @param domain The domain over which the traction is applied.
+   *
    * @pre TractionType must be a object that can be called with the following arguments:
    *    1. `tensor<T,dim> x` the spatial coordinates for the quadrature point
    *    2. `tensor<T,dim> n` the outward-facing unit normal for the quadrature point
@@ -1070,11 +1056,8 @@ public:
    * @note This method must be called prior to completeSetup()
    */
   template <int... active_parameters, typename TractionType>
-  void setTraction(DependsOn<active_parameters...>, TractionType traction_function,
-                   const std::optional<Domain>& optional_domain = std::nullopt)
+  void setTraction(DependsOn<active_parameters...>, TractionType traction_function, Domain& domain)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary(mesh_);
-
     residual_->AddBoundaryIntegral(
         Dimension<dim - 1>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
         [traction_function](double t, auto X, auto /* displacement */, auto /* acceleration */, auto... params) {
@@ -1087,9 +1070,9 @@ public:
 
   /// @overload
   template <typename TractionType>
-  void setTraction(TractionType traction_function, const std::optional<Domain>& optional_domain = std::nullopt)
+  void setTraction(TractionType traction_function, Domain& domain)
   {
-    setTraction(DependsOn<>{}, traction_function, optional_domain);
+    setTraction(DependsOn<>{}, traction_function, domain);
   }
 
   /**
@@ -1097,8 +1080,8 @@ public:
    *
    * @tparam PressureType The type of the pressure load
    * @param pressure_function A function describing the pressure applied to a boundary
-   * @param optional_domain The domain over which the pressure is applied. If nothing is supplied the entire boundary is
-   * used.
+   * @param domain The domain over which the pressure is applied.
+   *
    * @pre PressureType must be a object that can be called with the following arguments:
    *    1. `tensor<T,dim> x` the reference configuration spatial coordinates for the quadrature point
    *    2. `double t` the time (note: time will be handled differently in the future)
@@ -1116,11 +1099,8 @@ public:
    * @note This method must be called prior to completeSetup()
    */
   template <int... active_parameters, typename PressureType>
-  void setPressure(DependsOn<active_parameters...>, PressureType pressure_function,
-                   const std::optional<Domain>& optional_domain = std::nullopt)
+  void setPressure(DependsOn<active_parameters...>, PressureType pressure_function, Domain& domain)
   {
-    Domain domain = (optional_domain) ? *optional_domain : EntireBoundary(mesh_);
-
     residual_->AddBoundaryIntegral(
         Dimension<dim - 1>{}, DependsOn<0, 1, active_parameters + NUM_STATE_VARS...>{},
         [pressure_function](double t, auto X, auto displacement, auto /* acceleration */, auto... params) {
@@ -1148,9 +1128,9 @@ public:
 
   /// @overload
   template <typename PressureType>
-  void setPressure(PressureType pressure_function, const std::optional<Domain>& optional_domain = std::nullopt)
+  void setPressure(PressureType pressure_function, Domain& domain)
   {
-    setPressure(DependsOn<>{}, pressure_function, optional_domain);
+    setPressure(DependsOn<>{}, pressure_function, domain);
   }
 
   /// @brief Build the quasi-static operator corresponding to the total Lagrangian formulation

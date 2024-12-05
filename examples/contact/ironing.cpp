@@ -35,10 +35,11 @@ int main(int argc, char* argv[])
   // Construct the appropriate dimension mesh and give it to the data store
   std::string filename = SERAC_REPO_DIR "/data/meshes/ironing.mesh";
 
-  auto mesh = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 2, 0);
-  serac::StateManager::setMesh(std::move(mesh), "ironing_mesh");
+  auto  mesh  = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 2, 0);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "ironing_mesh");
 
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};
+
 #ifndef MFEM_USE_STRUMPACK
   SLIC_INFO_ROOT("Contact requires MFEM built with strumpack.");
   return 1;
@@ -78,7 +79,8 @@ int main(int argc, char* argv[])
   solid_solver.setParameter(1, G_field);
 
   serac::solid_mechanics::ParameterizedNeoHookeanSolid mat{1.0, 0.0, 0.0};
-  solid_solver.setMaterial(serac::DependsOn<0, 1>{}, mat);
+  serac::Domain                                        whole_mesh = serac::EntireDomain(pmesh);
+  solid_solver.setMaterial(serac::DependsOn<0, 1>{}, mat, whole_mesh);
 
   // Pass the BC information to the solver object
   solid_solver.setDisplacementBCs({5}, [](const mfem::Vector&, mfem::Vector& u) {

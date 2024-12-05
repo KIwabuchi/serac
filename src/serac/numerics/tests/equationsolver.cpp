@@ -58,6 +58,8 @@ TEST_P(EquationSolverSuite, All)
 
   x_exact.Randomize(0);
 
+  Domain domain = EntireDomain(pmesh);
+
   residual.AddDomainIntegral(
       Dimension<dim>{}, DependsOn<0>{},
       [&](double /*t*/, auto, auto scalar) {
@@ -66,7 +68,7 @@ TEST_P(EquationSolverSuite, All)
         auto flux       = du_dx;
         return serac::tuple{source, flux};
       },
-      pmesh);
+      domain);
 
   StdFunctionOperator residual_opr(
       fes->TrueVSize(),
