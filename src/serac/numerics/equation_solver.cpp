@@ -15,6 +15,7 @@
 #include "serac/infrastructure/terminator.hpp"
 #include "serac/serac_config.hpp"
 #include "serac/infrastructure/profiling.hpp"
+#include "serac/numerics/trust_region_solver.hpp"
 
 namespace serac {
 
@@ -234,6 +235,7 @@ struct TrustRegionResults {
     d.SetSize(size);
     Pr.SetSize(size);
     Hd.SetSize(size);
+    Hz.SetSize(size);
     cauchy_point.SetSize(size);
   }
 
@@ -250,6 +252,7 @@ struct TrustRegionResults {
     Interior,
     NegativeCurvature,
     OnBoundary,
+    NonDescentDirection
   };
 
   /// step direction
@@ -260,6 +263,8 @@ struct TrustRegionResults {
   mfem::Vector Pr;
   /// action of hessian on direction d
   mfem::Vector Hd;
+  /// action of hessian on current step z
+  mfem::Vector Hz;
   /// cauchy point
   mfem::Vector cauchy_point;
   /// specifies if step is interior, exterior, negative curvature, etc.
@@ -298,6 +303,9 @@ protected:
   /// extra vector of scratch space for doing temporary calculations
   mutable mfem::Vector scratch;
 
+  mutable std::vector<mfem::Vector*> leftmosts;
+  mutable std::vector<double> leftvals;
+
   /// nonlinear solution options
   NonlinearSolverOptions nonlinear_options;
   /// linear solution options
@@ -317,11 +325,39 @@ public:
 #endif
 
   /// finds tau s.t. (z + tau*d)^2 = trSize^2
-  void projectToBoundaryWithCoefs(mfem::Vector& z, const mfem::Vector& d, double trSize, double zz, double zd,
+  void projectToBoundaryWithCoefs(mfem::Vector& z, const mfem::Vector& d, double delta, double zz, double zd,
                                   double dd) const
   {
-    double tau = (std::sqrt((trSize * trSize - zz) * dd + zd * zd) - zd) / dd;
+    // find z + tau d
+    double deltadelta_m_zz = delta * delta - zz;
+    if (deltadelta_m_zz == 0) return; // already on boundary
+
+    //double d_norm = std::sqrt(dd);
+    //double tau = zd == 0.0 ? delta / d_norm : deltadelta_m_zz / (zd/d_norm + sgn(zd)*std::sqrt(zd*zd/dd + deltadelta_m_zz));
+    double tau = (std::sqrt(deltadelta_m_zz * dd + zd * zd) - zd) / dd;
+    //if ( std::abs(tau-tau2) > 1e-9) printf("taus = %g, %g\n", tau, tau2);
     z.Add(tau, d);
+  }
+
+  template <typename HessVecFunc>
+  void solveSubspaceProblem(const HessVecFunc& hess_vec_func,
+                            mfem::Vector& z, mfem::Vector& Hz,
+                            const mfem::Vector& d, const mfem::Vector& Hd,
+                            const mfem::Vector& g,
+                            double delta, double zz, double zd, double dd,
+                            int num_leftmosts, bool use_subspace) const
+  {
+    if (use_subspace) {
+      std::vector<FiniteElementState> Hvals;
+      //for (auto left : leftmosts) {
+      //  Hvals.emplace_back(*left);
+      //  hess_vec_func(*left, Hvals.back());
+      //}
+      // for (int)
+    }
+
+    projectToBoundaryWithCoefs(z, d, delta, zz, zd, dd);
+
   }
 
   /// finds tau s.t. (z + tau*(y-z))^2 = trSize^2
@@ -361,14 +397,14 @@ public:
     }
   }
 
-  //template <typename HessVecFunc>
-  //double computeEnergy(const mfem::Vector& r, const HessVecFunc& H, const mfem::Vector& z) const {
-  //  double rz = Dot(r,z);
-  //  mfem::Vector tmp(r);
-  //  tmp *= 0.0;
-  //  H(z,tmp);
-  //  return rz + 0.5 * Dot(z, tmp);
-  //}
+  template <typename HessVecFunc>
+  double computeEnergy(const mfem::Vector& r, const HessVecFunc& H, const mfem::Vector& z) const {
+    double rz = Dot(r,z);
+    mfem::Vector tmp(r);
+    tmp *= 0.0;
+    H(z, tmp);
+    return rz + 0.5 * Dot(z, tmp);
+  }
 
   /// Minimize quadratic sub-problem given residual vector, the action of the stiffness and a preconditioner
   template <typename HessVecFunc, typename PrecondFunc>
@@ -386,6 +422,7 @@ public:
     auto& d      = results.d;
     auto& Pr     = results.Pr;
     auto& Hd     = results.Hd;
+    auto& Hz     = results.Hz;
 
     const double cg_tol_squared = settings.cg_tol * settings.cg_tol;
 
@@ -397,12 +434,12 @@ public:
     precond(rCurrent, Pr);
     // std::cout << std::setprecision(16) << "r0 = " << r0.Norml2() << " " << rCurrent.Norml2() << std::endl;
 
-    d = 0.0;
-    add(d, -1.0, Pr, d);  // d = -Pr
-    // d = Pr; // d = -Pr
-    // d *= -1.0;
+    // d = -Pr
+    d = Pr;
+    d *= -1.0;
 
     z          = 0.0;
+    Hz         = 0.0;
     double zz  = 0.;
     double rPr = Dot(rCurrent, Pr);
     double zd  = 0.0;
@@ -411,40 +448,45 @@ public:
     //std::cout << "initial energy = " << computeEnergy(r0, hess_vec_func, z) << std::endl;
 
     for (cgIter = 1; cgIter <= settings.max_cg_iterations; ++cgIter) {
+
+      // check if this is a decent direction
+      if (Dot(d, rCurrent) > 0) {
+        d *= -1;
+        results.interior_status = TrustRegionResults::Status::NonDescentDirection;
+      }
+      
       hess_vec_func(d, Hd);
       const double curvature = Dot(d, Hd);
-      const double alphaCg   = curvature != 0.0 ? rPr / curvature : 0.0;
+      const double alphaCg = curvature != 0.0 ? rPr / curvature : 0.0;
 
-      auto& zPred = Hd;  // re-use Hd, this is where bugs come from
+      auto& zPred = Pr;  // re-use Pr, carefully
       add(z, alphaCg, d, zPred);
-      double zzNp1 = Dot(zPred, zPred);  // can optimize this eventually
+      double zzNp1 = Dot(zPred, zPred);
 
-      if (curvature <= 0) {
-        //printf("negative curvature\n");
-        // mfem::out << "negative curvature found.\n";
-        //scratch = z;
-        //scratch *= 1e-4;
-        //std::cout << "energy toward boundary = " << computeEnergy(r0, hess_vec_func, scratch) << " step size = " << std::sqrt(Dot(z,z)) << std::endl;
-        projectToBoundaryWithCoefs(z, d, trSize, zz, zd, dd);
-        //std::cout << "energy at boundary = " << computeEnergy(r0, hess_vec_func, z) << " step size = " << std::sqrt(Dot(z,z)) << std::endl;
-        //std::cout << "curvature, d norm = " << curvature << " " << std::sqrt(Dot(z,z)) << std::endl;
-        results.interior_status = TrustRegionResults::Status::NegativeCurvature;
-        return;
-      } else if (zzNp1 > (trSize * trSize)) {
-        //printf("on boundary\n");
-        // mfem::out << "step outside trust region.\n";
+      const int num_leftmosts = 1;
+      bool use_subspace = true;
 
-        projectToBoundaryWithCoefs(z, d, trSize, zz, zd, dd);
-        // std::cout << "energy at boundary = " << computeEnergy(r0, hess_vec_func, z) << " " << std::sqrt(Dot(z,z)) << std::endl;
-        results.interior_status = TrustRegionResults::Status::OnBoundary;
+      const bool go_to_boundary = curvature <= 0 || zzNp1 > trSize * trSize;
+      if (go_to_boundary) {
+        solveSubspaceProblem(hess_vec_func, z, Hz, d, Hd, r0, trSize, zz, zd, dd, num_leftmosts, use_subspace);
+        //projectToBoundaryWithCoefs(z, d, trSize, zz, zd, dd);
+        if (curvature <= 0) {
+          results.interior_status = TrustRegionResults::Status::NegativeCurvature;
+        } else {
+          results.interior_status = TrustRegionResults::Status::OnBoundary;
+        }
         return;
       }
 
       z = zPred;
+      add(Hz, alphaCg, Hd, Hz);
+
+      if (results.interior_status == TrustRegionResults::Status::NonDescentDirection) {
+        return;
+      }
 
       //std::cout << "energy at " << cgIter << " = " << computeEnergy(r0, hess_vec_func, z) << " " << std::sqrt(Dot(z,z)) << std::endl;
 
-      hess_vec_func(d, Hd);
       add(rCurrent, alphaCg, Hd, rCurrent);
 
       precond(rCurrent, Pr);

@@ -11,6 +11,13 @@
 
 namespace serac {
 
+int GlobalSize(const mfem::Vector& parallel_v, const MPI_Comm& comm)
+{
+  int local_size = parallel_v.Size();
+  int global_size;
+  MPI_Allreduce(&local_size, &global_size, 1, MPI_INT, MPI_SUM, comm);
+  return global_size;
+}
 
 struct BasisVectors
 {

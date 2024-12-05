@@ -51,7 +51,7 @@ std::vector<serac::FiniteElementState> applyLinearOperator(const Mat& A, const s
   }
 
   int local_rows(states[0].Size());
-  int global_rows(states[0].GlobalSize());
+  int global_rows(GlobalSize(states[0], states[0].comm()));
   
   Vec x;
   Vec y;
@@ -84,10 +84,12 @@ std::vector<serac::FiniteElementState> applyLinearOperator(const Mat& A, const s
 }
 
 
-auto createDiagonalTestMatrix(serac::FiniteElementState& x)
+//auto createDiagonalTestMatrix(serac::FiniteElementState& x)
+auto createDiagonalTestMatrix(mfem::Vector& x)
 {
   const int local_rows = x.Size();
-  const int global_rows = x.GlobalSize();
+  mfem::Vector one = x; one = 1.0;
+  const int global_rows = serac::GlobalSize(x, PETSC_COMM_WORLD);
 
   Vec b;
   VecCreateMPI(PETSC_COMM_WORLD, local_rows, global_rows, &b);
