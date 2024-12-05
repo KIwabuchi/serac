@@ -129,9 +129,9 @@ TEST(LiquidCrystalElastomer, Brighenti)
   solid_solver.setMaterial(DependsOn<TEMPERATURE_INDEX, GAMMA_INDEX>{}, mat, qdata);
 
   // prescribe symmetry conditions
-  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, xmin_face, 0);
-  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, ymin_face, 1);
-  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, zmin_face, 2);
+  solid_solver.setFixedBCs(xmin_face, 0);
+  solid_solver.setFixedBCs(ymin_face, 1);
+  solid_solver.setFixedBCs(zmin_face, 2);
 
   // set initila displacement different than zero to help solver
   auto ini_displacement = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 1.0e-5; };

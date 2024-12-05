@@ -81,14 +81,12 @@ TEST_P(ContactTest, patch)
   solid_solver.setMaterial(mat);
 
   // Define the function for the initial displacement and boundary condition
-  //auto zero_function = [](tensor<double, dim>, auto) { return tensor<double, dim>{}; };
-  auto zero = serac::solid_mechanics::zero_vector_function<dim>;
   auto applied_disp_function = [](tensor<double, dim>, auto) { return tensor<double, dim>{{0, 0, -0.01}}; };
 
   // Define a boundary attribute set and specify initial / boundary conditions
-  solid_solver.setDisplacementBCs(zero, serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1)), 0);
-  solid_solver.setDisplacementBCs(zero, serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(2)), 1);
-  solid_solver.setDisplacementBCs(zero, serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3)), 2);
+  solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1)), 0);
+  solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(2)), 1);
+  solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3)), 2);
   solid_solver.setDisplacementBCs(applied_disp_function, serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6)), 2);
   
   // Add the contact interaction

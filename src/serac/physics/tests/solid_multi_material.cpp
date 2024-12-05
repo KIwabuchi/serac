@@ -97,9 +97,9 @@ TEST(Solid, MultiMaterial)
   solid.setTraction(
       DependsOn<>{}, [stress](auto, auto n, auto) { return stress * n; }, end_face);
 
-  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(2)), 1);
-  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(5)), 0);
-  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)), 2);
+  solid.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(2)), 1);
+  solid.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(5)), 0);
+  solid.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)), 2);
 
   solid.completeSetup();
 
@@ -174,6 +174,10 @@ TEST(Solid, MultiMaterialWithState)
 
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
+  Domain x_min_face = Domain::ofBoundaryElements(pmesh, by_attr<dim>(5));
+  Domain y_min_face = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
+  Domain z_min_face = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+
   serac::LinearSolverOptions linear_options{.linear_solver = LinearSolver::SuperLU};
 
   serac::NonlinearSolverOptions nonlinear_options{.nonlin_solver  = NonlinearSolver::Newton,
@@ -224,9 +228,9 @@ TEST(Solid, MultiMaterialWithState)
   solid.setTraction(
       DependsOn<>{}, [applied_stress](auto, auto n, auto) { return applied_stress * n; }, end_face);
 
-  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(2)), 1);
-  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(5)), 0);
-  solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)), 2);
+  solid.setFixedBCs(x_min_face, 0);
+  solid.setFixedBCs(y_min_face, 1);
+  solid.setFixedBCs(z_min_face, 2);
 
   solid.completeSetup();
 

@@ -167,9 +167,9 @@ void functional_solid_spatial_essential_bc()
     pmesh,
     [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[1] < node_tol; }); });
 
-  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, left, 0);
-  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, back, 1);
-  solid_solver.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, bottom, 2);
+  solid_solver.setFixedBCs(left, 0);
+  solid_solver.setFixedBCs(back, 1);
+  solid_solver.setFixedBCs(bottom, 2);
   solid_solver.setDisplacementBCs([](vec3, double) { return vec3{{0.0, 0.0, -0.1}}; }, top, 2);
 
   // Set a zero initial guess

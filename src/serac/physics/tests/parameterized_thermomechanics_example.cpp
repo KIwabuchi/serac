@@ -129,9 +129,9 @@ TEST(Thermomechanics, ParameterizedMaterial)
   Domain y_equals_0 = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
   Domain z_equals_0 = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
 
-  simulation.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, x_equals_0, 0);
-  simulation.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, y_equals_0, 1);
-  simulation.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, z_equals_0, 2);
+  simulation.setFixedBCs(x_equals_0, 0);
+  simulation.setFixedBCs(y_equals_0, 1);
+  simulation.setFixedBCs(z_equals_0, 2);
 
   // set up initial conditions
   auto zero_vector = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 0.0; };

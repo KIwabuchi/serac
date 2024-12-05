@@ -426,6 +426,31 @@ public:
   }
 
   /**
+   * @brief Shortcut to set one component of displacements to zero for all time
+   *
+   * @param[in] domain Domain to apply the homogeneous boundary condition to
+   * @param[in] component Index of the displacement component that will be constrained
+   *
+   * @note This method must be called prior to completeSetup()
+   */
+  void setFixedBCs(const Domain& domain, int component)
+  {
+    solid_.setFixedBCs(domain, component);
+  }
+
+  /**
+   * @brief Shortcut to set all displacements to zero for all time
+   *
+   * @param[in] domain Domain to apply the homogeneous boundary condition to
+   *
+   * @note This method must be called prior to completeSetup()
+   */
+  void setFixedBCs(const Domain& domain)
+  {
+    solid_.setFixedBCs(domain);
+  }
+
+  /**
    * @brief Set the thermal flux boundary condition
    *
    * @tparam FluxType The type of the thermal flux object

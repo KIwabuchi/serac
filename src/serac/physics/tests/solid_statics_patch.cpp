@@ -299,33 +299,31 @@ double pressure_error()
   // Define the essential boundary conditions corresponding to 10% uniaxial strain everywhere
   // except the pressure loaded surface
   if constexpr (dim == 2) {
+    auto set_bcs = [&solid, exact_uniaxial_strain](Domain driven, Domain fixed) {
+      for (int i = 0; i < dim; ++i) solid.setDisplacementBCs(exact_uniaxial_strain, driven, i);
+      solid.setFixedBCs(fixed, 1);
+    };
+
     if (element_type::geometry == mfem::Geometry::TRIANGLE) {
-      Domain boundaryA = Domain::ofBoundaryElements(pmesh, by_attr<dim>(4));
-      solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 0);
-      solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 1);
-
-      Domain boundaryB = Domain::ofBoundaryElements(pmesh, 
-        [](std::vector<vec2>, int attr) { return (attr == 1) || (attr == 3); });
-      solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, boundaryB, 1);
+      Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(4));
+      Domain fixed = Domain::ofBoundaryElements(pmesh, [](std::vector<vec2>, int attr) { return (attr == 1) || (attr == 3); });
+      set_bcs(driven, fixed);
     } else if (element_type::geometry == mfem::Geometry::SQUARE) {
-      Domain boundaryA = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
-      solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 0);
-      solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 1);
-
-      Domain boundaryB = Domain::ofBoundaryElements(pmesh, [](std::vector<vec2>, int attr) { return (attr == 2) || (attr == 4); });
-      solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, boundaryB, 1);
+      Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+      Domain fixed = Domain::ofBoundaryElements(pmesh, [](std::vector<vec2>, int attr) { return (attr == 2) || (attr == 4); });
+      set_bcs(driven, fixed);
     }
-  } else {
-    Domain boundaryA = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
-    solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 0);
-    solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 1);
-    solid.setDisplacementBCs(exact_uniaxial_strain, boundaryA, 2);
+  } else { // dim == 3
+    auto set_bcs = [&solid, exact_uniaxial_strain](Domain driven, Domain fixed_y, Domain fixed_z) {
+      for (int i = 0; i < dim; ++i) solid.setDisplacementBCs(exact_uniaxial_strain, driven, i);
+      solid.setFixedBCs(fixed_y, 1);
+      solid.setFixedBCs(fixed_z, 2);
+    };
 
-    Domain boundaryB = Domain::ofBoundaryElements(pmesh, [](std::vector<vec3>, int attr) { return (attr == 2) || (attr == 5); });
-    solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, boundaryB, 1);
-
-    Domain boundaryC = Domain::ofBoundaryElements(pmesh, [](std::vector<vec3>, int attr) { return (attr == 3) || (attr == 6); });
-    solid.setDisplacementBCs(solid_mechanics::zero_vector_function<dim>, boundaryC, 2);
+    Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+    Domain fixed_y = Domain::ofBoundaryElements(pmesh, [](std::vector<vec3>, int attr) { return (attr == 2) || (attr == 5); });
+    Domain fixed_z = Domain::ofBoundaryElements(pmesh, [](std::vector<vec3>, int attr) { return (attr == 3) || (attr == 6); });
+    set_bcs(driven, fixed_y, fixed_z);
   }
 
   // Finalize the data structures
