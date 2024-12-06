@@ -42,9 +42,9 @@ Visit `Brew's website <https://brew.sh/>`_ to install and setup Brew. This is re
 
 Next step setting up a new SSH Key to your GitHub account so that you're able to clone the Serac repo. In case you do not know
 how to do this, instructions can be found on
-`GitHub's website <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>_`
+`GitHub's website <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account>`_.
 
 7. **Install Serac**
 
 You're now able to clone Serac and get started with the installation process. Further instructions for doing so are currently on 
-the `quickstart page <https://serac.readthedocs.io/en/latest/sphinx/quickstart.html#quickstart-label>`_` of the Serac documentation.
+the `quickstart page <https://serac.readthedocs.io/en/latest/sphinx/quickstart.html#quickstart-label>`_ of the Serac documentation.
