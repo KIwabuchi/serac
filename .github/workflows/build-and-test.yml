@@ -1,10 +1,6 @@
 name: Build and Test
 
-on:
-  push:
-    branches: [ $default-branch ]
-  pull_request:
-    branches: [ $default-branch ]
+on: pull_request
 
 env:
   Clang_14_ImageName: 'seracllnl/tpls:clang-14_08-15-24_21h-49m'
