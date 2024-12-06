@@ -157,7 +157,9 @@ TEST(quasistatic, finiteDifference)
 
   using materialType = ParameterizedNeoHookeanSolid;
   materialType material;
-  seracSolid->setMaterial(::serac::DependsOn<0, 1>{}, material);
+
+  Domain whole_domain = EntireDomain(*meshPtr);
+  seracSolid->setMaterial(::serac::DependsOn<0, 1>{}, material, whole_domain);
 
   seracSolid->setDisplacementBCs(
       {3}, [](const mfem::Vector&) { return 0.0; }, 0);
@@ -195,7 +197,7 @@ TEST(quasistatic, finiteDifference)
         auto stress = material(state, du_dx, E, v);
         return stress[2][2] * time;
       },
-      *meshPtr);
+      whole_domain);
 
   int    nTimeSteps = 3;
   double timeStep   = 0.8;

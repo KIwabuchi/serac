@@ -290,9 +290,11 @@ void functional_test_2D(mfem::ParMesh& mesh, double tolerance)
   // Construct the new functional object using the known test and trial spaces
   ShapeAwareFunctional<shape_space, test_space(trial_space)> residual(fespace2.get(), fespace1.get(), {fespace1.get()});
 
-  residual.AddDomainIntegral(Dimension<dim>{}, DependsOn<>{}, TestFunctorOne<dim, p>{}, mesh);
+  Domain whole_domain = EntireDomain(mesh);
+  residual.AddDomainIntegral(Dimension<dim>{}, DependsOn<>{}, TestFunctorOne<dim, p>{}, whole_domain);
 
-  residual.AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<>{}, TestFunctorTwo<dim, p>{}, mesh);
+  Domain whole_boundary = EntireBoundary(mesh);
+  residual.AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<>{}, TestFunctorTwo<dim, p>{}, whole_boundary);
 
   double t        = 0.0;
   auto [r, drdU2] = residual(t, serac::differentiate_wrt(U2), U1);
@@ -333,9 +335,11 @@ void functional_test_3D(mfem::ParMesh& mesh, double tolerance)
   // Construct the new functional object using the known test and trial spaces
   ShapeAwareFunctional<shape_space, test_space(trial_space)> residual(fespace2.get(), fespace1.get(), {fespace1.get()});
 
-  residual.AddDomainIntegral(Dimension<dim>{}, DependsOn<>{}, TestFunctorOne<dim, p>{}, mesh);
+  Domain whole_domain = EntireDomain(mesh);
+  residual.AddDomainIntegral(Dimension<dim>{}, DependsOn<>{}, TestFunctorOne<dim, p>{}, whole_domain);
 
-  residual.AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<>{}, TestFunctorTwo<dim, p>{}, mesh);
+  Domain whole_boundary = EntireBoundary(mesh);
+  residual.AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<>{}, TestFunctorTwo<dim, p>{}, whole_boundary);
 
   double t        = 0.0;
   auto [r, drdU2] = residual(t, serac::differentiate_wrt(U2), U1);

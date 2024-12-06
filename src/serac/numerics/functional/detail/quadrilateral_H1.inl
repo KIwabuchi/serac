@@ -32,7 +32,8 @@ struct finite_element<mfem::Geometry::SQUARE, H1<p, c> > {
   using residual_type =
       typename std::conditional<components == 1, tensor<double, ndof>, tensor<double, ndof, components> >::type;
 
-  using dof_type = tensor<double, c, p + 1, p + 1>;
+  using dof_type    = tensor<double, c, p + 1, p + 1>;
+  using dof_type_if = dof_type;
 
   using value_type = typename std::conditional<components == 1, double, tensor<double, components> >::type;
   using derivative_type =
@@ -174,11 +175,11 @@ struct finite_element<mfem::Geometry::SQUARE, H1<p, c> > {
         double              phi_j      = B(qx, jx) * B(qy, jy);
         tensor<double, dim> dphi_j_dxi = {G(qx, jx) * B(qy, jy), B(qx, jx) * G(qy, jy)};
 
-        int   Q   = qy * q + qx;
-        auto& d00 = get<0>(get<0>(input(Q)));
-        auto& d01 = get<1>(get<0>(input(Q)));
-        auto& d10 = get<0>(get<1>(input(Q)));
-        auto& d11 = get<1>(get<1>(input(Q)));
+        int         Q   = qy * q + qx;
+        const auto& d00 = get<0>(get<0>(input(Q)));
+        const auto& d01 = get<1>(get<0>(input(Q)));
+        const auto& d10 = get<0>(get<1>(input(Q)));
+        const auto& d11 = get<1>(get<1>(input(Q)));
 
         output[Q] = {d00 * phi_j + dot(d01, dphi_j_dxi), d10 * phi_j + dot(d11, dphi_j_dxi)};
       }

@@ -21,16 +21,6 @@ mfem::Mesh import_mesh(std::string meshfile)
   return mesh;
 }
 
-template <int dim>
-tensor<double, dim> average(std::vector<tensor<double, dim> >& positions)
-{
-  tensor<double, dim> total{};
-  for (auto x : positions) {
-    total += x;
-  }
-  return total / double(positions.size());
-}
-
 TEST(domain, of_edges)
 {
   {
@@ -402,6 +392,74 @@ TEST(domain, of3dElementsFindsDofs)
   dof_indices = d2.dof_list(&fes);
 
   EXPECT_EQ(dof_indices.Size(), 113);
+}
+
+TEST(domain, of2dBoundaryElementsFindsDofs)
+{
+  constexpr int dim  = 2;
+  constexpr int p    = 2;
+  auto          mesh = import_mesh("patch2D_tris_and_quads.mesh");
+
+  auto find_right_boundary = [](std::vector<vec2> vertices, int /* attr */) {
+    return std::all_of(vertices.begin(), vertices.end(), [](vec2 X) { return X[0] > 1.0 - 1e-2; });
+  };
+
+  Domain d0 = Domain::ofBoundaryElements(mesh, find_right_boundary);
+  EXPECT_EQ(d0.edge_ids_.size(), 1);
+
+  auto fec = mfem::H1_FECollection(p, dim);
+  auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+  mfem::Array<int> dof_indices = d0.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 3);
+
+  auto find_top_boundary = [](std::vector<vec2> vertices, int /* attr */) {
+    return std::all_of(vertices.begin(), vertices.end(), [](vec2 X) { return X[1] > 1.0 - 1e-2; });
+  };
+
+  Domain d1 = Domain::ofBoundaryElements(mesh, find_top_boundary);
+  EXPECT_EQ(d1.edge_ids_.size(), 1);
+
+  Domain d2 = d0 | d1;
+
+  dof_indices = d2.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 5);
+}
+
+TEST(domain, of3dBoundaryElementsFindsDofs)
+{
+  constexpr int dim  = 3;
+  constexpr int p    = 2;
+  auto          mesh = import_mesh("patch3D_tets.mesh");
+
+  auto find_xmax_boundary = [](std::vector<vec3> vertices, int /* attr */) {
+    return std::all_of(vertices.begin(), vertices.end(), [](vec3 X) { return X[0] > 1.0 - 1e-2; });
+  };
+
+  Domain d0 = Domain::ofBoundaryElements(mesh, find_xmax_boundary);
+  EXPECT_EQ(d0.tri_ids_.size(), 2);
+
+  auto fec = mfem::H1_FECollection(p, dim);
+  auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+  mfem::Array<int> dof_indices = d0.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 9);
+
+  auto find_ymax_boundary = [](std::vector<vec3> vertices, int /* attr */) {
+    return std::all_of(vertices.begin(), vertices.end(), [](vec3 X) { return X[1] > 1.0 - 1e-2; });
+  };
+
+  Domain d1 = Domain::ofBoundaryElements(mesh, find_ymax_boundary);
+  EXPECT_EQ(d1.tri_ids_.size(), 2);
+
+  Domain d2 = d0 | d1;
+
+  dof_indices = d2.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 15);
 }
 
 int main(int argc, char* argv[])

@@ -87,7 +87,8 @@ void applyInitialAndBoundaryConditions(SolidMechanics<p, dim>& solid_solver)
 }
 
 std::unique_ptr<SolidMechanics<p, dim>> createNonlinearSolidMechanicsSolver(
-    const NonlinearSolverOptions& nonlinear_opts, const TimesteppingOptions& dyn_opts, const SolidMaterial& mat)
+    const NonlinearSolverOptions& nonlinear_opts, const TimesteppingOptions& dyn_opts, const SolidMaterial& mat,
+    Domain& whole_domain)
 {
   static int                iter           = 0;
   const LinearSolverOptions linear_options = {.linear_solver  = LinearSolver::CG,
@@ -101,16 +102,18 @@ std::unique_ptr<SolidMechanics<p, dim>> createNonlinearSolidMechanicsSolver(
   auto solid              = std::make_unique<SolidMechanics<p, dim>>(nonlinear_opts, linear_options, dyn_opts,
                                                         physics_prefix + std::to_string(iter++), mesh_tag,
                                                         std::vector<std::string>{}, 0, 0.0, checkpoint_to_disk, false);
-  solid->setMaterial(mat);
+  solid->setMaterial(mat, whole_domain);
 
   solid->setDisplacementBCs(
       {1}, [](const mfem::Vector&, double t, mfem::Vector& disp) { disp = (1.0 + 10 * t) * boundary_disp; });
-  solid->addBodyForce([](auto X, auto t) {
-    auto Y = X;
-    Y[0]   = 0.1 + 0.1 * X[0] + 0.3 * X[1] - 0.2 * t;
-    Y[1]   = -0.05 - 0.08 * X[0] + 0.15 * X[1] + 0.3 * t;
-    return 0.4 * X + Y;
-  });
+  solid->addBodyForce(
+      [](auto X, auto t) {
+        auto Y = X;
+        Y[0]   = 0.1 + 0.1 * X[0] + 0.3 * X[1] - 0.2 * t;
+        Y[1]   = -0.05 - 0.08 * X[0] + 0.15 * X[1] + 0.3 * t;
+        return 0.4 * X + Y;
+      },
+      whole_domain);
   solid->completeSetup();
 
   applyInitialAndBoundaryConditions(*solid);
@@ -273,7 +276,8 @@ struct SolidMechanicsSensitivityFixture : public ::testing::Test {
 
 TEST_F(SolidMechanicsSensitivityFixture, InitialDisplacementSensitivities)
 {
-  auto solid_solver                             = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat);
+  Domain whole_domain = EntireDomain(*mesh);
+  auto   solid_solver = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat, whole_domain);
   auto [qoi_base, init_disp_sensitivity, _, __] = computeSolidMechanicsQoiSensitivities(*solid_solver, tsInfo);
 
   solid_solver->resetStates();
@@ -290,7 +294,8 @@ TEST_F(SolidMechanicsSensitivityFixture, InitialDisplacementSensitivities)
 
 TEST_F(SolidMechanicsSensitivityFixture, InitialVelocitySensitivities)
 {
-  auto solid_solver                             = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat);
+  Domain whole_domain = EntireDomain(*mesh);
+  auto   solid_solver = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat, whole_domain);
   auto [qoi_base, _, init_velo_sensitivity, __] = computeSolidMechanicsQoiSensitivities(*solid_solver, tsInfo);
 
   solid_solver->resetStates();
@@ -306,7 +311,8 @@ TEST_F(SolidMechanicsSensitivityFixture, InitialVelocitySensitivities)
 
 TEST_F(SolidMechanicsSensitivityFixture, ShapeSensitivities)
 {
-  auto solid_solver                         = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat);
+  Domain whole_domain = EntireDomain(*mesh);
+  auto   solid_solver = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat, whole_domain);
   auto [qoi_base, _, __, shape_sensitivity] = computeSolidMechanicsQoiSensitivities(*solid_solver, tsInfo);
 
   solid_solver->resetStates();
@@ -322,8 +328,9 @@ TEST_F(SolidMechanicsSensitivityFixture, ShapeSensitivities)
 
 TEST_F(SolidMechanicsSensitivityFixture, QuasiStaticShapeSensitivities)
 {
-  dyn_opts.timestepper                      = TimestepMethod::QuasiStatic;
-  auto solid_solver                         = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat);
+  Domain whole_domain  = EntireDomain(*mesh);
+  dyn_opts.timestepper = TimestepMethod::QuasiStatic;
+  auto solid_solver    = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat, whole_domain);
   auto [qoi_base, _, __, shape_sensitivity] = computeSolidMechanicsQoiSensitivities(*solid_solver, tsInfo);
 
   solid_solver->resetStates();
@@ -339,7 +346,8 @@ TEST_F(SolidMechanicsSensitivityFixture, QuasiStaticShapeSensitivities)
 
 TEST_F(SolidMechanicsSensitivityFixture, WhenShapeSensitivitiesCalledTwice_GetSameObjectiveAndGradient)
 {
-  auto solid_solver                      = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat);
+  Domain whole_domain = EntireDomain(*mesh);
+  auto   solid_solver = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat, whole_domain);
   auto [qoi1, _, __, shape_sensitivity1] = computeSolidMechanicsQoiSensitivities(*solid_solver, tsInfo);
 
   solid_solver->resetStates();

@@ -78,12 +78,14 @@ void thermal_test_impl(std::unique_ptr<mfem::ParMesh>& mesh)
   // Construct the new functional object using the known test and trial spaces
   Functional<test_space(trial_space), exec_space> residual(test_fespace.get(), {trial_fespace.get()});
 
-  residual.AddDomainIntegral(Dimension<dim>{}, DependsOn<0>{}, TestThermalModelOne<dim>{}, *mesh);
+  Domain dom = EntireDomain(*mesh);
+  Domain bdr = EntireBoundary(*mesh);
 
-  residual.AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<0>{}, TestThermalModelTwo{}, *mesh);
+  residual.AddDomainIntegral(Dimension<dim>{}, DependsOn<0>{}, TestThermalModelOne<dim>{}, dom);
+
+  residual.AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<0>{}, TestThermalModelTwo{}, bdr);
 
   double t = 0.0;
-
   check_gradient(residual, t, U);
 }
 
