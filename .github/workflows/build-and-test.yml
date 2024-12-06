@@ -1,0 +1,28 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
+env:
+  Clang_14_ImageName: 'seracllnl/tpls:clang-14_08-15-24_21h-49m'
+  GCC_13_ImageName: 'seracllnl/tpls:gcc-13_08-15-24_21h-49m'
+  CUDA_12_ImageName: 'seracllnl/tpls:cuda-12_08-15-24_21h-49m'
+  # Temp set these here to test one pipeline
+  VM_ImageName: 'ubuntu-22.04'
+  Compiler_ImageName: $(Clang_14_ImageName)
+  TEST_TARGET: 'linux_clang14'
+  HOST_CONFIG: 'clang@14.0.0.cmake'
+  BUILD_TYPE: 'Release'
+  BUILD_SRC_OPTS: '--skip-install'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and Test
+      run: |
+        docker run --rm -v `pwd`:/home/serac/serac -e TEST_TARGET -e HOST_CONFIG $(Compiler_ImageName) ./serac/scripts/llnl/build_src.py $BUILD_SRC_OPTS -v --host-config $HOST_CONFIG --extra-cmake-options "${CMAKE_OPTS} -DCMAKE_BUILD_TYPE=$BUILD_TYPE" --jobs 4
