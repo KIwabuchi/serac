@@ -99,7 +99,7 @@ struct Domain {
   /**
    * @brief empty Domain constructor, with connectivity info to be populated later
    */
-  Domain(const mesh_t& m, int d, Type type = Domain::Type::Elements) : mesh_(m), dim_(d), type_(type) {}
+  Domain(const mesh_t& m, int d, Type type) : mesh_(m), dim_(d), type_(type) {}
 
   /**
    * @brief create a domain from some subset of the vertices in an mfem::Mesh
