@@ -638,8 +638,7 @@ def get_build_dir(prefix, host_config):
 
 
 def get_repo_dir():
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    return os.path.abspath(pjoin(script_dir, "../.."))
+    return os.path.abspath(pjoin(get_script_dir(), "../.."))
 
 
 def get_build_and_test_root(prefix, timestamp):
@@ -685,7 +684,7 @@ def get_shared_spot_dir():
 
 
 def get_uberenv_path():
-    return pjoin(get_script_dir(), "../uberenv/uberenv.py")
+    return pjoin(get_repo_dir(), "scripts/uberenv/uberenv.py")
 
 
 def on_rz():
@@ -703,7 +702,7 @@ _project_name = ""
 def get_project_name():
     global _project_name
     if not _project_name:
-        uberenv_config_path = os.path.abspath(os.path.join(get_script_dir(), "../../.uberenv_config.json"))
+        uberenv_config_path = pjoin(get_repo_dir(), ".uberenv_config.json")
         _project_name = "UNKNOWN_PROJECT"
         if os.path.exists(uberenv_config_path):
             with open(uberenv_config_path) as json_file:
