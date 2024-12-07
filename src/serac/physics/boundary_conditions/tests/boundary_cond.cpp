@@ -30,10 +30,10 @@ TEST(BoundaryCond, SimpleRepeatedDofs)
 
   BoundaryConditionManager bcs(par_mesh);
   auto                     coef = std::make_shared<mfem::ConstantCoefficient>(1);
-  bcs.addEssential({ATTR}, coef, state.space(), 1);
+  bcs.addEssential(std::set<int>{ATTR}, coef, state.space(), 1);
   const auto before_dofs = bcs.allEssentialTrueDofs();
 
-  bcs.addEssential({ATTR}, coef, state.space(), 1);
+  bcs.addEssential(std::set<int>{ATTR}, coef, state.space(), 1);
   const auto after_dofs = bcs.allEssentialTrueDofs();
 
   // Make sure that attempting to add a boundary condition
