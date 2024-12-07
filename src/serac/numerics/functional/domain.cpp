@@ -77,7 +77,7 @@ static Domain domain_of_edges(const mfem::Mesh& mesh, std::function<T> predicate
 
     if constexpr (d == 2) {
       int bdr_id = edge_id_to_bdr_id[i];
-      int attr   = (bdr_id > 0) ? mesh.GetBdrAttribute(bdr_id) : -1;
+      int attr   = (bdr_id >= 0) ? mesh.GetBdrAttribute(bdr_id) : -1;
       if (predicate(x, attr)) {
         output.addElement(i, i, mfem::Geometry::SEGMENT);
       }
