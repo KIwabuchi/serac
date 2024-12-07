@@ -188,9 +188,16 @@ Domain operator&(const Domain& a, const Domain& b);
 /// @brief create a new domain that is the set difference of `a` and `b`
 Domain operator-(const Domain& a, const Domain& b);
 
-/// @brief convenience predicate for creating domains by attributes
+/// @brief convenience predicate for creating domains by attribute
 template <int dim>
-inline auto by_attrs(std::set<int> values)
+inline auto by_attr(int value)
+{
+  return [value](std::vector<tensor<double, dim>>, int attr) { return value == attrs; };
+}
+
+/// @brief convenience predicate for creating domains by a set of attributes
+template <int dim>
+inline auto by_attr(std::set<int> values)
 {
   return [values](std::vector<tensor<double, dim>>, int attr) { return values.find(attr) != values.end(); };
 }
