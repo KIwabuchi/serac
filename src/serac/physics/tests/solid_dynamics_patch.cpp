@@ -135,13 +135,7 @@ public:
   template <int p, typename Material>
   void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundary_attrs) const
   {
-    auto contains = [](const std::set<int>& my_set, int i) {
-      return my_set.find(i) != my_set.end();
-    };
-    Domain essential_boundary = Domain::ofBoundaryElements(solid.mesh(), 
-      [&essential_boundary_attrs, &contains](std::vector<tensor<double, dim>>, int attr) {
-        return contains(essential_boundary_attrs, attr);
-      });
+    Domain essential_boundary = Domain::ofBoundaryElements(solid.mesh(), by_attr<dim>(essential_boundary_attrs));
 
     // essential BCs
     auto ebc_func = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
@@ -226,11 +220,7 @@ public:
   void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundary_attrs) const
   {
     // essential BCs
-    Domain essential_boundary = Domain::ofBoundaryElements(solid.mesh(), 
-      [&essential_boundary_attrs](std::vector<tensor<double, dim>>, int attr) {
-        bool set_contains_attr = essential_boundary_attrs.find(attr) != essential_boundary_attrs.end();
-        return set_contains_attr;
-      });
+    Domain essential_boundary = Domain::ofBoundaryElements(solid.mesh(), by_attr<dim>(essential_boundary_attrs));
     auto ebc_func = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
     for (int i = 0; i < dim; ++i) solid.setDisplacementBCs(ebc_func, essential_boundary, i);
 

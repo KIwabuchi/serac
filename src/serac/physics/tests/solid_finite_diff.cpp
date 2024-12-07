@@ -80,7 +80,7 @@ TEST(SolidMechanics, FiniteDifferenceParameter)
   auto bc = [](const mfem::Vector&, mfem::Vector& bc_vec) -> void { bc_vec = 0.0; };
 
   // Define a boundary attribute set and specify initial / boundary conditions
-  Domain essential_boundary = Domain::ofBoundaryElements(pmesh, [](std::vector<vec2>, int attr){ return attr == 1; });
+  Domain essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
   solid_solver.setFixedBCs(essential_boundary);
 
   tensor<double, dim> constant_force;
@@ -208,7 +208,7 @@ void finite_difference_shape_test(LoadingType load)
   constexpr int dim = 2;
 
   // Define the boundary for essential bcs
-  Domain essential_boundary = Domain::ofBoundaryElements(pmesh, [](std::vector<tensor<double, dim>>, int attr) { return attr == 1;});
+  Domain essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
 
   double shape_displacement_value = 1.0;
 

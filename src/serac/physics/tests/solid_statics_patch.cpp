@@ -306,11 +306,11 @@ double pressure_error()
 
     if (element_type::geometry == mfem::Geometry::TRIANGLE) {
       Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(4));
-      Domain fixed = Domain::ofBoundaryElements(pmesh, [](std::vector<vec2>, int attr) { return (attr == 1) || (attr == 3); });
+      Domain fixed = Domain::ofBoundaryElements(pmesh, by_attr<dim>({1, 3}));
       set_bcs(driven, fixed);
     } else if (element_type::geometry == mfem::Geometry::SQUARE) {
       Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
-      Domain fixed = Domain::ofBoundaryElements(pmesh, [](std::vector<vec2>, int attr) { return (attr == 2) || (attr == 4); });
+      Domain fixed = Domain::ofBoundaryElements(pmesh, by_attr<dim>({2, 4}));
       set_bcs(driven, fixed);
     }
   } else { // dim == 3
@@ -321,8 +321,8 @@ double pressure_error()
     };
 
     Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
-    Domain fixed_y = Domain::ofBoundaryElements(pmesh, [](std::vector<vec3>, int attr) { return (attr == 2) || (attr == 5); });
-    Domain fixed_z = Domain::ofBoundaryElements(pmesh, [](std::vector<vec3>, int attr) { return (attr == 3) || (attr == 6); });
+    Domain fixed_y = Domain::ofBoundaryElements(pmesh, by_attr<dim>({2, 5}));
+    Domain fixed_z = Domain::ofBoundaryElements(pmesh, by_attr<dim>({3, 6}));
     set_bcs(driven, fixed_y, fixed_z);
   }
 

@@ -151,6 +151,7 @@ void functional_solid_spatial_essential_bc()
 
   auto all = [](std::vector<vec3> coords, auto predicate) { return std::all_of(coords.begin(), coords.end(), [predicate](auto X) { return predicate(X); }); };
 
+  // Demonstrate that you can create domains from a spatial predicate
   Domain bottom = Domain::ofBoundaryElements(
     pmesh,
     [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[2] < node_tol; }); });
@@ -159,13 +160,9 @@ void functional_solid_spatial_essential_bc()
     pmesh,
     [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[2] > 1.0 - node_tol; }); });
 
-  Domain left = Domain::ofBoundaryElements(
-    pmesh,
-    [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[0] < node_tol; }); });
-
-  Domain back = Domain::ofBoundaryElements(
-    pmesh,
-    [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[1] < node_tol; }); });
+  // Or that you can create domains from attributes
+  Domain left = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+  Domain back = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
 
   solid_solver.setFixedBCs(left, 0);
   solid_solver.setFixedBCs(back, 1);

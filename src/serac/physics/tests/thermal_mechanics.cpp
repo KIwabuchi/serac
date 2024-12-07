@@ -46,7 +46,7 @@ void functional_test_static_3D(double expected_norm)
   // For simplicity, we apply essential boundary condtions in both the thermal and mechanics
   // on the same boundary subset.
   std::set<int> ess_bdr = {1};
-  auto displacement_essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+  auto displacement_essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(ess_bdr));
 
   // define the solid solver configurations
   // no default solver options for solid yet, so make some here

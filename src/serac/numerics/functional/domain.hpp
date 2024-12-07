@@ -192,7 +192,7 @@ Domain operator-(const Domain& a, const Domain& b);
 template <int dim>
 inline auto by_attr(int value)
 {
-  return [value](std::vector<tensor<double, dim>>, int attr) { return value == attrs; };
+  return [value](std::vector<tensor<double, dim>>, int attr) { return value == attr; };
 }
 
 /// @brief convenience predicate for creating domains by a set of attributes

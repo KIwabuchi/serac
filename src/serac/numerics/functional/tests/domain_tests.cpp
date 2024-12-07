@@ -111,8 +111,8 @@ TEST(domain, of_edges)
     EXPECT_EQ(d3.edge_ids_.size(), 0);
     EXPECT_EQ(d3.dim_, 1);
 
-    // check that by_attrs compiles
-    Domain d4 = Domain::ofEdges(mesh, by_attrs<dim>({3}));
+    // check that by_attr compiles
+    Domain d4 = Domain::ofEdges(mesh, by_attr<dim>(3));
     EXPECT_EQ(d4.mfem_edge_ids_.size(), 16);
 
     Domain d5 = Domain::ofBoundaryElements(mesh, [](std::vector<vec2>, int) { return true; });
@@ -145,8 +145,8 @@ TEST(domain, of_faces)
     EXPECT_EQ(d3.quad_ids_.size(), 0);
     EXPECT_EQ(d3.dim_, 2);
 
-    // check that by_attrs compiles
-    Domain d4 = Domain::ofFaces(mesh, by_attrs<dim>({3}));
+    // check that by_attr compiles
+    Domain d4 = Domain::ofFaces(mesh, by_attr<dim>(3));
 
     Domain d5 = Domain::ofBoundaryElements(mesh, [](std::vector<vec3>, int) { return true; });
     EXPECT_EQ(d5.quad_ids_.size(), 6);
@@ -178,8 +178,8 @@ TEST(domain, of_faces)
     EXPECT_EQ(d3.tri_ids_.size(), 1);
     EXPECT_EQ(d3.dim_, 2);
 
-    // check that by_attrs compiles
-    Domain d4 = Domain::ofFaces(mesh, by_attrs<dim>({3}));
+    // check that by_attr compiles
+    Domain d4 = Domain::ofFaces(mesh, by_attr<dim>(3));
 
     Domain d5 = Domain::ofBoundaryElements(mesh, [](std::vector<vec3>, int) { return true; });
     EXPECT_EQ(d5.tri_ids_.size(), 4);
@@ -208,8 +208,8 @@ TEST(domain, of_faces)
     EXPECT_EQ(d3.quad_ids_.size(), 2);
     EXPECT_EQ(d3.dim_, 2);
 
-    // check that by_attrs compiles
-    Domain d4 = Domain::ofFaces(mesh, by_attrs<dim>({3}));
+    // check that by_attr compiles
+    Domain d4 = Domain::ofFaces(mesh, by_attr<dim>(3));
   }
 }
 
@@ -243,8 +243,8 @@ TEST(domain, of_elements)
     EXPECT_EQ(d3.hex_ids_.size(), 0);
     EXPECT_EQ(d3.dim_, 3);
 
-    // check that by_attrs works
-    Domain d4 = Domain::ofElements(mesh, by_attrs<dim>({3}));
+    // check that by_attr works
+    Domain d4 = Domain::ofElements(mesh, by_attr<dim>(3));
   }
 
   {
@@ -272,8 +272,8 @@ TEST(domain, of_elements)
     EXPECT_EQ(d3.quad_ids_.size(), 0);
     EXPECT_EQ(d3.dim_, 2);
 
-    // check that by_attrs compiles
-    Domain d4 = Domain::ofElements(mesh, by_attrs<dim>({3}));
+    // check that by_attr compiles
+    Domain d4 = Domain::ofElements(mesh, by_attr<dim>(3));
   }
 }
 
