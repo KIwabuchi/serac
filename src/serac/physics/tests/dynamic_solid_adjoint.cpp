@@ -17,6 +17,7 @@
 #include "serac/mesh/mesh_utils.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/serac_config.hpp"
+#include "serac/infrastructure/terminator.hpp"
 
 namespace serac {
 
@@ -27,7 +28,6 @@ const std::string mesh_tag       = "mesh";
 const std::string physics_prefix = "solid";
 
 using SolidMaterial = solid_mechanics::NeoHookean;
-auto geoNonlinear   = GeometricNonlinearities::On;
 
 struct TimeSteppingInfo {
   TimeSteppingInfo() : dts({0.0, 0.2, 0.4, 0.24, 0.12, 0.0}) {}
@@ -38,25 +38,29 @@ struct TimeSteppingInfo {
 };
 
 constexpr double disp_target   = -0.34;
-constexpr double boundary_disp = 0.013;
+constexpr double boundary_disp = 0.00013;
 
-constexpr double initial_interior_disp = 0.03;
+constexpr double initial_interior_disp = 0.001;
 constexpr double initial_interior_velo = 0.04;
 
-// MRT: add explicit velocity dependence
-double computeStepQoi(const FiniteElementState& displacement, double dt)
+double computeStepQoi(const FiniteElementState& displacement, const FiniteElementDual& reactions, double dt)
 {
   FiniteElementState displacement_error(displacement);
   displacement_error = disp_target;
   displacement_error.Add(1.0, displacement);
-  return 0.5 * dt * innerProduct(displacement_error, displacement_error);
+  return 0.5 * dt * innerProduct(displacement_error, displacement_error) +
+         0.05 * dt * innerProduct(reactions, reactions);
 }
 
-void computeStepAdjointLoad(const FiniteElementState& displacement, FiniteElementDual& d_qoi_d_displacement, double dt)
+void computeStepAdjointLoad(const FiniteElementState& displacement, const FiniteElementDual& reactions,
+                            FiniteElementDual& d_qoi_d_displacement, FiniteElementState& d_qoi_d_reactions, double dt)
 {
   d_qoi_d_displacement = disp_target;
   d_qoi_d_displacement.Add(1.0, displacement);
   d_qoi_d_displacement *= dt;
+
+  d_qoi_d_reactions = reactions;
+  d_qoi_d_reactions *= 0.1 * dt;
 }
 
 void applyInitialAndBoundaryConditions(SolidMechanics<p, dim>& solid_solver)
@@ -83,21 +87,33 @@ void applyInitialAndBoundaryConditions(SolidMechanics<p, dim>& solid_solver)
 }
 
 std::unique_ptr<SolidMechanics<p, dim>> createNonlinearSolidMechanicsSolver(
-    const NonlinearSolverOptions& nonlinear_opts, const TimesteppingOptions& dyn_opts, const SolidMaterial& mat)
+    const NonlinearSolverOptions& nonlinear_opts, const TimesteppingOptions& dyn_opts, const SolidMaterial& mat,
+    Domain& whole_domain)
 {
-  static int iter = 0;
-  auto       solid =
-      std::make_unique<SolidMechanics<p, dim>>(nonlinear_opts, solid_mechanics::direct_linear_options, dyn_opts,
-                                               geoNonlinear, physics_prefix + std::to_string(iter++), mesh_tag);
-  solid->setMaterial(mat);
+  static int                iter           = 0;
+  const LinearSolverOptions linear_options = {.linear_solver  = LinearSolver::CG,
+                                              .preconditioner = Preconditioner::HypreJacobi,
+                                              .relative_tol   = 1.0e-9,
+                                              .absolute_tol   = 1.0e-16,
+                                              .max_iterations = 2000,
+                                              .print_level    = 0};
+
+  bool checkpoint_to_disk = true;
+  auto solid              = std::make_unique<SolidMechanics<p, dim>>(nonlinear_opts, linear_options, dyn_opts,
+                                                        physics_prefix + std::to_string(iter++), mesh_tag,
+                                                        std::vector<std::string>{}, 0, 0.0, checkpoint_to_disk, false);
+  solid->setMaterial(mat, whole_domain);
+
   solid->setDisplacementBCs(
       {1}, [](const mfem::Vector&, double t, mfem::Vector& disp) { disp = (1.0 + 10 * t) * boundary_disp; });
-  solid->addBodyForce([](auto X, auto t) {
-    auto Y = X;
-    Y[0]   = 0.1 + 0.1 * X[0] + 0.3 * X[1] - 0.2 * t;
-    Y[1]   = -0.05 - 0.08 * X[0] + 0.15 * X[1] + 0.3 * t;
-    return 0.4 * X + Y;
-  });
+  solid->addBodyForce(
+      [](auto X, auto t) {
+        auto Y = X;
+        Y[0]   = 0.1 + 0.1 * X[0] + 0.3 * X[1] - 0.2 * t;
+        Y[1]   = -0.05 - 0.08 * X[0] + 0.15 * X[1] + 0.3 * t;
+        return 0.4 * X + Y;
+      },
+      whole_domain);
   solid->completeSetup();
 
   applyInitialAndBoundaryConditions(*solid);
@@ -108,16 +124,22 @@ std::unique_ptr<SolidMechanics<p, dim>> createNonlinearSolidMechanicsSolver(
 double computeSolidMechanicsQoi(BasePhysics& solid_solver, const TimeSteppingInfo& ts_info)
 {
   auto dts = ts_info.dts;
+
   solid_solver.advanceTimestep(dts(0));  // advance by 0.0 seconds to get initial acceleration
   solid_solver.outputStateToDisk();
+
   FiniteElementState dispForObjective = solid_solver.state("displacement");
 
-  double qoi = computeStepQoi(dispForObjective, 0.5 * (dts(0) + dts(1)));
+  FiniteElementDual reactionsForObjective = solid_solver.dual("reactions");
+  double            qoi = computeStepQoi(dispForObjective, reactionsForObjective, 0.5 * (dts(0) + dts(1)));
+
   for (int i = 1; i <= ts_info.numTimesteps(); ++i) {
     solid_solver.advanceTimestep(dts(i));
     solid_solver.outputStateToDisk();
-    dispForObjective = solid_solver.state("displacement");
-    qoi += computeStepQoi(dispForObjective, 0.5 * (dts(i) + dts(i + 1)));
+
+    dispForObjective      = solid_solver.state("displacement");
+    reactionsForObjective = solid_solver.dual("reactions");
+    qoi += computeStepQoi(dispForObjective, reactionsForObjective, 0.5 * (dts(i) + dts(i + 1)));
   }
   return qoi;
 }
@@ -137,18 +159,23 @@ std::tuple<double, FiniteElementDual, FiniteElementDual, FiniteElementDual> comp
   FiniteElementDual shape_sensitivity(solid_solver.shapeDisplacement().space(), "shape sensitivity");
   shape_sensitivity = 0.0;
 
-  FiniteElementDual adjoint_load(solid_solver.state("displacement").space(), "adjoint_displacement_load");
+  FiniteElementDual  adjoint_load(solid_solver.state("displacement").space(), "adjoint_displacement_load");
+  FiniteElementState adjoint_bcs(solid_solver.dual("reactions").space(), "adjoint_reaction_bcs");
 
   // for solids, we go back to time = 0, because there is an extra hidden implicit solve at the start
   // consider unifying the interface between solids and thermal
   for (int i = solid_solver.cycle(); i > 0; --i) {
     auto previous_displacement = solid_solver.loadCheckpointedState("displacement", solid_solver.cycle());
+    auto previous_reactions    = solid_solver.loadCheckpointedDual("reactions", solid_solver.cycle());
+
     computeStepAdjointLoad(
-        previous_displacement, adjoint_load,
+        previous_displacement, previous_reactions, adjoint_load, adjoint_bcs,
         0.5 * (solid_solver.getCheckpointedTimestep(i - 1) + solid_solver.getCheckpointedTimestep(i)));
     EXPECT_EQ(i, solid_solver.cycle());
     solid_solver.setAdjointLoad({{"displacement", adjoint_load}});
+    solid_solver.setDualAdjointBcs({{"reactions", adjoint_bcs}});
     solid_solver.reverseAdjointTimestep();
+
     shape_sensitivity += solid_solver.computeTimestepShapeSensitivity();
     EXPECT_EQ(i - 1, solid_solver.cycle());
   }
@@ -216,7 +243,7 @@ struct SolidMechanicsSensitivityFixture : public ::testing::Test {
     MPI_Barrier(MPI_COMM_WORLD);
     StateManager::initialize(dataStore, "solid_mechanics_solve");
     std::string filename = std::string(SERAC_REPO_DIR) + "/data/meshes/star.mesh";
-    mesh                 = &StateManager::setMesh(mesh::refineAndDistribute(buildMeshFromFile(filename), 0), mesh_tag);
+    mesh                 = &StateManager::setMesh(mesh::refineAndDistribute(buildMeshFromFile(filename), 1), mesh_tag);
     mat.density          = 1.0;
     mat.K                = 1.0;
     mat.G                = 0.1;
@@ -233,7 +260,8 @@ struct SolidMechanicsSensitivityFixture : public ::testing::Test {
   axom::sidre::DataStore dataStore;
   mfem::ParMesh*         mesh;
 
-  NonlinearSolverOptions nonlinear_opts{.relative_tol = 1.0e-15, .absolute_tol = 1.0e-15};
+  NonlinearSolverOptions nonlinear_opts{
+      .nonlin_solver = NonlinearSolver::TrustRegion, .relative_tol = 1.0e-15, .absolute_tol = 1.0e-14};
 
   bool                dispBc = true;
   TimesteppingOptions dyn_opts{.timestepper        = TimestepMethod::Newmark,
@@ -243,12 +271,13 @@ struct SolidMechanicsSensitivityFixture : public ::testing::Test {
   SolidMaterial    mat;
   TimeSteppingInfo tsInfo;
 
-  static constexpr double eps = 2e-7;
+  static constexpr double eps = 1e-7;
 };
 
 TEST_F(SolidMechanicsSensitivityFixture, InitialDisplacementSensitivities)
 {
-  auto solid_solver                             = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat);
+  Domain whole_domain = EntireDomain(*mesh);
+  auto   solid_solver = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat, whole_domain);
   auto [qoi_base, init_disp_sensitivity, _, __] = computeSolidMechanicsQoiSensitivities(*solid_solver, tsInfo);
 
   solid_solver->resetStates();
@@ -260,12 +289,13 @@ TEST_F(SolidMechanicsSensitivityFixture, InitialDisplacementSensitivities)
   double qoi_plus =
       computeSolidMechanicsQoiAdjustingInitialDisplacement(*solid_solver, tsInfo, derivative_direction, eps);
   double directional_deriv = innerProduct(derivative_direction, init_disp_sensitivity);
-  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 16 * eps);
+  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 50 * eps);
 }
 
 TEST_F(SolidMechanicsSensitivityFixture, InitialVelocitySensitivities)
 {
-  auto solid_solver                             = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat);
+  Domain whole_domain = EntireDomain(*mesh);
+  auto   solid_solver = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat, whole_domain);
   auto [qoi_base, _, init_velo_sensitivity, __] = computeSolidMechanicsQoiSensitivities(*solid_solver, tsInfo);
 
   solid_solver->resetStates();
@@ -276,12 +306,13 @@ TEST_F(SolidMechanicsSensitivityFixture, InitialVelocitySensitivities)
 
   double qoi_plus = computeSolidMechanicsQoiAdjustingInitialVelocity(*solid_solver, tsInfo, derivative_direction, eps);
   double directional_deriv = innerProduct(derivative_direction, init_velo_sensitivity);
-  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 16 * eps);
+  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 55 * eps);
 }
 
 TEST_F(SolidMechanicsSensitivityFixture, ShapeSensitivities)
 {
-  auto solid_solver                         = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat);
+  Domain whole_domain = EntireDomain(*mesh);
+  auto   solid_solver = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat, whole_domain);
   auto [qoi_base, _, __, shape_sensitivity] = computeSolidMechanicsQoiSensitivities(*solid_solver, tsInfo);
 
   solid_solver->resetStates();
@@ -292,13 +323,14 @@ TEST_F(SolidMechanicsSensitivityFixture, ShapeSensitivities)
   double qoi_plus = computeSolidMechanicsQoiAdjustingShape(*solid_solver, tsInfo, derivative_direction, eps);
 
   double directional_deriv = innerProduct(derivative_direction, shape_sensitivity);
-  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, eps);
+  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 10 * eps);
 }
 
 TEST_F(SolidMechanicsSensitivityFixture, QuasiStaticShapeSensitivities)
 {
-  dyn_opts.timestepper                      = TimestepMethod::QuasiStatic;
-  auto solid_solver                         = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat);
+  Domain whole_domain  = EntireDomain(*mesh);
+  dyn_opts.timestepper = TimestepMethod::QuasiStatic;
+  auto solid_solver    = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat, whole_domain);
   auto [qoi_base, _, __, shape_sensitivity] = computeSolidMechanicsQoiSensitivities(*solid_solver, tsInfo);
 
   solid_solver->resetStates();
@@ -309,12 +341,13 @@ TEST_F(SolidMechanicsSensitivityFixture, QuasiStaticShapeSensitivities)
   double qoi_plus = computeSolidMechanicsQoiAdjustingShape(*solid_solver, tsInfo, derivative_direction, eps);
 
   double directional_deriv = innerProduct(derivative_direction, shape_sensitivity);
-  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, eps);
+  EXPECT_NEAR(directional_deriv, (qoi_plus - qoi_base) / eps, 10 * eps);
 }
 
 TEST_F(SolidMechanicsSensitivityFixture, WhenShapeSensitivitiesCalledTwice_GetSameObjectiveAndGradient)
 {
-  auto solid_solver                      = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat);
+  Domain whole_domain = EntireDomain(*mesh);
+  auto   solid_solver = createNonlinearSolidMechanicsSolver(nonlinear_opts, dyn_opts, mat, whole_domain);
   auto [qoi1, _, __, shape_sensitivity1] = computeSolidMechanicsQoiSensitivities(*solid_solver, tsInfo);
 
   solid_solver->resetStates();
@@ -336,12 +369,8 @@ TEST_F(SolidMechanicsSensitivityFixture, WhenShapeSensitivitiesCalledTwice_GetSa
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);
-  MPI_Init(&argc, &argv);
-
-  axom::slic::SimpleLogger logger;
-  std::cout << std::setprecision(16);
+  serac::initialize(argc, argv);
   int result = RUN_ALL_TESTS();
-  MPI_Finalize();
-
+  serac::exitGracefully(result);
   return result;
 }

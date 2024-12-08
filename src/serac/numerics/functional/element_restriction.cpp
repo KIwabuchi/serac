@@ -4,6 +4,9 @@
 
 #include "serac/numerics/functional/geometry.hpp"
 
+// TODO REMOVE AFTER DEBUGGING
+#include "serac/infrastructure/mpi_fstream.hpp"
+
 std::vector<std::vector<int> > lexicographic_permutations(int p)
 {
   // p == 0 is admissible for L2 spaces, but lexicographic permutations
@@ -213,8 +216,7 @@ std::vector<Array2D<int> > geom_local_face_dofs(int p)
   return output;
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetElementRestriction(const mfem::FiniteElementSpace* fes,
-                                                                      mfem::Geometry::Type            geom)
+axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetElementRestriction(const serac::fes_t* fes, mfem::Geometry::Type geom)
 {
   std::vector<DoF> elem_dofs{};
   mfem::Mesh*      mesh = fes->GetMesh();
@@ -276,8 +278,74 @@ axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetElementRestriction(const mfem
   }
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetFaceDofs(const mfem::FiniteElementSpace* fes,
-                                                            mfem::Geometry::Type face_geom, FaceType type)
+axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetElementDofs(const serac::fes_t* fes, mfem::Geometry::Type geom,
+                                                            const std::vector<int>& mfem_elem_ids)
+
+{
+  std::vector<DoF> elem_dofs{};
+  mfem::Mesh*      mesh = fes->GetMesh();
+
+  // note: this assumes that all the elements are the same polynomial order
+  int                            p        = fes->GetElementOrder(0);
+  std::vector<std::vector<int> > lex_perm = lexicographic_permutations(p);
+
+  uint64_t n = 0;
+
+  for (auto elem : mfem_elem_ids) {
+    // discard elements with the wrong geometry
+    if (mesh->GetElementGeometry(elem) != geom) {
+      SLIC_ERROR("encountered incorrect element geometry type");
+    }
+
+    mfem::Array<int> dofs;
+
+    [[maybe_unused]] auto* dof_transformation = fes->GetElementDofs(elem, dofs);
+
+    // mfem returns the H1 dofs in "native" order, so we need
+    // to apply the native-to-lexicographic permutation
+    if (isH1(*fes)) {
+      for (int k = 0; k < dofs.Size(); k++) {
+        elem_dofs.push_back({uint64_t(dofs[lex_perm[uint32_t(geom)][uint32_t(k)]])});
+      }
+    }
+
+    // the dofs mfem returns for Hcurl include information about
+    // dof orientation, but not for triangle faces on 3D elements.
+    // So, we need to manually
+    if (isHcurl(*fes)) {
+      // TODO
+      // TODO
+      // TODO
+      uint64_t sign        = 1;
+      uint64_t orientation = 0;
+      for (int k = 0; k < dofs.Size(); k++) {
+        elem_dofs.push_back({uint64_t(dofs[k]), sign, orientation});
+      }
+    }
+
+    // mfem returns DG dofs in lexicographic order already
+    // so no permutation is required here
+    if (isDG(*fes)) {
+      for (int k = 0; k < dofs.Size(); k++) {
+        elem_dofs.push_back({uint64_t(dofs[k])});
+      }
+    }
+
+    n++;
+  }
+
+  if (n == 0) {
+    return axom::Array<DoF, 2, axom::MemorySpace::Dynamic>{};
+  } else {
+    uint64_t                                     dofs_per_elem = elem_dofs.size() / n;
+    axom::Array<DoF, 2, axom::MemorySpace::Dynamic> output(n, dofs_per_elem);
+    std::memcpy(output.data(), elem_dofs.data(), sizeof(DoF) * n * dofs_per_elem);
+    return output;
+  }
+}
+
+axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
+                                                         FaceType type)
 {
   std::vector<DoF> face_dofs;
   mfem::Mesh*      mesh         = fes->GetMesh();
@@ -363,7 +431,345 @@ axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetFaceDofs(const mfem::FiniteEl
 
       if (isHcurl(*fes)) {
         for (int k = 0; k < dofs.Size(); k++) {
-          face_dofs.push_back(uint64_t(dofs[k]));
+          if (dofs[k] >= 0) {
+            face_dofs.push_back(DoF{uint64_t(dofs[k]), 0});
+          } else {
+            face_dofs.push_back(DoF{uint64_t(-1 - dofs[k]), 1});
+          }
+        }
+      } else {
+        for (int k = 0; k < dofs.Size(); k++) {
+          face_dofs.push_back(uint64_t(dofs[lex_perm[uint32_t(face_geom)][uint32_t(k)]]));
+        }
+      }
+    }
+
+    n++;
+  }
+
+  delete face_to_elem;
+
+  if (n == 0) {
+    return axom::Array<DoF, 2, axom::MemorySpace::Dynamic>{};
+  } else {
+    uint64_t                                     dofs_per_face = face_dofs.size() / n;
+    axom::Array<DoF, 2, axom::MemorySpace::Dynamic> output(n, dofs_per_face);
+    std::memcpy(output.data(), face_dofs.data(), sizeof(DoF) * n * dofs_per_face);
+    return output;
+  }
+}
+
+axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
+                                                         const std::vector<int>& mfem_face_ids)
+{
+  std::vector<DoF> face_dofs;
+  mfem::Mesh*      mesh         = fes->GetMesh();
+  mfem::Table*     face_to_elem = mesh->GetFaceToElementTable();
+
+  // note: this assumes that all the elements are the same polynomial order
+  int                            p               = fes->GetElementOrder(0);
+  Array2D<int>                   face_perm       = face_permutations(face_geom, p);
+  std::vector<Array2D<int> >     local_face_dofs = geom_local_face_dofs(p);
+  std::vector<std::vector<int> > lex_perm        = lexicographic_permutations(p);
+
+  // sam: this function contains several comments that relate to an investigation into adopting
+  //      mfem's FaceNbrData pattern (which ended up being too invasive to implement initially).
+  //      I leave some of the commented code here so Julian's recommendations are not lost.
+  //
+  // int components_per_node = fes->GetVDim();
+  // bool by_vdim = fes->GetOrdering() == mfem::Ordering::byVDIM;
+  // fes->ExchangeFaceNbrData();
+  // int LSize = fes->GetProlongationMatrix()->Height();
+
+  uint64_t n = 0;
+
+  for (int f : mfem_face_ids) {
+    mfem::Mesh::FaceInformation info = mesh->GetFaceInformation(f);
+
+    if (mesh->GetFaceGeometry(f) != face_geom) {
+      SLIC_ERROR("encountered incorrect face geometry type");
+    }
+
+    // mfem doesn't provide this connectivity info for DG spaces directly (?),
+    // so we have to get at it indirectly in several steps:
+    if (isDG(*fes)) {
+      // 1. find the element(s) that this face belongs to
+      mfem::Array<int> elem_ids;
+      face_to_elem->GetRow(f, elem_ids);
+
+#if 0
+      mpi::out << f << " elem ids: ";
+      for (auto elem : elem_ids) {
+        mpi::out << elem << " ";
+      }
+      mpi::out << std::endl;
+
+      mfem::Array<int> test_dofs;
+      fes->GetFaceDofs(f, test_dofs);
+
+      mpi::out << " dofs (sz = " << test_dofs.Size() << "): ";
+      for (int z = 0; z < test_dofs.Size(); z++) {
+        mpi::out << test_dofs[z] << " ";
+      }
+      mpi::out << std::endl;
+      mpi::out << std::endl;
+#endif
+
+      for (auto elem : elem_ids) {
+        // 2a. get the list of faces (and their orientations) that belong to that element ...
+        mfem::Array<int> elem_side_ids, orientations;
+        if (mesh->Dimension() == 2) {
+          mesh->GetElementEdges(elem, elem_side_ids, orientations);
+
+          // mfem returns {-1, 1} for edge orientations,
+          // but {0, 1, ... , n} for face orientations.
+          // Here, we renumber the edge orientations to
+          // {0 (no permutation), 1 (reversed)} so the values can be
+          // consistently used as indices into a permutation table
+          for (auto& o : orientations) {
+            o = (o == -1) ? 1 : 0;
+          }
+
+        } else {
+          mesh->GetElementFaces(elem, elem_side_ids, orientations);
+        }
+
+        // 2b. ... and find `i` such that `elem_side_ids[i] == f`
+        int i;
+        for (i = 0; i < elem_side_ids.Size(); i++) {
+          if (elem_side_ids[i] == f) break;
+        }
+
+        // 3. get the dofs for the entire element
+        mfem::Array<int> elem_dof_ids;
+        fes->GetElementDofs(elem, elem_dof_ids);
+
+        mfem::Geometry::Type elem_geom = mesh->GetElementGeometry(elem);
+
+        // mfem uses different conventions for boundary element orientations in 2D and 3D.
+        // In 2D, mfem's official edge orientations on the boundary will always be a mix of
+        // CW and CCW, so we have to discard mfem's orientation information in order
+        // to get a consistent winding.
+        //
+        // In 3D, mfem does use a consistently CCW winding for boundary faces (I think).
+        int orientation = (mesh->Dimension() == 2 && info.IsBoundary()) ? 0 : orientations[i];
+
+        // 4. extract only the dofs that correspond to side `i`
+        for (auto k : face_perm(orientation)) {
+          face_dofs.push_back(uint64_t(elem_dof_ids[local_face_dofs[uint32_t(elem_geom)](i, k)]));
+        }
+
+#if 0
+        // (5. optional) add remaining dofs that were omitted on shared faces
+        if (info.IsShared()) {
+
+          mfem::Array<int> shared_elem_vdof_ids;
+
+          //                on my processor
+          //                    VVVVVVV
+          // dofs for the face [0 1 3 4 | 5 8 12 13]
+          //                              ^^^^^^^^^
+          //                         on the other processor
+          int other_element_id = info.element[1].index;
+          fes->GetFaceNbrElementVDofs(other_element_id, shared_elem_vdof_ids); // indices into vector from FaceNbrData
+
+          mpi::out << " this face is also shared so it has additional dofs: ";
+          int dofs_per_face = shared_elem_vdof_ids.Size() / components_per_node;
+          int stride = (by_vdim) ? components_per_node : 1;
+
+          // sam: is this right?
+          // byVDIM == x y z x y z x y z x y z
+          // byNODES == x x x x y y y y z z z z
+          for (int k = 0; k < dofs_per_face; k++) {
+            face_dofs.push_back(uint64_t(fes->VDofToDof(shared_elem_vdof_ids[k * stride]) + LSize));
+            mpi::out << face_dofs.back().index() << " ";
+          }
+          mpi::out << std::endl;
+        }
+#endif
+      }
+
+      // H1 and Hcurl spaces are more straight-forward, since
+      // we can use FiniteElementSpace::GetFaceDofs() directly
+    } else {
+      mfem::Array<int> dofs;
+
+      fes->GetFaceDofs(f, dofs);
+
+      if (isHcurl(*fes)) {
+        for (int k = 0; k < dofs.Size(); k++) {
+          if (dofs[k] >= 0) {
+            face_dofs.push_back(DoF{uint64_t(dofs[k]), 0});
+          } else {
+            face_dofs.push_back(DoF{uint64_t(-1 - dofs[k]), 1});
+          }
+        }
+      } else {
+        for (int k = 0; k < dofs.Size(); k++) {
+          face_dofs.push_back(uint64_t(dofs[lex_perm[uint32_t(face_geom)][uint32_t(k)]]));
+        }
+      }
+    }
+
+    n++;
+  }
+
+  delete face_to_elem;
+
+  if (n == 0) {
+    return axom::Array<DoF, 2, axom::MemorySpace::Dynamic>{};
+  } else {
+    uint64_t                                     dofs_per_face = face_dofs.size() / n;
+    axom::Array<DoF, 2, axom::MemorySpace::Dynamic> output(n, dofs_per_face);
+    std::memcpy(output.data(), face_dofs.data(), sizeof(DoF) * n * dofs_per_face);
+    return output;
+  }
+}
+
+axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
+                                                         const std::vector<int>& mfem_face_ids)
+{
+  std::vector<DoF> face_dofs;
+  mfem::Mesh*      mesh         = fes->GetMesh();
+  mfem::Table*     face_to_elem = mesh->GetFaceToElementTable();
+
+  // note: this assumes that all the elements are the same polynomial order
+  int                            p               = fes->GetElementOrder(0);
+  Array2D<int>                   face_perm       = face_permutations(face_geom, p);
+  std::vector<Array2D<int> >     local_face_dofs = geom_local_face_dofs(p);
+  std::vector<std::vector<int> > lex_perm        = lexicographic_permutations(p);
+
+  // sam: this function contains several comments that relate to an investigation into adopting
+  //      mfem's FaceNbrData pattern (which ended up being too invasive to implement initially).
+  //      I leave some of the commented code here so Julian's recommendations are not lost.
+  //
+  // int components_per_node = fes->GetVDim();
+  // bool by_vdim = fes->GetOrdering() == mfem::Ordering::byVDIM;
+  // fes->ExchangeFaceNbrData();
+  // int LSize = fes->GetProlongationMatrix()->Height();
+
+  uint64_t n = 0;
+
+  for (int f : mfem_face_ids) {
+    mfem::Mesh::FaceInformation info = mesh->GetFaceInformation(f);
+
+    if (mesh->GetFaceGeometry(f) != face_geom) {
+      SLIC_ERROR("encountered incorrect face geometry type");
+    }
+
+    // mfem doesn't provide this connectivity info for DG spaces directly (?),
+    // so we have to get at it indirectly in several steps:
+    if (isDG(*fes)) {
+      // 1. find the element(s) that this face belongs to
+      mfem::Array<int> elem_ids;
+      face_to_elem->GetRow(f, elem_ids);
+
+#if 0
+      mpi::out << f << " elem ids: ";
+      for (auto elem : elem_ids) {
+        mpi::out << elem << " ";
+      }
+      mpi::out << std::endl;
+
+      mfem::Array<int> test_dofs;
+      fes->GetFaceDofs(f, test_dofs);
+
+      mpi::out << " dofs (sz = " << test_dofs.Size() << "): ";
+      for (int z = 0; z < test_dofs.Size(); z++) {
+        mpi::out << test_dofs[z] << " ";
+      }
+      mpi::out << std::endl;
+      mpi::out << std::endl;
+#endif
+
+      for (auto elem : elem_ids) {
+        // 2a. get the list of faces (and their orientations) that belong to that element ...
+        mfem::Array<int> elem_side_ids, orientations;
+        if (mesh->Dimension() == 2) {
+          mesh->GetElementEdges(elem, elem_side_ids, orientations);
+
+          // mfem returns {-1, 1} for edge orientations,
+          // but {0, 1, ... , n} for face orientations.
+          // Here, we renumber the edge orientations to
+          // {0 (no permutation), 1 (reversed)} so the values can be
+          // consistently used as indices into a permutation table
+          for (auto& o : orientations) {
+            o = (o == -1) ? 1 : 0;
+          }
+
+        } else {
+          mesh->GetElementFaces(elem, elem_side_ids, orientations);
+        }
+
+        // 2b. ... and find `i` such that `elem_side_ids[i] == f`
+        int i;
+        for (i = 0; i < elem_side_ids.Size(); i++) {
+          if (elem_side_ids[i] == f) break;
+        }
+
+        // 3. get the dofs for the entire element
+        mfem::Array<int> elem_dof_ids;
+        fes->GetElementDofs(elem, elem_dof_ids);
+
+        mfem::Geometry::Type elem_geom = mesh->GetElementGeometry(elem);
+
+        // mfem uses different conventions for boundary element orientations in 2D and 3D.
+        // In 2D, mfem's official edge orientations on the boundary will always be a mix of
+        // CW and CCW, so we have to discard mfem's orientation information in order
+        // to get a consistent winding.
+        //
+        // In 3D, mfem does use a consistently CCW winding for boundary faces (I think).
+        int orientation = (mesh->Dimension() == 2 && info.IsBoundary()) ? 0 : orientations[i];
+
+        // 4. extract only the dofs that correspond to side `i`
+        for (auto k : face_perm(orientation)) {
+          face_dofs.push_back(uint64_t(elem_dof_ids[local_face_dofs[uint32_t(elem_geom)](i, k)]));
+        }
+
+#if 0
+        // (5. optional) add remaining dofs that were omitted on shared faces
+        if (info.IsShared()) {
+
+          mfem::Array<int> shared_elem_vdof_ids;
+
+          //                on my processor
+          //                    VVVVVVV
+          // dofs for the face [0 1 3 4 | 5 8 12 13]
+          //                              ^^^^^^^^^
+          //                         on the other processor
+          int other_element_id = info.element[1].index;
+          fes->GetFaceNbrElementVDofs(other_element_id, shared_elem_vdof_ids); // indices into vector from FaceNbrData
+
+          mpi::out << " this face is also shared so it has additional dofs: ";
+          int dofs_per_face = shared_elem_vdof_ids.Size() / components_per_node;
+          int stride = (by_vdim) ? components_per_node : 1;
+
+          // sam: is this right?
+          // byVDIM == x y z x y z x y z x y z
+          // byNODES == x x x x y y y y z z z z
+          for (int k = 0; k < dofs_per_face; k++) {
+            face_dofs.push_back(uint64_t(fes->VDofToDof(shared_elem_vdof_ids[k * stride]) + LSize));
+            mpi::out << face_dofs.back().index() << " ";
+          }
+          mpi::out << std::endl;
+        }
+#endif
+      }
+
+      // H1 and Hcurl spaces are more straight-forward, since
+      // we can use FiniteElementSpace::GetFaceDofs() directly
+    } else {
+      mfem::Array<int> dofs;
+
+      fes->GetFaceDofs(f, dofs);
+
+      if (isHcurl(*fes)) {
+        for (int k = 0; k < dofs.Size(); k++) {
+          if (dofs[k] >= 0) {
+            face_dofs.push_back(DoF{uint64_t(dofs[k]), 0});
+          } else {
+            face_dofs.push_back(DoF{uint64_t(-1 - dofs[k]), 1});
+          }
         }
       } else {
         for (int k = 0; k < dofs.Size(); k++) {
@@ -389,24 +795,18 @@ axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetFaceDofs(const mfem::FiniteEl
 
 namespace serac {
 
-ElementRestriction::ElementRestriction(const mfem::FiniteElementSpace* fes, mfem::Geometry::Type elem_geom)
+ElementRestriction::ElementRestriction(const fes_t* fes, mfem::Geometry::Type elem_geom,
+                                       const std::vector<int>& elem_ids)
 {
-  dof_info = GetElementRestriction(fes, elem_geom);
+  int sdim = fes->GetMesh()->Dimension();
+  int gdim = dimension_of(elem_geom);
 
-  ordering = fes->GetOrdering();
-
-  lsize          = uint64_t(fes->GetVSize());
-  components     = uint64_t(fes->GetVDim());
-  num_nodes      = lsize / components;
-  num_elements   = uint64_t(dof_info.shape()[0]);
-  nodes_per_elem = uint64_t(dof_info.shape()[1]);
-  esize          = num_elements * nodes_per_elem * components;
-}
-
-ElementRestriction::ElementRestriction(const mfem::FiniteElementSpace* fes, mfem::Geometry::Type face_geom,
-                                       FaceType type)
-{
-  dof_info = GetFaceDofs(fes, face_geom, type);
+  if (gdim == sdim) {
+    dof_info = GetElementDofs(fes, elem_geom, elem_ids);
+  }
+  if (gdim + 1 == sdim) {
+    dof_info = GetFaceDofs(fes, elem_geom, elem_ids);
+  }
 
   ordering = fes->GetOrdering();
 
@@ -468,39 +868,40 @@ void ElementRestriction::ScatterAdd(const mfem::Vector& E_vector, mfem::Vector& 
 
 ////////////////////////////////////////////////////////////////////////
 
-BlockElementRestriction::BlockElementRestriction(const mfem::FiniteElementSpace* fes)
+/// create a BlockElementRestriction for the elements in a given domain
+BlockElementRestriction::BlockElementRestriction(const fes_t* fes, const Domain& domain)
 {
-  int dim = fes->GetMesh()->Dimension();
-
-  if (dim == 2) {
-    for (auto geom : {mfem::Geometry::TRIANGLE, mfem::Geometry::SQUARE}) {
-      restrictions[geom] = ElementRestriction(fes, geom);
-    }
+  // TODO: changing the mfem_XXX_ids arrays to mfem_ids[XXX] would simplify this
+  if (domain.mfem_edge_ids_.size() > 0) {
+    restrictions[mfem::Geometry::SEGMENT] = ElementRestriction(fes, mfem::Geometry::SEGMENT, domain.mfem_edge_ids_);
   }
 
-  if (dim == 3) {
-    for (auto geom : {mfem::Geometry::TETRAHEDRON, mfem::Geometry::CUBE}) {
-      restrictions[geom] = ElementRestriction(fes, geom);
-    }
+  if (domain.mfem_tri_ids_.size() > 0) {
+    restrictions[mfem::Geometry::TRIANGLE] = ElementRestriction(fes, mfem::Geometry::TRIANGLE, domain.mfem_tri_ids_);
+  }
+
+  if (domain.mfem_quad_ids_.size() > 0) {
+    restrictions[mfem::Geometry::SQUARE] = ElementRestriction(fes, mfem::Geometry::SQUARE, domain.mfem_quad_ids_);
+  }
+
+  if (domain.mfem_tet_ids_.size() > 0) {
+    restrictions[mfem::Geometry::TETRAHEDRON] =
+        ElementRestriction(fes, mfem::Geometry::TETRAHEDRON, domain.mfem_tet_ids_);
+  }
+
+  if (domain.mfem_hex_ids_.size() > 0) {
+    restrictions[mfem::Geometry::CUBE] = ElementRestriction(fes, mfem::Geometry::CUBE, domain.mfem_hex_ids_);
   }
 }
 
-BlockElementRestriction::BlockElementRestriction(const mfem::FiniteElementSpace* fes, FaceType type)
+uint64_t BlockElementRestriction::ESize() const
 {
-  int dim = fes->GetMesh()->Dimension();
-
-  if (dim == 2) {
-    restrictions[mfem::Geometry::SEGMENT] = ElementRestriction(fes, mfem::Geometry::SEGMENT, type);
+  uint64_t total = 0;
+  for (auto& [geom, restriction] : restrictions) {
+    total += restriction.ESize();
   }
-
-  if (dim == 3) {
-    for (auto geom : {mfem::Geometry::TRIANGLE, mfem::Geometry::SQUARE}) {
-      restrictions[geom] = ElementRestriction(fes, geom, type);
-    }
-  }
+  return total;
 }
-
-uint64_t BlockElementRestriction::ESize() const { return (*restrictions.begin()).second.ESize(); }
 
 uint64_t BlockElementRestriction::LSize() const { return (*restrictions.begin()).second.LSize(); }
 
@@ -516,21 +917,20 @@ mfem::Array<int> BlockElementRestriction::bOffsets() const
     } else {
       offsets[g + 1] = offsets[g];
     }
-    // std::cout << g << " " << offsets[g+1] << std::endl;
   }
   return offsets;
 };
 
 void BlockElementRestriction::Gather(const mfem::Vector& L_vector, mfem::BlockVector& E_block_vector) const
 {
-  for (auto [geom, restriction] : restrictions) {
+  for (auto& [geom, restriction] : restrictions) {
     restriction.Gather(L_vector, E_block_vector.GetBlock(geom));
   }
 }
 
 void BlockElementRestriction::ScatterAdd(const mfem::BlockVector& E_block_vector, mfem::Vector& L_vector) const
 {
-  for (auto [geom, restriction] : restrictions) {
+  for (auto& [geom, restriction] : restrictions) {
     restriction.ScatterAdd(E_block_vector.GetBlock(geom), L_vector);
   }
 }

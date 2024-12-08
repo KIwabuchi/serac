@@ -35,8 +35,8 @@ int main(int argc, char* argv[])
   // Construct the appropriate dimension mesh and give it to the data store
   std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex-with-contact-block.mesh";
 
-  auto mesh = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 2, 0);
-  serac::StateManager::setMesh(std::move(mesh), "beam_mesh");
+  auto  mesh  = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 2, 0);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "beam_mesh");
 
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};
 #ifndef MFEM_USE_STRUMPACK
@@ -56,8 +56,8 @@ int main(int argc, char* argv[])
                                         .penalty     = 1.0e3};
 
   serac::SolidMechanicsContact<p, dim, serac::Parameters<serac::L2<0>, serac::L2<0>>> solid_solver(
-      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options,
-      serac::GeometricNonlinearities::On, name, "beam_mesh", {"bulk_mod", "shear_mod"});
+      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options, name, "beam_mesh",
+      {"bulk_mod", "shear_mod"});
 
   serac::FiniteElementState K_field(serac::StateManager::newState(serac::L2<0>{}, "bulk_mod", "beam_mesh"));
   // each vector value corresponds to a different element attribute:
@@ -78,7 +78,8 @@ int main(int argc, char* argv[])
   solid_solver.setParameter(1, G_field);
 
   serac::solid_mechanics::ParameterizedNeoHookeanSolid mat{1.0, 0.0, 0.0};
-  solid_solver.setMaterial(serac::DependsOn<0, 1>{}, mat);
+  serac::Domain                                        whole_mesh = serac::EntireDomain(pmesh);
+  solid_solver.setMaterial(serac::DependsOn<0, 1>{}, mat, whole_mesh);
 
   // Pass the BC information to the solver object
   solid_solver.setDisplacementBCs({1}, [](const mfem::Vector&, mfem::Vector& u) {

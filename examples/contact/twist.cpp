@@ -37,8 +37,8 @@ int main(int argc, char* argv[])
   // Construct the appropriate dimension mesh and give it to the data store
   std::string filename = SERAC_REPO_DIR "/data/meshes/twohex_for_contact.mesh";
 
-  auto mesh = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 3, 0);
-  serac::StateManager::setMesh(std::move(mesh), "twist_mesh");
+  auto  mesh  = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 3, 0);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "twist_mesh");
 
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};
 #ifndef MFEM_USE_STRUMPACK
@@ -57,12 +57,12 @@ int main(int argc, char* argv[])
                                         .type        = serac::ContactType::Frictionless,
                                         .penalty     = 1.0e5};
 
-  serac::SolidMechanicsContact<p, dim> solid_solver(nonlinear_options, linear_options,
-                                                    serac::solid_mechanics::default_quasistatic_options,
-                                                    serac::GeometricNonlinearities::On, name, "twist_mesh");
+  serac::SolidMechanicsContact<p, dim> solid_solver(
+      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options, name, "twist_mesh");
 
   serac::solid_mechanics::NeoHookean mat{1.0, 10.0, 10.0};
-  solid_solver.setMaterial(mat);
+  serac::Domain                      whole_mesh = serac::EntireDomain(pmesh);
+  solid_solver.setMaterial(mat, whole_mesh);
 
   // Pass the BC information to the solver object
   solid_solver.setDisplacementBCs({3}, [](const mfem::Vector&, mfem::Vector& u) {

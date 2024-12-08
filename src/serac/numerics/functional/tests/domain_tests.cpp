@@ -21,76 +21,6 @@ mfem::Mesh import_mesh(std::string meshfile)
   return mesh;
 }
 
-template <int dim>
-tensor<double, dim> average(std::vector<tensor<double, dim> >& positions)
-{
-  tensor<double, dim> total{};
-  for (auto x : positions) {
-    total += x;
-  }
-  return total / double(positions.size());
-}
-
-TEST(domain, of_vertices)
-{
-  {
-    auto   mesh = import_mesh("onehex.mesh");
-    Domain d0   = Domain::ofVertices(mesh, std::function([](vec3 x) { return x[0] < 0.5; }));
-    EXPECT_EQ(d0.vertex_ids_.size(), 4);
-    EXPECT_EQ(d0.dim_, 0);
-
-    Domain d1 = Domain::ofVertices(mesh, std::function([](vec3 x) { return x[1] < 0.5; }));
-    EXPECT_EQ(d1.vertex_ids_.size(), 4);
-    EXPECT_EQ(d1.dim_, 0);
-
-    Domain d2 = d0 | d1;
-    EXPECT_EQ(d2.vertex_ids_.size(), 6);
-    EXPECT_EQ(d2.dim_, 0);
-
-    Domain d3 = d0 & d1;
-    EXPECT_EQ(d3.vertex_ids_.size(), 2);
-    EXPECT_EQ(d3.dim_, 0);
-  }
-
-  {
-    auto   mesh = import_mesh("onetet.mesh");
-    Domain d0   = Domain::ofVertices(mesh, std::function([](vec3 x) { return x[0] < 0.5; }));
-    EXPECT_EQ(d0.vertex_ids_.size(), 3);
-    EXPECT_EQ(d0.dim_, 0);
-
-    Domain d1 = Domain::ofVertices(mesh, std::function([](vec3 x) { return x[1] < 0.5; }));
-    EXPECT_EQ(d1.vertex_ids_.size(), 3);
-    EXPECT_EQ(d1.dim_, 0);
-
-    Domain d2 = d0 | d1;
-    EXPECT_EQ(d2.vertex_ids_.size(), 4);
-    EXPECT_EQ(d2.dim_, 0);
-
-    Domain d3 = d0 & d1;
-    EXPECT_EQ(d3.vertex_ids_.size(), 2);
-    EXPECT_EQ(d3.dim_, 0);
-  }
-
-  {
-    auto   mesh = import_mesh("beam-quad.mesh");
-    Domain d0   = Domain::ofVertices(mesh, std::function([](vec2 x) { return x[0] < 0.5; }));
-    EXPECT_EQ(d0.vertex_ids_.size(), 2);
-    EXPECT_EQ(d0.dim_, 0);
-
-    Domain d1 = Domain::ofVertices(mesh, std::function([](vec2 x) { return x[1] < 0.5; }));
-    EXPECT_EQ(d1.vertex_ids_.size(), 9);
-    EXPECT_EQ(d1.dim_, 0);
-
-    Domain d2 = d0 | d1;
-    EXPECT_EQ(d2.vertex_ids_.size(), 10);
-    EXPECT_EQ(d2.dim_, 0);
-
-    Domain d3 = d0 & d1;
-    EXPECT_EQ(d3.vertex_ids_.size(), 1);
-    EXPECT_EQ(d3.dim_, 0);
-  }
-}
-
 TEST(domain, of_edges)
 {
   {
@@ -334,6 +264,202 @@ TEST(domain, of_elements)
     // check that by_attr compiles
     Domain d4 = Domain::ofElements(mesh, by_attr<dim>(3));
   }
+}
+
+TEST(domain, entireDomain2d)
+{
+  constexpr int dim  = 2;
+  constexpr int p    = 1;
+  auto          mesh = import_mesh("patch2D_tris_and_quads.mesh");
+
+  Domain d0 = EntireDomain(mesh);
+
+  EXPECT_EQ(d0.dim_, 2);
+  EXPECT_EQ(d0.tri_ids_.size(), 2);
+  EXPECT_EQ(d0.quad_ids_.size(), 4);
+
+  auto fec = mfem::H1_FECollection(p, dim);
+  auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+  mfem::Array<int> dof_indices = d0.dof_list(&fes);
+  EXPECT_EQ(dof_indices.Size(), 8);
+}
+
+TEST(domain, entireDomain3d)
+{
+  constexpr int dim  = 3;
+  constexpr int p    = 1;
+  auto          mesh = import_mesh("patch3D_tets_and_hexes.mesh");
+
+  Domain d0 = EntireDomain(mesh);
+
+  EXPECT_EQ(d0.dim_, 3);
+  EXPECT_EQ(d0.tet_ids_.size(), 12);
+  EXPECT_EQ(d0.hex_ids_.size(), 7);
+
+  auto fec = mfem::H1_FECollection(p, dim);
+  auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+  mfem::Array<int> dof_indices = d0.dof_list(&fes);
+  EXPECT_EQ(dof_indices.Size(), 25);
+}
+
+TEST(domain, of2dElementsFindsDofs)
+{
+  constexpr int dim  = 2;
+  constexpr int p    = 2;
+  auto          mesh = import_mesh("patch2D_tris_and_quads.mesh");
+
+  auto fec = mfem::H1_FECollection(p, dim);
+  auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+  auto find_element_0 = [](std::vector<vec2> vertices, int /* attr */) {
+    auto centroid = average(vertices);
+    return (centroid[0] < 0.5) && (centroid[1] < 0.25);
+  };
+
+  Domain d0 = Domain::ofElements(mesh, find_element_0);
+
+  mfem::Array<int> dof_indices = d0.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 9);
+
+  ///////////////////////////////////////
+
+  auto find_element_4 = [](std::vector<vec2> vertices, int) {
+    auto              centroid = average(vertices);
+    tensor<double, 2> target{{0.533, 0.424}};
+    return norm(centroid - target) < 1e-2;
+  };
+  Domain d1 = Domain::ofElements(mesh, find_element_4);
+
+  Domain elements_0_and_4 = d0 | d1;
+
+  dof_indices = elements_0_and_4.dof_list(&fes);
+  EXPECT_EQ(dof_indices.Size(), 12);
+
+  ///////////////////////////////////////
+
+  Domain d2 = EntireDomain(mesh) - elements_0_and_4;
+
+  dof_indices = d2.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 22);
+}
+
+TEST(domain, of3dElementsFindsDofs)
+{
+  constexpr int dim  = 3;
+  constexpr int p    = 2;
+  auto          mesh = import_mesh("patch3D_tets_and_hexes.mesh");
+
+  auto fec = mfem::H1_FECollection(p, dim);
+  auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+  auto find_element_0 = [](std::vector<vec3> vertices, int /* attr */) {
+    auto centroid = average(vertices);
+    vec3 target{{3.275, 0.7, 1.225}};
+    return norm(centroid - target) < 1e-2;
+  };
+
+  Domain d0 = Domain::ofElements(mesh, find_element_0);
+
+  mfem::Array<int> dof_indices = d0.dof_list(&fes);
+
+  // element 0 is a P2 tetrahedron, so it should have 10 dofs
+  EXPECT_EQ(dof_indices.Size(), 10);
+
+  ///////////////////////////////////////
+
+  auto find_element_1 = [](std::vector<vec3> vertices, int) {
+    auto centroid = average(vertices);
+    vec3 target{{3.275, 1.2, 0.725}};
+    return norm(centroid - target) < 1e-2;
+  };
+  Domain d1 = Domain::ofElements(mesh, find_element_1);
+
+  Domain elements_0_and_1 = d0 | d1;
+
+  dof_indices = elements_0_and_1.dof_list(&fes);
+
+  // Elements 0 and 1 are P2 tets that share one face -> 14 dofs
+  EXPECT_EQ(dof_indices.Size(), 14);
+
+  /////////////////////////////////////////
+
+  Domain d2 = EntireDomain(mesh) - elements_0_and_1;
+
+  dof_indices = d2.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 113);
+}
+
+TEST(domain, of2dBoundaryElementsFindsDofs)
+{
+  constexpr int dim  = 2;
+  constexpr int p    = 2;
+  auto          mesh = import_mesh("patch2D_tris_and_quads.mesh");
+
+  auto find_right_boundary = [](std::vector<vec2> vertices, int /* attr */) {
+    return std::all_of(vertices.begin(), vertices.end(), [](vec2 X) { return X[0] > 1.0 - 1e-2; });
+  };
+
+  Domain d0 = Domain::ofBoundaryElements(mesh, find_right_boundary);
+  EXPECT_EQ(d0.edge_ids_.size(), 1);
+
+  auto fec = mfem::H1_FECollection(p, dim);
+  auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+  mfem::Array<int> dof_indices = d0.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 3);
+
+  auto find_top_boundary = [](std::vector<vec2> vertices, int /* attr */) {
+    return std::all_of(vertices.begin(), vertices.end(), [](vec2 X) { return X[1] > 1.0 - 1e-2; });
+  };
+
+  Domain d1 = Domain::ofBoundaryElements(mesh, find_top_boundary);
+  EXPECT_EQ(d1.edge_ids_.size(), 1);
+
+  Domain d2 = d0 | d1;
+
+  dof_indices = d2.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 5);
+}
+
+TEST(domain, of3dBoundaryElementsFindsDofs)
+{
+  constexpr int dim  = 3;
+  constexpr int p    = 2;
+  auto          mesh = import_mesh("patch3D_tets.mesh");
+
+  auto find_xmax_boundary = [](std::vector<vec3> vertices, int /* attr */) {
+    return std::all_of(vertices.begin(), vertices.end(), [](vec3 X) { return X[0] > 1.0 - 1e-2; });
+  };
+
+  Domain d0 = Domain::ofBoundaryElements(mesh, find_xmax_boundary);
+  EXPECT_EQ(d0.tri_ids_.size(), 2);
+
+  auto fec = mfem::H1_FECollection(p, dim);
+  auto fes = mfem::FiniteElementSpace(&mesh, &fec);
+
+  mfem::Array<int> dof_indices = d0.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 9);
+
+  auto find_ymax_boundary = [](std::vector<vec3> vertices, int /* attr */) {
+    return std::all_of(vertices.begin(), vertices.end(), [](vec3 X) { return X[1] > 1.0 - 1e-2; });
+  };
+
+  Domain d1 = Domain::ofBoundaryElements(mesh, find_ymax_boundary);
+  EXPECT_EQ(d1.tri_ids_.size(), 2);
+
+  Domain d2 = d0 | d1;
+
+  dof_indices = d2.dof_list(&fes);
+
+  EXPECT_EQ(dof_indices.Size(), 15);
 }
 
 int main(int argc, char* argv[])

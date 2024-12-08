@@ -35,10 +35,11 @@ int main(int argc, char* argv[])
   // Construct the appropriate dimension mesh and give it to the data store
   std::string filename = SERAC_REPO_DIR "/data/meshes/ironing.mesh";
 
-  auto mesh = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 2, 0);
-  serac::StateManager::setMesh(std::move(mesh), "ironing_mesh");
+  auto  mesh  = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 2, 0);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "ironing_mesh");
 
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};
+
 #ifndef MFEM_USE_STRUMPACK
   SLIC_INFO_ROOT("Contact requires MFEM built with strumpack.");
   return 1;
@@ -56,8 +57,8 @@ int main(int argc, char* argv[])
                                         .penalty     = 1.0e3};
 
   serac::SolidMechanicsContact<p, dim, serac::Parameters<serac::L2<0>, serac::L2<0>>> solid_solver(
-      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options,
-      serac::GeometricNonlinearities::On, name, "ironing_mesh", {"bulk_mod", "shear_mod"});
+      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options, name, "ironing_mesh",
+      {"bulk_mod", "shear_mod"});
 
   serac::FiniteElementState K_field(serac::StateManager::newState(serac::L2<0>{}, "bulk_mod", "ironing_mesh"));
   // each vector value corresponds to a different element attribute:
@@ -78,7 +79,8 @@ int main(int argc, char* argv[])
   solid_solver.setParameter(1, G_field);
 
   serac::solid_mechanics::ParameterizedNeoHookeanSolid mat{1.0, 0.0, 0.0};
-  solid_solver.setMaterial(serac::DependsOn<0, 1>{}, mat);
+  serac::Domain                                        whole_mesh = serac::EntireDomain(pmesh);
+  solid_solver.setMaterial(serac::DependsOn<0, 1>{}, mat, whole_mesh);
 
   // Pass the BC information to the solver object
   solid_solver.setDisplacementBCs({5}, [](const mfem::Vector&, mfem::Vector& u) {
@@ -86,12 +88,13 @@ int main(int argc, char* argv[])
     u = 0.0;
   });
   solid_solver.setDisplacementBCs({12}, [](const mfem::Vector&, double t, mfem::Vector& u) {
+    constexpr double init_steps = 2.0;
     u.SetSize(dim);
     u = 0.0;
-    if (t <= 2.0 + 1.0e-12) {
-      u[2] = -t * 0.15;
+    if (t <= init_steps + 1.0e-12) {
+      u[2] = -t * 0.3 / init_steps;
     } else {
-      u[0] = -(t - 2.0) * 0.25;
+      u[0] = -(t - init_steps) * 0.25;
       u[2] = -0.3;
     }
   });

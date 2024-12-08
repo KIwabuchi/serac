@@ -4,14 +4,12 @@
 #
 # SPDX-License-Identifier: (BSD-3-Clause)
 
-set(functional_depends serac_mesh)
-blt_list_append(TO functional_depends ELEMENTS blt::cuda IF ENABLE_CUDA)
+set(functional_depends serac_mesh ${serac_device_depends})
 
 # Add the library first
 set(functional_headers
     differentiate_wrt.hpp
     boundary_integral_kernels.hpp
-    dof_numbering.hpp
     element_restriction.hpp
     geometry.hpp
     geometric_factors.hpp
@@ -23,6 +21,7 @@ set(functional_headers
     function_signature.hpp
     functional_qoi.inl
     integral.hpp
+    interior_face_integral_kernels.hpp
     isotropic_tensor.hpp
     polynomials.hpp
     quadrature.hpp
@@ -31,6 +30,7 @@ set(functional_headers
     tensor.hpp
     tuple.hpp
     tuple_tensor_dual_functions.hpp
+    typedefs.hpp
     )
 
 set(functional_sources 
@@ -62,7 +62,7 @@ set(functional_cuda_headers
     domain_integral_kernels.cuh
     )
 
-blt_list_append(TO functional_headers ELEMENTS ${functional_cuda_headers} IF ENABLE_CUDA)
+blt_list_append(TO functional_headers ELEMENTS ${functional_cuda_headers} IF SERAC_ENABLE_CUDA)
 
 blt_add_library(
       NAME        serac_functional

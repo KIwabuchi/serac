@@ -48,6 +48,12 @@ enum class NonlinSolve
   NONE
 };
 
+enum class ProblemSize
+{
+  SMALL,
+  LARGE,
+};
+
 std::string mesh_path = ".";
 // string->value matching for optionally entering options as string in command line
 std::map<std::string, Prec> precMap = {
@@ -61,6 +67,10 @@ std::map<std::string, NonlinSolve> nonlinSolveMap = {
     {"critialpoint", NonlinSolve::CRITICALPOINT},
     {"trustregion", NonlinSolve::TRUSTREGION},
     {"none", NonlinSolve::NONE},
+};
+std::map<std::string, ProblemSize> problemSizeMap = {
+    {"small", ProblemSize::SMALL},
+    {"large", ProblemSize::LARGE},
 };
 
 const std::string precToString(Prec prec)
@@ -228,12 +238,14 @@ void functional_solid_test_euler(NonlinSolve nonlinSolve, Prec prec)
 
   auto [nonlinear_options, linear_options] = get_opts(nonlinSolve, prec, 3 * Nx * Ny * Nz, 1e-9);
 
-  auto seracSolid = std::make_unique<seracSolidType>(
-      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options,
-      serac::GeometricNonlinearities::On, "serac_solid", meshTag, std::vector<std::string>{});
+  auto seracSolid = std::make_unique<seracSolidType>(nonlinear_options, linear_options,
+                                                     serac::solid_mechanics::default_quasistatic_options, "serac_solid",
+                                                     meshTag, std::vector<std::string>{});
+
+  Domain whole_domain = EntireDomain(*meshPtr);
 
   serac::solid_mechanics::NeoHookean material{density, bulkMod, shearMod};
-  seracSolid->setMaterial(serac::DependsOn<>{}, material);
+  seracSolid->setMaterial(material, whole_domain);
 
   serac::Domain backSurface =
       serac::Domain::ofBoundaryElements(*meshPtr, serac::by_attr<DIM>(3));  // 4,5 with traction makes a twist
@@ -258,7 +270,7 @@ void functional_solid_test_euler(NonlinSolve nonlinSolve, Prec prec)
   }
 }
 
-void functional_solid_test_nonlinear_buckle(NonlinSolve nonlinSolve, Prec prec, double loadMagnitude)
+void functional_solid_test_nonlinear_buckle(NonlinSolve nonlinSolve, Prec prec, ProblemSize problemSize)
 {
   // initialize serac
   axom::sidre::DataStore datastore;
@@ -267,14 +279,26 @@ void functional_solid_test_nonlinear_buckle(NonlinSolve nonlinSolve, Prec prec, 
   static constexpr int ORDER{1};
   static constexpr int DIM{3};
 
-  // int Nx = 1000;
-  int Nx = 500;
-  int Ny = 6;
-  int Nz = 5;
+  int Nx, Ny, Nz;
+  switch (problemSize) {
+    case ProblemSize::SMALL:
+      Nx = 500;
+      Ny = 6;
+      Nz = 5;
+      break;
+    default:
+    case ProblemSize::LARGE:
+      Nx = 1000;
+      Ny = 60;
+      Nz = 50;
+      break;
+  }
 
   double Lx = Nx * 0.1;
   double Ly = Ny * 0.03;
   double Lz = Nz * 0.06;
+
+  double loadMagnitude = 5e-10;
 
   double density  = 1.0;
   double E        = 1.0;
@@ -294,12 +318,14 @@ void functional_solid_test_nonlinear_buckle(NonlinSolve nonlinSolve, Prec prec, 
 
   auto [nonlinear_options, linear_options] = get_opts(nonlinSolve, prec, 3 * Nx * Ny * Nz, 1e-11);
 
-  auto seracSolid = std::make_unique<seracSolidType>(
-      nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options,
-      serac::GeometricNonlinearities::On, "serac_solid", meshTag, std::vector<std::string>{});
+  auto seracSolid = std::make_unique<seracSolidType>(nonlinear_options, linear_options,
+                                                     serac::solid_mechanics::default_quasistatic_options, "serac_solid",
+                                                     meshTag, std::vector<std::string>{});
+
+  Domain whole_domain = EntireDomain(*meshPtr);
 
   serac::solid_mechanics::NeoHookean material{density, bulkMod, shearMod};
-  seracSolid->setMaterial(serac::DependsOn<>{}, material);
+  seracSolid->setMaterial(material, whole_domain);
 
   // fix displacement on side surface
   seracSolid->setDisplacementBCs({2, 3, 4, 5}, [](const mfem::Vector&, mfem::Vector& u) { u = 0.0; });
@@ -322,13 +348,16 @@ int main(int argc, char* argv[])
 
   NonlinSolve nonlinSolve = NonlinSolve::NONE;
   Prec        prec        = Prec::NONE;
+  ProblemSize problemSize = ProblemSize::LARGE;
 
   axom::CLI::App app{"Solid Nonlinear Solve Benchmark"};
   // app.add_option("-m,--mesh", mesh_path, "Path to mesh files")->check(axom::CLI::ExistingDirectory);
-  app.add_option("-n,--nonlinear-solver", nonlinSolve, "Nonlinear solver")
+  app.add_option("-n,--nonlinear-solver", nonlinSolve, "Nonlinear Solver")
       ->transform(axom::CLI::CheckedTransformer(nonlinSolveMap, axom::CLI::ignore_case));
   app.add_option("-p,--preconditioner", prec, "Preconditioner")
       ->transform(axom::CLI::CheckedTransformer(precMap, axom::CLI::ignore_case));
+  app.add_option("-s,--problem-size", problemSize, "Problem Size")
+      ->transform(axom::CLI::CheckedTransformer(problemSizeMap, axom::CLI::ignore_case));
 
   // Parse the arguments and check if they are good
   try {
@@ -350,27 +379,27 @@ int main(int argc, char* argv[])
   // If you do not specify preconditioner and nonlinear solver, run the following pre-selected options
   if (nonlinSolve == NonlinSolve::NONE && prec == Prec::NONE) {
     SERAC_MARK_BEGIN("Jacobi Preconditioner");
-    functional_solid_test_nonlinear_buckle(NonlinSolve::NEWTON, Prec::JACOBI, 5e-10);
+    functional_solid_test_nonlinear_buckle(NonlinSolve::NEWTON, Prec::JACOBI, problemSize);
     SERAC_MARK_END("Jacobi Preconditioner");
 
     SERAC_MARK_BEGIN("Multigrid Preconditioner");
-    functional_solid_test_nonlinear_buckle(NonlinSolve::NEWTON, Prec::MULTIGRID, 5e-10);
+    functional_solid_test_nonlinear_buckle(NonlinSolve::NEWTON, Prec::MULTIGRID, problemSize);
     SERAC_MARK_END("Multigrid Preconditioner");
 
+#ifdef SERAC_USE_PETSC
     SERAC_MARK_BEGIN("Petsc Multigrid Preconditioner");
-    functional_solid_test_nonlinear_buckle(NonlinSolve::NEWTON, Prec::PETSC_MULTIGRID, 5e-10);
+    functional_solid_test_nonlinear_buckle(NonlinSolve::NEWTON, Prec::PETSC_MULTIGRID, problemSize);
     SERAC_MARK_END("Petsc Multigrid Preconditioner");
+#endif
   } else {
     SERAC_SET_METADATA("nonlinear solver", nonlinSolveToString(nonlinSolve));
     SERAC_SET_METADATA("preconditioner", precToString(prec));
 
     SERAC_MARK_BEGIN("Custom Preconditioner");
-    functional_solid_test_nonlinear_buckle(nonlinSolve, prec, 5e-10);
+    functional_solid_test_nonlinear_buckle(nonlinSolve, prec, problemSize);
     SERAC_MARK_END("Custom Preconditioner");
   }
 
-  // functional_solid_test_nonlinear_buckle(4e-4);
-  // functional_solid_test_nonlinear_buckle(3e-2);
   // functional_solid_test_euler();
 
   serac::exitGracefully(0);

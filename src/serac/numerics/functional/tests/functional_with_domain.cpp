@@ -73,16 +73,6 @@ struct TrivialIntegrator {
   }
 };
 
-template <int dim>
-tensor<double, dim> average(std::vector<tensor<double, dim>>& positions)
-{
-  tensor<double, dim> total{};
-  for (auto x : positions) {
-    total += x;
-  }
-  return total / double(positions.size());
-}
-
 template <int ptest, int ptrial, int dim>
 void whole_mesh_comparison_test_impl(std::unique_ptr<mfem::ParMesh>& mesh)
 {
@@ -222,10 +212,11 @@ void partial_mesh_comparison_test_impl(std::unique_ptr<mfem::ParMesh>& mesh)
 
   //////////////
 
-  residual_comparison.AddDomainIntegral(Dimension<dim>{}, DependsOn<0>{}, TestThermalIntegratorOne<dim, true>{}, *mesh);
+  Domain d = EntireDomain(*mesh);
+  residual_comparison.AddDomainIntegral(Dimension<dim>{}, DependsOn<0>{}, TestThermalIntegratorOne<dim, true>{}, d);
 
-  residual_comparison.AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<0>{}, TestThermalIntegratorTwo<true>{},
-                                          *mesh);
+  Domain bdr = EntireBoundary(*mesh);
+  residual_comparison.AddBoundaryIntegral(Dimension<dim - 1>{}, DependsOn<0>{}, TestThermalIntegratorTwo<true>{}, bdr);
 
   auto r1 = residual_comparison(t, U);
 

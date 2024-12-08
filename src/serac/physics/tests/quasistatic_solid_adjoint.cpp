@@ -17,6 +17,7 @@
 #include "serac/mesh/mesh_utils.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/serac_config.hpp"
+#include "serac/infrastructure/terminator.hpp"
 
 struct ParameterizedLinearIsotropicSolid {
   using State = ::serac::Empty;  ///< this material has no internal variables
@@ -151,13 +152,14 @@ TEST(quasistatic, finiteDifference)
                                                          .max_iterations = 10,
                                                          .print_level    = 1};
   auto seracSolid = ::std::make_unique<solidType>(nonlinear_options, serac::solid_mechanics::direct_linear_options,
-                                                  ::serac::solid_mechanics::default_quasistatic_options,
-                                                  ::serac::GeometricNonlinearities::On, physics_prefix, mesh_tag,
-                                                  std::vector<std::string>{"E", "v"});
+                                                  ::serac::solid_mechanics::default_quasistatic_options, physics_prefix,
+                                                  mesh_tag, std::vector<std::string>{"E", "v"});
 
   using materialType = ParameterizedNeoHookeanSolid;
   materialType material;
-  seracSolid->setMaterial(::serac::DependsOn<0, 1>{}, material);
+
+  Domain whole_domain = EntireDomain(*meshPtr);
+  seracSolid->setMaterial(::serac::DependsOn<0, 1>{}, material, whole_domain);
 
   seracSolid->setDisplacementBCs(
       {3}, [](const mfem::Vector&) { return 0.0; }, 0);
@@ -195,7 +197,7 @@ TEST(quasistatic, finiteDifference)
         auto stress = material(state, du_dx, E, v);
         return stress[2][2] * time;
       },
-      *meshPtr);
+      whole_domain);
 
   int    nTimeSteps = 3;
   double timeStep   = 0.8;
@@ -243,12 +245,9 @@ TEST(quasistatic, finiteDifference)
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);
-  MPI_Init(&argc, &argv);
-
-  axom::slic::SimpleLogger logger;
-  std::cout << std::setprecision(16);
+  serac::initialize(argc, argv);
   int result = RUN_ALL_TESTS();
-  MPI_Finalize();
+  serac::exitGracefully(result);
 
   return result;
 }

@@ -41,8 +41,8 @@ void functional_solid_test_robin_condition()
 
   std::string mesh_tag{"mesh"};
 
-  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto  mesh  = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // _solver_params_start
   serac::NonlinearSolverOptions nonlinear_options{.nonlin_solver  = NonlinearSolver::Newton,
@@ -52,8 +52,7 @@ void functional_solid_test_robin_condition()
                                                   .print_level    = 1};
 
   SolidMechanics<p, dim> solid_solver(nonlinear_options, solid_mechanics::default_linear_options,
-                                      solid_mechanics::default_quasistatic_options, GeometricNonlinearities::Off,
-                                      "solid_mechanics", mesh_tag);
+                                      solid_mechanics::default_quasistatic_options, "solid_mechanics", mesh_tag);
   // _solver_params_end
 
   solid_mechanics::LinearIsotropic mat{
@@ -62,7 +61,8 @@ void functional_solid_test_robin_condition()
       1.0   // shear modulus
   };
 
-  solid_solver.setMaterial(mat);
+  Domain whole_domain = EntireDomain(pmesh);
+  solid_solver.setMaterial(mat, whole_domain);
 
   // prescribe zero displacement in the y- and z-directions
   // at the supported end of the beam,

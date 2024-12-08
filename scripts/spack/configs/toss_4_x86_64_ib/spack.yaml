@@ -252,7 +252,7 @@ spack:
       - spec: zlib@1.2.11
         prefix: /usr
 
-  # Lock in versions of Devtools
+    # Lock in versions of Devtools
     cmake:
       version: [3.23.1]
       buildable: false

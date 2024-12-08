@@ -20,7 +20,7 @@
 
 namespace serac {
 
-void shape_test(GeometricNonlinearities geo_nonlin)
+void shape_test()
 {
   MPI_Barrier(MPI_COMM_WORLD);
 
@@ -112,7 +112,7 @@ void shape_test(GeometricNonlinearities geo_nonlin)
 
     // Construct a functional-based solid mechanics solver including references to the shape velocity field.
     SolidMechanics<p, dim> solid_solver(nonlinear_options, linear_options, solid_mechanics::default_quasistatic_options,
-                                        geo_nonlin, "solid_functional", mesh_tag);
+                                        "solid_functional", mesh_tag);
 
     // Set the initial displacement and boundary condition
     solid_solver.setDisplacementBCs(ess_bdr, bc);
@@ -120,9 +120,10 @@ void shape_test(GeometricNonlinearities geo_nonlin)
 
     solid_solver.setShapeDisplacement(user_defined_shape_displacement);
 
-    solid_solver.setMaterial(mat);
+    Domain whole_mesh = EntireDomain(StateManager::mesh(mesh_tag));
 
-    solid_solver.addBodyForce(force, EntireDomain(StateManager::mesh(mesh_tag)));
+    solid_solver.setMaterial(mat, whole_mesh);
+    solid_solver.addBodyForce(force, whole_mesh);
 
     // Finalize the data structures
     solid_solver.completeSetup();
@@ -156,8 +157,8 @@ void shape_test(GeometricNonlinearities geo_nonlin)
 
     // Construct a functional-based solid mechanics solver including references to the shape velocity field.
     SolidMechanics<p, dim> solid_solver_no_shape(nonlinear_options, linear_options,
-                                                 solid_mechanics::default_quasistatic_options, geo_nonlin,
-                                                 "solid_functional", new_mesh_tag);
+                                                 solid_mechanics::default_quasistatic_options, "solid_functional",
+                                                 new_mesh_tag);
 
     mfem::VisItDataCollection visit_dc("pure_version", const_cast<mfem::ParMesh*>(&solid_solver_no_shape.mesh()));
     visit_dc.RegisterField("displacement", &solid_solver_no_shape.displacement().gridFunction());
@@ -167,9 +168,10 @@ void shape_test(GeometricNonlinearities geo_nonlin)
     solid_solver_no_shape.setDisplacementBCs(ess_bdr, bc_pure);
     solid_solver_no_shape.setDisplacement(bc_pure);
 
-    solid_solver_no_shape.setMaterial(mat);
+    Domain whole_mesh = EntireDomain(StateManager::mesh(new_mesh_tag));
 
-    solid_solver_no_shape.addBodyForce(force, EntireDomain(StateManager::mesh(new_mesh_tag)));
+    solid_solver_no_shape.setMaterial(mat, whole_mesh);
+    solid_solver_no_shape.addBodyForce(force, whole_mesh);
 
     // Finalize the data structures
     solid_solver_no_shape.completeSetup();
@@ -187,8 +189,7 @@ void shape_test(GeometricNonlinearities geo_nonlin)
   EXPECT_LT(relative_error, 4.5e-12);
 }
 
-TEST(SolidMechanics, MoveShapeLinear) { shape_test(GeometricNonlinearities::Off); }
-TEST(SolidMechanics, MoveShapeNonlinear) { shape_test(GeometricNonlinearities::On); }
+TEST(SolidMechanics, MoveShape) { shape_test(); }
 
 }  // namespace serac
 
