@@ -89,11 +89,14 @@ template <int dim>
 class AffineSolution {
 public:
   AffineSolution()
-    : disp_grad_rate(make_tensor<dim, dim>([](int i, int j) { return A_3d[i][j]; })), 
-      initial_displacement(make_tensor<dim>([](int i) { return b_3d[i]; })) {};
+      : disp_grad_rate(make_tensor<dim, dim>([](int i, int j) { return A_3d[i][j]; })),
+        initial_displacement(make_tensor<dim>([](int i) { return b_3d[i]; })){};
 
   /// exact solution for displacement field
-  tensor<double, dim> eval (tensor<double, dim> X, double t) const { return t*dot(disp_grad_rate, X) + initial_displacement; }
+  tensor<double, dim> eval(tensor<double, dim> X, double t) const
+  {
+    return t * dot(disp_grad_rate, X) + initial_displacement;
+  }
 
   /**
    * @brief MFEM-style coefficient function corresponding to this solution
@@ -105,12 +108,13 @@ public:
   {
     auto X_tensor = make_tensor<dim>([&X](int i) { return X[i]; });
     auto u_tensor = this->eval(X_tensor, t);
-    for (int i=0; i < dim; ++i) u[i] = u_tensor[i];
+    for (int i = 0; i < dim; ++i) u[i] = u_tensor[i];
   }
 
-  void velocity(const mfem::Vector& X, double /* t */, mfem::Vector& v) const { 
+  void velocity(const mfem::Vector& X, double /* t */, mfem::Vector& v) const
+  {
     auto X_tensor = make_tensor<dim>([&X](int i) { return X[i]; });
-    auto v_tensor = disp_grad_rate*X_tensor;
+    auto v_tensor = disp_grad_rate * X_tensor;
     for (int i = 0; i < dim; ++i) v[i] = v_tensor[i];
   }
 
@@ -159,8 +163,8 @@ public:
   }
 
 private:
-  tensor<double, dim, dim> disp_grad_rate;        /// Linear part of solution. Equivalently, the displacement gradient rate
-  tensor<double, dim> initial_displacement;  /// Constant part of solution. Rigid body displacement.
+  tensor<double, dim, dim> disp_grad_rate;  /// Linear part of solution. Equivalently, the displacement gradient rate
+  tensor<double, dim>      initial_displacement;  /// Constant part of solution. Rigid body displacement.
 };
 
 constexpr tensor<double, 3> a_3d{{0.1, -0.2, 0.25}};
@@ -175,10 +179,9 @@ constexpr tensor<double, 3> a_3d{{0.1, -0.2, 0.25}};
 template <int dim>
 class ConstantAccelerationSolution {
 public:
-  ConstantAccelerationSolution() 
-    : acceleration(make_tensor<dim>([](int i) { return a_3d[i]; })) {};
+  ConstantAccelerationSolution() : acceleration(make_tensor<dim>([](int i) { return a_3d[i]; })){};
 
-  tensor<double, dim> eval(tensor<double, dim>, double t) const { return 0.5*t*t*acceleration; };
+  tensor<double, dim> eval(tensor<double, dim>, double t) const { return 0.5 * t * t * acceleration; };
 
   /**
    * @brief MFEM-style coefficient function corresponding to this solution
@@ -195,7 +198,7 @@ public:
 
   void velocity(const mfem::Vector& /* X */, double t, mfem::Vector& v) const
   {
-    auto v_tensor = acceleration*t;
+    auto v_tensor = acceleration * t;
     for (int i = 0; i < dim; ++i) v[i] = v_tensor[i];
   }
 
@@ -222,14 +225,15 @@ public:
   {
     // essential BCs
     Domain essential_boundary = Domain::ofBoundaryElements(solid.mesh(), by_attr<dim>(essential_boundary_attrs));
-    auto ebc_func = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
+    auto   ebc_func           = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
     solid.setDisplacementBCs(ebc_func, essential_boundary);
 
     // no natural BCs
 
     // body force
     Domain domain = EntireDomain(solid.mesh());
-    solid.addBodyForce([&material, *this](auto /* X */, auto /* t */) { return material.density * this->acceleration; }, domain);
+    solid.addBodyForce([&material, *this](auto /* X */, auto /* t */) { return material.density * this->acceleration; },
+                       domain);
   }
 
 private:
@@ -305,7 +309,7 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
                                "solid_dynamics", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = 1.0, .G = 1.0};
-  Domain                      whole_domain   = EntireDomain(pmesh);
+  Domain                      whole_domain = EntireDomain(pmesh);
   solid.setMaterial(mat, whole_domain);
 
   // initial conditions

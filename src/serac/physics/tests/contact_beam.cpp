@@ -77,7 +77,7 @@ TEST_P(ContactTest, beam)
 
   // Pass the BC information to the solver object
   solid_solver.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)));
-  auto applied_displacement = [](tensor<double, dim>, double) { 
+  auto applied_displacement = [](tensor<double, dim>, double) {
     tensor<double, dim> u{};
     u[2] = -0.15;
     return u;

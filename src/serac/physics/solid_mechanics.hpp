@@ -43,7 +43,6 @@ enum VECTOR_COMPONENT : unsigned char
 template <unsigned char dim>
 constexpr unsigned char ALL_COMPONENTS = (1 << (dim + 1)) - 1;
 
-
 namespace solid_mechanics {
 
 namespace detail {
@@ -444,7 +443,7 @@ public:
    *
    * @param[in] applied_displacement Function specifying the applied displacement vector.
    * @param[in] domain Domain over which to apply the boundary condition.
-   * @param[in] components (optional) Indicates which vector components will be constrained. 
+   * @param[in] components (optional) Indicates which vector components will be constrained.
    *            If argument is omitted, the default is to constrain all components.
    *
    * @note This method must be called prior to completeSetup()
@@ -456,20 +455,21 @@ public:
    *   t - time
    * Returns:
    *   u, vector of applied displacements
-   * 
+   *
    * Usage examples:
-   * 
+   *
    * To constrain the Y component:
    * setDisplacementBCs(applied_displacement, domain, Y_COMPONENT);
-   * 
+   *
    * To constrain the X and Z components:
    * setDisplacementBCs(applied_displacement, domain, X_COMPONENT | Z_COMPONENT);
-   * 
+   *
    * To constrain all components:
    * setDisplacementBCs((applied_displacement, domain);
    */
   template <typename AppliedDisplacementFunction>
-  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain, VectorComponents<dim> components = ALL_COMPONENTS<dim>)
+  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain,
+                          VectorComponents<dim> components = ALL_COMPONENTS<dim>)
   {
     for (size_t i = 0; i < dim; ++i) {
       if (components[i]) {

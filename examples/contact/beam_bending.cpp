@@ -83,15 +83,15 @@ int main(int argc, char* argv[])
 
   // Pass the BC information to the solver object
   solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1)));
-  
+
   auto applied_displacement = [](serac::tensor<double, dim>, double t) {
     serac::tensor<double, dim> u{};
     u[2] = -0.05 * t;
     return u;
   };
-  
+
   auto applied_displacement_surface = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6));
-  
+
   solid_solver.setDisplacementBCs(applied_displacement, applied_displacement_surface);
 
   // Add the contact interaction

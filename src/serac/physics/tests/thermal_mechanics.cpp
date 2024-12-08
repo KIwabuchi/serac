@@ -45,8 +45,8 @@ void functional_test_static_3D(double expected_norm)
   // Define the boundary subset where essential boundary conditions will be prescribed
   // For simplicity, we apply essential boundary condtions in both the thermal and mechanics
   // on the same boundary subset.
-  std::set<int> ess_bdr = {1};
-  auto displacement_essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(ess_bdr));
+  std::set<int> ess_bdr                         = {1};
+  auto          displacement_essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(ess_bdr));
 
   // define the solid solver configurations
   // no default solver options for solid yet, so make some here
@@ -130,7 +130,7 @@ void functional_test_shrinking_3D(double expected_norm)
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Define a boundary partitions where essential boundary conditions will be prescribed
-  Domain constraint_bdr = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+  Domain        constraint_bdr = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
   std::set<int> temp_bdr       = {1, 2, 3};
 
   // define the solid solver configurations

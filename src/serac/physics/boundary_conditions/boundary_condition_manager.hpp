@@ -56,7 +56,7 @@ public:
    */
   void addEssential(const mfem::Array<int>& true_dofs, std::shared_ptr<mfem::VectorCoefficient> ess_bdr_coef,
                     mfem::ParFiniteElementSpace& space);
-  
+
   void addEssential(const mfem::Array<int>& true_dofs, std::shared_ptr<mfem::Coefficient> ess_bdr_coef,
                     mfem::ParFiniteElementSpace& space, std::optional<int> component = {});
 

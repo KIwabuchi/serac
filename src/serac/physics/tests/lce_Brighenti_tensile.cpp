@@ -140,7 +140,7 @@ TEST(LiquidCrystalElastomer, Brighenti)
   double iniLoadVal = 1.0e0;
   double maxLoadVal = 4 * 1.3e0 / lx / lz;
   double loadVal    = iniLoadVal + 0.0 * maxLoadVal;
-  solid_solver.setTraction([&loadVal](auto, auto n, auto) { return loadVal*n; }, ymax_face);
+  solid_solver.setTraction([&loadVal](auto, auto n, auto) { return loadVal * n; }, ymax_face);
 
   solid_solver.setDisplacement(ini_displacement);
 

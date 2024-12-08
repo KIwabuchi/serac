@@ -87,9 +87,9 @@ int main(int argc, char* argv[])
   serac::Domain bottom_of_substrate = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(5));
   solid_solver.setFixedBCs(bottom_of_substrate);
 
-  serac::Domain top_of_indenter = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(12));
-  auto applied_displacement = [](serac::tensor<double, dim>, double t) {
-    constexpr double init_steps = 2.0;
+  serac::Domain top_of_indenter      = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(12));
+  auto          applied_displacement = [](serac::tensor<double, dim>, double t) {
+    constexpr double           init_steps = 2.0;
     serac::tensor<double, dim> u{};
     if (t <= init_steps + 1.0e-12) {
       u[2] = -t * 0.3 / init_steps;

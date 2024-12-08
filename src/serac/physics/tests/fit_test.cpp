@@ -73,7 +73,7 @@ void stress_extrapolation_test()
 
   // prescribe small displacement at each hole, pulling the plate apart
   Domain top_hole = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
-  auto up = [](tensor<double, dim>, double) {
+  auto   up       = [](tensor<double, dim>, double) {
     tensor<double, dim> u{};
     u[1] = 0.01;
     return u;
@@ -81,9 +81,7 @@ void stress_extrapolation_test()
   solid_solver.setDisplacementBCs(up, top_hole);
 
   Domain bottom_hole = Domain::ofBoundaryElements(pmesh, by_attr<dim>(3));
-  auto down = [up](tensor<double, dim> X, double t) {
-    return -up(X, t);
-  };
+  auto   down        = [up](tensor<double, dim> X, double t) { return -up(X, t); };
   solid_solver.setDisplacementBCs(down, bottom_hole);
 
   auto zero_displacement = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 0.0; };

@@ -82,8 +82,8 @@ int main(int argc, char* argv[])
   // Pass the BC information to the solver object
   auto fixed_boundary = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));
   solid_solver.setFixedBCs(fixed_boundary);
-  
-  auto driven_surface = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(12));
+
+  auto driven_surface       = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(12));
   auto applied_displacement = [](serac::tensor<double, dim> x, double t) {
     serac::tensor<double, dim> u{};
     if (t <= 3.0 + 1.0e-12) {

@@ -124,18 +124,18 @@ int main(int argc, char* argv[])
   serac::StateManager::initialize(datastore, name + "_data");
 
   // Create and refine mesh
-  std::string filename = SERAC_REPO_DIR "/data/meshes/hollow-cylinder.mesh";
-  auto        mesh     = serac::buildMeshFromFile(filename);
-  auto        refined_mesh    = mesh::refineAndDistribute(std::move(mesh), serial_refinement, parallel_refinement);
-  auto& pmesh = serac::StateManager::setMesh(std::move(refined_mesh), mesh_tag);
+  std::string filename     = SERAC_REPO_DIR "/data/meshes/hollow-cylinder.mesh";
+  auto        mesh         = serac::buildMeshFromFile(filename);
+  auto        refined_mesh = mesh::refineAndDistribute(std::move(mesh), serial_refinement, parallel_refinement);
+  auto&       pmesh        = serac::StateManager::setMesh(std::move(refined_mesh), mesh_tag);
 
   // Surfaces for boundary conditions
   constexpr int xneg_attr{2};
   constexpr int xpos_attr{3};
-  auto xneg = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(xneg_attr));
-  auto xpos = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(xpos_attr));
-  auto bottom = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1));
-  auto top = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(4));
+  auto          xneg   = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(xneg_attr));
+  auto          xpos   = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(xpos_attr));
+  auto          bottom = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1));
+  auto          top    = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(4));
 
   // Create solver, either with or without contact
   std::unique_ptr<SolidMechanics<p, dim>> solid_solver;
@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
     return u;
   };
   solid_solver->setDisplacementBCs(compress, top, X_COMPONENT | Z_COMPONENT);
-  solid_solver->setDisplacementBCs(compress, top, Y_COMPONENT); // BT: Would it be better to leave this component free?
+  solid_solver->setDisplacementBCs(compress, top, Y_COMPONENT);  // BT: Would it be better to leave this component free?
 
   // Finalize the data structures
   solid_solver->completeSetup();

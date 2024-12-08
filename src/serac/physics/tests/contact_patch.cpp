@@ -88,8 +88,9 @@ TEST_P(ContactTest, patch)
   solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1)), X_COMPONENT);
   solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(2)), Y_COMPONENT);
   solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3)), Z_COMPONENT);
-  solid_solver.setDisplacementBCs(applied_disp_function, serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6)), Z_COMPONENT);
-  
+  solid_solver.setDisplacementBCs(applied_disp_function,
+                                  serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6)), Z_COMPONENT);
+
   // Add the contact interaction
   solid_solver.addContactInteraction(0, {4}, {5}, contact_options);
 

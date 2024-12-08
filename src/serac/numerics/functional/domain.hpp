@@ -299,7 +299,7 @@ inline std::array<uint32_t, mfem::Geometry::NUM_GEOMETRIES> geometry_counts(cons
  * @brief convenience function for computing the arithmetic mean of some list of vectors
  */
 template <int dim>
-inline tensor<double, dim> average(std::vector<tensor<double, dim> >& positions)
+inline tensor<double, dim> average(std::vector<tensor<double, dim>>& positions)
 {
   tensor<double, dim> total{};
   for (auto x : positions) {

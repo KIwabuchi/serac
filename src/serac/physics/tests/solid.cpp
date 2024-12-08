@@ -143,24 +143,25 @@ void functional_solid_spatial_essential_bc()
                                       solid_mechanics::direct_linear_options,
                                       solid_mechanics::default_quasistatic_options, "solid_mechanics", mesh_tag);
 
-  constexpr double K = 1.0;
-  constexpr double G = 1.0; 
+  constexpr double                 K = 1.0;
+  constexpr double                 G = 1.0;
   solid_mechanics::LinearIsotropic mat{.density = 1.0, .K = K, .G = G};
   Domain                           whole_domain = EntireDomain(pmesh);
   solid_solver.setMaterial(mat, whole_domain);
 
   constexpr double node_tol = 1e-1;
 
-  auto all = [](std::vector<vec3> coords, auto predicate) { return std::all_of(coords.begin(), coords.end(), [predicate](auto X) { return predicate(X); }); };
+  auto all = [](std::vector<vec3> coords, auto predicate) {
+    return std::all_of(coords.begin(), coords.end(), [predicate](auto X) { return predicate(X); });
+  };
 
   // Test creating domains from a spatial predicate and using for essential BCs
   Domain bottom = Domain::ofBoundaryElements(
-    pmesh,
-    [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[2] < node_tol; }); });
+      pmesh, [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[2] < node_tol; }); });
 
-  Domain top = Domain::ofBoundaryElements(
-    pmesh,
-    [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[2] > 1.0 - node_tol; }); });
+  Domain top = Domain::ofBoundaryElements(pmesh, [all](std::vector<vec3> coords, int) {
+    return all(coords, [](auto X) { return X[2] > 1.0 - node_tol; });
+  });
 
   // Or that you can create domains from attributes
   Domain left = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));

@@ -128,7 +128,7 @@ void shape_test()
 
     // Set the initial displacement and boundary condition
     solid_solver.setDisplacementBCs(applied_displacement, ess_bdr);
-    
+
     // For consistency of the problem, this value should match the one in the BCs
     // TODO(Brandon): When the setDisplacement is updated to take a serac::tensor valued callable,
     // pass the same functor here as is used for the BCs.
