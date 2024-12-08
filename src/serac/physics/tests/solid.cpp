@@ -151,7 +151,7 @@ void functional_solid_spatial_essential_bc()
 
   auto all = [](std::vector<vec3> coords, auto predicate) { return std::all_of(coords.begin(), coords.end(), [predicate](auto X) { return predicate(X); }); };
 
-  // Demonstrate that you can create domains from a spatial predicate
+  // Test creating domains from a spatial predicate and using for essential BCs
   Domain bottom = Domain::ofBoundaryElements(
     pmesh,
     [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[2] < node_tol; }); });
@@ -295,22 +295,11 @@ void functional_parameterized_solid_test(double expected_disp_norm)
   solid_mechanics::ParameterizedLinearIsotropicSolid mat{1.0, 0.0, 0.0};
   solid_solver.setMaterial(DependsOn<0, 1>{}, mat);
 
-  // Define the function for the initial displacement and boundary condition
-  auto bc = [](const mfem::Vector&, mfem::Vector& bc_vec) -> void { bc_vec = 0.0; };
+  // Specify initial / boundary conditions
+  Domain essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
 
-  // Define a boundary attribute set and specify initial / boundary conditions
-  std::set<int> ess_bdr = {1};
-
-  // Generate a true dof set from the boundary attribute
-  mfem::Array<int> bdr_attr_marker(pmesh.bdr_attributes.Max());
-  bdr_attr_marker    = 0;
-  bdr_attr_marker[0] = 1;
-  mfem::Array<int> true_dofs;
-  auto             fe_space = const_cast<mfem::ParFiniteElementSpace*>(&solid_solver.displacement().space());
-  fe_space->GetEssentialTrueDofs(bdr_attr_marker, true_dofs);
-
-  solid_solver.setDisplacementBCsByDofList(true_dofs, bc);
-  solid_solver.setDisplacement(bc);
+  solid_solver.setFixedBCs(essential_boundary);
+  solid_solver.setDisplacement([](const mfem::Vector&, mfem::Vector& bc_vec) -> void { bc_vec = 0.0; });
 
   tensor<double, dim> constant_force;
 
