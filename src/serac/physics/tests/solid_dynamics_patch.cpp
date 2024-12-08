@@ -139,7 +139,7 @@ public:
 
     // essential BCs
     auto ebc_func = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
-    for (int i = 0; i < dim; ++i) solid.setDisplacementBCs(ebc_func, essential_boundary, i);
+    solid.setDisplacementBCs(ebc_func, essential_boundary);
 
     // It's tempting to restrict the traction to the appropriate sub-boundaryby defining
     // Domain natural_boundary = EntireBoundary(solid.mesh()) - essential_boundary;
@@ -222,7 +222,7 @@ public:
     // essential BCs
     Domain essential_boundary = Domain::ofBoundaryElements(solid.mesh(), by_attr<dim>(essential_boundary_attrs));
     auto ebc_func = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
-    for (int i = 0; i < dim; ++i) solid.setDisplacementBCs(ebc_func, essential_boundary, i);
+    solid.setDisplacementBCs(ebc_func, essential_boundary);
 
     // no natural BCs
 

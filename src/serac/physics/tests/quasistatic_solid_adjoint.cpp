@@ -159,13 +159,13 @@ TEST(quasistatic, finiteDifference)
   materialType material;
   seracSolid->setMaterial(::serac::DependsOn<0, 1>{}, material);
 
-  seracSolid->setFixedBCs(::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(3)), 0);
-  seracSolid->setFixedBCs(::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(4)), 1);
-  seracSolid->setFixedBCs(::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(1)), 2);
+  seracSolid->setFixedBCs(::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(3)), X_COMPONENT);
+  seracSolid->setFixedBCs(::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(4)), Y_COMPONENT);
+  seracSolid->setFixedBCs(::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(1)), Z_COMPONENT);
 
   serac::Domain loadRegion = serac::Domain::ofBoundaryElements(*meshPtr, serac::by_attr<DIM>(6));
   // seracSolid->setTraction([](auto, auto n, auto) {return 1.0*n;}, loadRegion);
-  seracSolid->setDisplacementBCs([](vec3, double time) { return vec3{{0.0, 0.0, time}}; }, loadRegion, 2);
+  seracSolid->setDisplacementBCs([](vec3, double time) { return vec3{{0.0, 0.0, time}}; }, loadRegion, Z_COMPONENT);
 
   double                      E0 = 1.0;
   double                      v0 = 0.3;

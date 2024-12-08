@@ -174,9 +174,8 @@ int main(int argc, char* argv[])
     u[0] = u[2] = -1.5 / std::sqrt(2.0) * t;
     return u;
   };
-  solid_solver->setDisplacementBCs(compress, top, 0);
-  solid_solver->setDisplacementBCs(compress, top, 1); // BT: Would it be better to leave this component free?
-  solid_solver->setDisplacementBCs(compress, top, 2);
+  solid_solver->setDisplacementBCs(compress, top, X_COMPONENT | Z_COMPONENT);
+  solid_solver->setDisplacementBCs(compress, top, Y_COMPONENT); // BT: Would it be better to leave this component free?
 
   // Finalize the data structures
   solid_solver->completeSetup();

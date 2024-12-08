@@ -97,9 +97,9 @@ TEST(Solid, MultiMaterial)
   solid.setTraction(
       DependsOn<>{}, [stress](auto, auto n, auto) { return stress * n; }, end_face);
 
-  solid.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(2)), 1);
-  solid.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(5)), 0);
-  solid.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)), 2);
+  solid.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(5)), X_COMPONENT);
+  solid.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(2)), Y_COMPONENT);
+  solid.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)), Z_COMPONENT);
 
   solid.completeSetup();
 
@@ -228,9 +228,9 @@ TEST(Solid, MultiMaterialWithState)
   solid.setTraction(
       DependsOn<>{}, [applied_stress](auto, auto n, auto) { return applied_stress * n; }, end_face);
 
-  solid.setFixedBCs(x_min_face, 0);
-  solid.setFixedBCs(y_min_face, 1);
-  solid.setFixedBCs(z_min_face, 2);
+  solid.setFixedBCs(x_min_face, X_COMPONENT);
+  solid.setFixedBCs(y_min_face, Y_COMPONENT);
+  solid.setFixedBCs(z_min_face, Z_COMPONENT);
 
   solid.completeSetup();
 

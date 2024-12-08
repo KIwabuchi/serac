@@ -91,9 +91,7 @@ int main(int argc, char* argv[])
   
   auto applied_displacement_surface = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6));
   
-  solid_solver.setDisplacementBCs(applied_displacement, applied_displacement_surface, 0);
-  solid_solver.setDisplacementBCs(applied_displacement, applied_displacement_surface, 1);
-  solid_solver.setDisplacementBCs(applied_displacement, applied_displacement_surface, 2);
+  solid_solver.setDisplacementBCs(applied_displacement, applied_displacement_surface);
 
   // Add the contact interaction
   auto          contact_interaction_id = 0;

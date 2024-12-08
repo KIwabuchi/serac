@@ -81,17 +81,9 @@ public:
     // essential BCs
     auto ebc_func = [*this](tensor<double, dim> X, double){ return this->eval(X); };
     
-    auto contains = [](const std::set<int>& my_set, int i) {
-      return my_set.find(i) != my_set.end();
-    };
+    Domain essential_boundary = Domain::ofBoundaryElements(sf.mesh(), by_attr<dim>(essential_boundary_attrs));
 
-    Domain essential_boundary = Domain::ofBoundaryElements(sf.mesh(), 
-      [&essential_boundary_attrs, &contains](std::vector<tensor<double, dim>>, int attr)
-      {
-        return contains(essential_boundary_attrs, attr);
-      }
-    );
-    for (int i = 0; i < dim; i++) sf.setDisplacementBCs(ebc_func, essential_boundary, i);
+    sf.setDisplacementBCs(ebc_func, essential_boundary);
 
     // natural BCs
     typename Material::State state;
@@ -300,8 +292,8 @@ double pressure_error()
   // except the pressure loaded surface
   if constexpr (dim == 2) {
     auto set_bcs = [&solid, exact_uniaxial_strain](Domain driven, Domain fixed) {
-      for (int i = 0; i < dim; ++i) solid.setDisplacementBCs(exact_uniaxial_strain, driven, i);
-      solid.setFixedBCs(fixed, 1);
+      solid.setDisplacementBCs(exact_uniaxial_strain, driven);
+      solid.setFixedBCs(fixed, Y_COMPONENT);
     };
 
     if (element_type::geometry == mfem::Geometry::TRIANGLE) {
@@ -315,9 +307,9 @@ double pressure_error()
     }
   } else { // dim == 3
     auto set_bcs = [&solid, exact_uniaxial_strain](Domain driven, Domain fixed_y, Domain fixed_z) {
-      for (int i = 0; i < dim; ++i) solid.setDisplacementBCs(exact_uniaxial_strain, driven, i);
-      solid.setFixedBCs(fixed_y, 1);
-      solid.setFixedBCs(fixed_z, 2);
+      solid.setDisplacementBCs(exact_uniaxial_strain, driven);
+      solid.setFixedBCs(fixed_y, Y_COMPONENT);
+      solid.setFixedBCs(fixed_z, Z_COMPONENT);
     };
 
     Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));

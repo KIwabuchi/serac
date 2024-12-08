@@ -97,9 +97,7 @@ int main(int argc, char* argv[])
     return u;
   };
 
-  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 0);
-  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 1);
-  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 2);
+  solid_solver.setDisplacementBCs(applied_displacement, driven_surface);
 
   // Add the contact interaction
   auto          contact_interaction_id = 0;

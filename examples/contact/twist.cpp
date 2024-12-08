@@ -68,6 +68,7 @@ int main(int argc, char* argv[])
   solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3)));
 
   auto driven_surface = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6));
+  
   auto applied_displacement = [](serac::tensor<double, dim> x, double t) {
     serac::tensor<double, dim> u{};
     if (t <= 3.0 + 1.0e-12) {
@@ -82,9 +83,7 @@ int main(int argc, char* argv[])
     return u;
   };
 
-  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 0);
-  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 1);
-  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 2);
+  solid_solver.setDisplacementBCs(applied_displacement, driven_surface);
 
   // Add the contact interaction
   auto          contact_interaction_id = 0;

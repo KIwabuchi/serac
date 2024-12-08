@@ -129,9 +129,9 @@ TEST(Thermomechanics, ParameterizedMaterial)
   Domain y_equals_0 = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
   Domain z_equals_0 = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
 
-  simulation.setFixedBCs(x_equals_0, 0);
-  simulation.setFixedBCs(y_equals_0, 1);
-  simulation.setFixedBCs(z_equals_0, 2);
+  simulation.setFixedBCs(x_equals_0, X_COMPONENT);
+  simulation.setFixedBCs(y_equals_0, Y_COMPONENT);
+  simulation.setFixedBCs(z_equals_0, Z_COMPONENT);
 
   // set up initial conditions
   auto zero_vector = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 0.0; };

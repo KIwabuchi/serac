@@ -91,7 +91,7 @@ void functional_solid_test_static_J2()
     return u;
   };
   auto tip = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
-  solid_solver.setDisplacementBCs(translated_in_z, tip, 2);
+  solid_solver.setDisplacementBCs(translated_in_z, tip, Z_COMPONENT);
 
   // Finalize the data structures
   solid_solver.completeSetup();
@@ -164,10 +164,10 @@ void functional_solid_spatial_essential_bc()
   Domain left = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
   Domain back = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
 
-  solid_solver.setFixedBCs(left, 0);
-  solid_solver.setFixedBCs(back, 1);
-  solid_solver.setFixedBCs(bottom, 2);
-  solid_solver.setDisplacementBCs([](vec3, double) { return vec3{{0.0, 0.0, -0.1}}; }, top, 2);
+  solid_solver.setFixedBCs(left, X_COMPONENT);
+  solid_solver.setFixedBCs(back, Y_COMPONENT);
+  solid_solver.setFixedBCs(bottom, Z_COMPONENT);
+  solid_solver.setDisplacementBCs([](vec3, double) { return vec3{{0.0, 0.0, -0.1}}; }, top, Z_COMPONENT);
 
   // Set a zero initial guess
   solid_solver.setDisplacement([](const mfem::Vector&, mfem::Vector& u) { u = 0.0; });

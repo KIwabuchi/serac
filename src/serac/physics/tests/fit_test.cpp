@@ -76,13 +76,13 @@ void stress_extrapolation_test()
     u[1] = 0.01;
     return u;
   };
-  for (int i = 0; i < dim; ++i) solid_solver.setDisplacementBCs(up, top_hole, i);
+  solid_solver.setDisplacementBCs(up, top_hole);
 
   Domain bottom_hole = Domain::ofBoundaryElements(pmesh, by_attr<dim>(3));
   auto down = [up](tensor<double, dim> X, double t) {
     return -up(X, t);
   };
-  for (int i = 0; i < dim; ++i) solid_solver.setDisplacementBCs(down, bottom_hole, i);
+  solid_solver.setDisplacementBCs(down, bottom_hole);
 
   auto zero_displacement = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 0.0; };
   solid_solver.setDisplacement(zero_displacement);

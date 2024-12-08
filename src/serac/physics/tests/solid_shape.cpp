@@ -127,9 +127,7 @@ void shape_test()
                                         "solid_functional", mesh_tag);
 
     // Set the initial displacement and boundary condition
-    solid_solver.setDisplacementBCs(applied_displacement, ess_bdr, 0);
-    solid_solver.setDisplacementBCs(applied_displacement, ess_bdr, 1);
-    if constexpr (dim == 3) solid_solver.setDisplacementBCs(applied_displacement, ess_bdr, 2);
+    solid_solver.setDisplacementBCs(applied_displacement, ess_bdr);
     
     // For consistency of the problem, this value should match the one in the BCs
     // TODO(Brandon): When the setDisplacement is updated to take a serac::tensor valued callable,
@@ -182,9 +180,7 @@ void shape_test()
     visit_dc.Save();
 
     // Set the initial displacement and boundary condition
-    solid_solver_no_shape.setDisplacementBCs(applied_displacement_pure, ess_bdr, 0);
-    solid_solver_no_shape.setDisplacementBCs(applied_displacement_pure, ess_bdr, 1);
-    if constexpr (dim ==3) solid_solver_no_shape.setDisplacementBCs(applied_displacement_pure, ess_bdr, 2);
+    solid_solver_no_shape.setDisplacementBCs(applied_displacement_pure, ess_bdr);
     solid_solver_no_shape.setDisplacement(bc_pure);
 
     solid_solver_no_shape.setMaterial(mat);

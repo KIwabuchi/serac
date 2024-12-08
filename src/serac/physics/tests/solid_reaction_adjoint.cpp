@@ -61,8 +61,7 @@ std::unique_ptr<SolidMechanicsType> createNonlinearSolidMechanicsSolver(mfem::Pa
 
   Domain essential_bdr = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
   auto applied_displacement = [](vec2, double) { return boundary_disp*vec2{{1.0, 1.0}}; };
-  solid->setDisplacementBCs(applied_displacement, essential_bdr, 0);
-  solid->setDisplacementBCs(applied_displacement, essential_bdr, 1);
+  solid->setDisplacementBCs(applied_displacement, essential_bdr);
   solid->addBodyForce([](auto X, auto /* t */) {
     auto Y = X;
     Y[0]   = 0.1 + 0.1 * X[0] + 0.3 * X[1];

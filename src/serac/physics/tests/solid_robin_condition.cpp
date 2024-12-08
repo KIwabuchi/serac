@@ -67,13 +67,8 @@ void functional_solid_test_robin_condition()
 
   // prescribe zero displacement in the y- and z-directions
   // at the supported end of the beam,
-  constexpr int Y_DIRECTION = 1;
-  constexpr int Z_DIRECTION = 2;
-
   Domain support = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
-
-  solid_solver.setFixedBCs(support, Y_DIRECTION);
-  solid_solver.setFixedBCs(support, Z_DIRECTION);
+  solid_solver.setFixedBCs(support, Y_COMPONENT | Z_COMPONENT);
 
   // apply an axial displacement at the the tip of the beam
   auto translated_in_x = [](tensor<double, dim>, double t) -> vec3 {
@@ -82,7 +77,7 @@ void functional_solid_test_robin_condition()
     return u;
   };
   Domain tip = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
-  solid_solver.setDisplacementBCs(translated_in_x, tip, 0);
+  solid_solver.setDisplacementBCs(translated_in_x, tip, X_COMPONENT);
 
   // clang-format off
   Domain robinDomain = Domain::ofBoundaryElements(StateManager::mesh(mesh_tag),

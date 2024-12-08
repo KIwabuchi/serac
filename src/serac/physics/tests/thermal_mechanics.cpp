@@ -175,7 +175,7 @@ void functional_test_shrinking_3D(double expected_norm)
   auto zeroVector = [](const mfem::Vector&, mfem::Vector& u) { u = 0.0; };
 
   // Set the initial displacement and boundary condition
-  for (int i = 0; i < dim; ++i) thermal_solid_solver.setFixedBCs(constraint_bdr, i);
+  thermal_solid_solver.setFixedBCs(constraint_bdr);
   thermal_solid_solver.setDisplacement(zeroVector);
 
   // Finalize the data structures

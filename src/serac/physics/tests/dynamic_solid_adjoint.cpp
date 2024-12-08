@@ -109,7 +109,7 @@ std::unique_ptr<SolidMechanics<p, dim>> createNonlinearSolidMechanicsSolver(
     return u;
   };
   auto applied_displacement_surface = Domain::ofBoundaryElements(solid->mesh(), by_attr<dim>(1));
-  for (int i = 0; i < dim; ++i) solid->setDisplacementBCs(applied_displacement, applied_displacement_surface, i);
+  solid->setDisplacementBCs(applied_displacement, applied_displacement_surface);
   solid->addBodyForce([](auto X, auto t) {
     auto Y = X;
     Y[0]   = 0.1 + 0.1 * X[0] + 0.3 * X[1] - 0.2 * t;

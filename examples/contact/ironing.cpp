@@ -82,7 +82,8 @@ int main(int argc, char* argv[])
   solid_solver.setMaterial(serac::DependsOn<0, 1>{}, mat);
 
   // Pass the BC information to the solver object
-  solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(5)));
+  serac::Domain bottom_of_substrate = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(5));
+  solid_solver.setFixedBCs(bottom_of_substrate);
 
   serac::Domain top_of_indenter = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(12));
   auto applied_displacement = [](serac::tensor<double, dim>, double t) {
@@ -96,7 +97,7 @@ int main(int argc, char* argv[])
     }
     return u;
   };
-  for (int i = 0; i < dim; ++i) solid_solver.setDisplacementBCs(applied_displacement, top_of_indenter, i);
+  solid_solver.setDisplacementBCs(applied_displacement, top_of_indenter);
 
   // Add the contact interaction
   auto          contact_interaction_id = 0;
