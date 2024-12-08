@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <bitset>
+
 #include "mfem.hpp"
 
 #include "serac/serac_config.hpp"
@@ -27,6 +29,16 @@
 #include "serac/physics/materials/solid_material.hpp"
 
 namespace serac {
+
+enum VECTOR_COMPONENT : unsigned char
+{
+  X_COMPONENT = 1 << 0,
+  Y_COMPONENT = 1 << 1,
+  Z_COMPONENT = 1 << 2
+};
+
+template <int dim>
+using VectorComponents = std::bitset<dim>;
 
 namespace solid_mechanics {
 
@@ -427,7 +439,7 @@ public:
    * @param[in] applied_displacement Function specifying the applied displacement vector. 
    *   Only the value in the component @p component will be used, the others are ignored.
    * @param[in] domain Domain over which to apply the boundary condition.
-   * @param[in] component Index of the displacement component that will be constrained
+   * @param[in] components Indicates which vector components will be constrained.
    *
    * @note This method must be called prior to completeSetup()
    *
@@ -440,33 +452,37 @@ public:
    *   u, vector of applied displacements
    */
   template <typename AppliedDisplacementFunction>
-  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain, int component)
+  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain, VectorComponents<dim> components)
   {
-    auto mfem_coefficient_function = [applied_displacement, component](const mfem::Vector& X_mfem, double t) {
-      auto X = make_tensor<dim>([&X_mfem](int i) { return X_mfem[i]; });
-      return applied_displacement(X, t)[component];
-    };
+    for (size_t i = 0; i < dim; ++i) {
+      if (components[i]) {
+        auto mfem_coefficient_function = [applied_displacement, i](const mfem::Vector& X_mfem, double t) {
+          auto X = make_tensor<dim>([&X_mfem](int k) { return X_mfem[k]; });
+          return applied_displacement(X, t)[int(i)];
+        };
 
-    component_disp_bdr_coef_ = std::make_shared<mfem::FunctionCoefficient>(mfem_coefficient_function);
+        component_disp_bdr_coef_ = std::make_shared<mfem::FunctionCoefficient>(mfem_coefficient_function);
 
-    auto dof_list = domain.dof_list(&displacement_.space());
-    displacement_.space().DofsToVDofs(component, dof_list);
+        auto dof_list = domain.dof_list(&displacement_.space());
+        displacement_.space().DofsToVDofs(int(i), dof_list);
 
-    bcs_.addEssential(dof_list, component_disp_bdr_coef_, displacement_.space(), component);
+        bcs_.addEssential(dof_list, component_disp_bdr_coef_, displacement_.space(), int(i));
+      }
+    }
   }
 
   /**
    * @brief Shortcut to set one component of displacements to zero for all time
    *
    * @param[in] domain Domain to apply the homogeneous boundary condition to
-   * @param[in] component Index of the displacement component that will be constrained
+   * @param[in] components Indicates which vector components will be constrained.
    *
    * @note This method must be called prior to completeSetup()
    */
-  void setFixedBCs(const Domain& domain, int component)
+  void setFixedBCs(const Domain& domain, VectorComponents<dim> components)
   {
     auto zero_vector_function = [](tensor<double, dim>, double) { return tensor<double, dim>{}; };
-    setDisplacementBCs(zero_vector_function, domain, component);
+    setDisplacementBCs(zero_vector_function, domain, components);
   }
 
   /**
@@ -478,7 +494,9 @@ public:
    */
   void setFixedBCs(const Domain& domain)
   {
-    for (int i = 0; i < dim; ++i) setFixedBCs(domain, i);
+    VectorComponents<dim> components;
+    components.set();
+    setFixedBCs(domain, components);
   }
 
   /**
