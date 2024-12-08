@@ -74,7 +74,7 @@ std::ostream& operator<<(std::ostream& out, serac::SignedIndex i)
  * @param filename the name of the output file
  */
 template <typename T>
-void write_to_file(axom::Array<T, 2, axom::MemorySpace::Host> arr, std::string filename)
+void write_to_file(axom::Array<T, 2, axom::MemorySpace::Dynamic> arr, std::string filename)
 {
   std::ofstream outfile(filename);
 
@@ -97,7 +97,7 @@ void write_to_file(axom::Array<T, 2, axom::MemorySpace::Host> arr, std::string f
  * @param filename the name of the output file
  */
 template <typename T>
-void write_to_file(axom::Array<T, 3, axom::MemorySpace::Host> arr, std::string filename)
+void write_to_file(axom::Array<T, 3, axom::MemorySpace::Dynamic> arr, std::string filename)
 {
   std::ofstream outfile(filename);
 

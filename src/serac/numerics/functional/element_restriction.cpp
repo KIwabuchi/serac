@@ -213,8 +213,8 @@ std::vector<Array2D<int> > geom_local_face_dofs(int p)
   return output;
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementRestriction(const mfem::FiniteElementSpace* fes,
-                                                                   mfem::Geometry::Type            geom)
+axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetElementRestriction(const mfem::FiniteElementSpace* fes,
+                                                                      mfem::Geometry::Type            geom)
 {
   std::vector<DoF> elem_dofs{};
   mfem::Mesh*      mesh = fes->GetMesh();
@@ -267,17 +267,17 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetElementRestriction(const mfem::F
   }
 
   if (n == 0) {
-    return axom::Array<DoF, 2, axom::MemorySpace::Host>{};
+    return axom::Array<DoF, 2, axom::MemorySpace::Dynamic>{};
   } else {
-    uint64_t                                     dofs_per_elem = elem_dofs.size() / n;
-    axom::Array<DoF, 2, axom::MemorySpace::Host> output(n, dofs_per_elem);
+    uint64_t                                        dofs_per_elem = elem_dofs.size() / n;
+    axom::Array<DoF, 2, axom::MemorySpace::Dynamic> output(n, dofs_per_elem);
     std::memcpy(output.data(), elem_dofs.data(), sizeof(DoF) * n * dofs_per_elem);
     return output;
   }
 }
 
-axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const mfem::FiniteElementSpace* fes,
-                                                         mfem::Geometry::Type face_geom, FaceType type)
+axom::Array<DoF, 2, axom::MemorySpace::Dynamic> GetFaceDofs(const mfem::FiniteElementSpace* fes,
+                                                            mfem::Geometry::Type face_geom, FaceType type)
 {
   std::vector<DoF> face_dofs;
   mfem::Mesh*      mesh         = fes->GetMesh();
@@ -378,10 +378,10 @@ axom::Array<DoF, 2, axom::MemorySpace::Host> GetFaceDofs(const mfem::FiniteEleme
   delete face_to_elem;
 
   if (n == 0) {
-    return axom::Array<DoF, 2, axom::MemorySpace::Host>{};
+    return axom::Array<DoF, 2, axom::MemorySpace::Dynamic>{};
   } else {
-    uint64_t                                     dofs_per_face = face_dofs.size() / n;
-    axom::Array<DoF, 2, axom::MemorySpace::Host> output(n, dofs_per_face);
+    uint64_t                                        dofs_per_face = face_dofs.size() / n;
+    axom::Array<DoF, 2, axom::MemorySpace::Dynamic> output(n, dofs_per_face);
     std::memcpy(output.data(), face_dofs.data(), sizeof(DoF) * n * dofs_per_face);
     return output;
   }

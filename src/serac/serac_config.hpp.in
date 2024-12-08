@@ -43,7 +43,6 @@
 #cmakedefine SERAC_USE_SLEPC
 #cmakedefine SERAC_USE_SUNDIALS
 #cmakedefine SERAC_USE_TRIBOL
-#cmakedefine SERAC_USE_UMPIRE
 
 #cmakedefine SERAC_USE_VDIM_ORDERING
 

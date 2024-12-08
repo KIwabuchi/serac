@@ -58,7 +58,7 @@ class Tribol(CachedCMakePackage, CudaPackage, ROCmPackage):
             description="Build tests")
     variant("examples", default=False,
             description="Build examples")
-    variant("devtools", default=False, 
+    variant("devtools", default=False,
             description="Build development tools (Sphinx, Doxygen, Shroud, clang-format)")
     variant("umpire",   default=False,
             description="Build with portable memory access support")
@@ -82,6 +82,8 @@ class Tribol(CachedCMakePackage, CudaPackage, ROCmPackage):
     depends_on("raja@2024.02.0:", when="+raja")
     depends_on("umpire@2024.02.0:", when="+umpire")
 
+    depends_on("metall")
+
     with when("+redecomp"):
         depends_on("mfem+metis+mpi")
         depends_on("mfem+raja", when="+raja")
@@ -104,11 +106,11 @@ class Tribol(CachedCMakePackage, CudaPackage, ROCmPackage):
         depends_on(f"umpire{ext_rocm_dep}", when=f"+umpire{ext_rocm_dep}")
 
     depends_on("rocprim", when="+rocm")
-    
+
     # Optional (require our variant in "when")
     for dep in ["raja", "umpire"]:
         depends_on("{0} build_type=Debug".format(dep), when="+{0} build_type=Debug".format(dep))
-        
+
     # Required
     for dep in ["axom", "conduit", "metis", "parmetis"]:
         depends_on("{0} build_type=Debug".format(dep), when="build_type=Debug")
@@ -125,6 +127,8 @@ class Tribol(CachedCMakePackage, CudaPackage, ROCmPackage):
     depends_on("llvm+clang@10.0.0", when="+devtools", type="build")
 
     conflicts("+cuda", when="+rocm")
+
+    patch("find_metall.patch", when="@0.1.0.16")
 
     def _get_sys_type(self, spec):
         sys_type = spec.architecture
@@ -175,7 +179,7 @@ class Tribol(CachedCMakePackage, CudaPackage, ROCmPackage):
         else:
             entries.append(cmake_cache_option("ENABLE_FORTRAN", False))
 
-        entries.append(cmake_cache_string("BLT_CXX_STD", "c++14", ""))
+        entries.append(cmake_cache_string("BLT_CXX_STD", "c++17", ""))
 
         # Add optimization flag workaround for Debug builds with
         # cray compiler or newer HIP

@@ -195,7 +195,7 @@ struct ElementRestriction {
   uint64_t nodes_per_elem;
 
   /// a 2D array (num_elements-by-nodes_per_elem) holding the dof info extracted from the finite element space
-  axom::Array<DoF, 2, axom::MemorySpace::Host> dof_info;
+  axom::Array<DoF, 2, axom::MemorySpace::Dynamic> dof_info;
 
   /// whether the underlying dofs are arranged "byNodes" or "byVDim"
   mfem::Ordering::Type ordering;

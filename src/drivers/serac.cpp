@@ -17,6 +17,9 @@
 #include <memory>
 #include <string>
 
+// #define METALL_DISABLE_CONCURRENCY
+
+#include "metall/metall.hpp"
 #include "axom/core.hpp"
 #include "mfem.hpp"
 
@@ -297,14 +300,24 @@ int main(int argc, char* argv[])
     restart_cycle = std::stoi(cycle->second);
   }
 
+  metall::manager*        manager;
+  axom::sidre::DataStore* datastore;
+  if (!restart_cycle) {
+    manager   = new metall::manager(metall::create_only, output_directory + "/metall-all");
+    datastore = manager->construct<axom::sidre::DataStore>("ds")(manager->get_allocator<std::byte>());
+  } else {
+    manager =
+        new metall::manager(metall::open_only, output_directory + "/metall-cycle-" + std::to_string(*restart_cycle));
+    datastore = manager->find<axom::sidre::DataStore>("ds").first;
+  }
   // Create DataStore
-  axom::sidre::DataStore datastore;
+  // axom::sidre::DataStore datastore(manager.get_allocator<std::byte>());
 
   // Intialize MFEMSidreDataCollection
-  serac::StateManager::initialize(datastore, output_directory);
+  serac::StateManager::initialize(*datastore, output_directory);
 
   // Initialize Inlet and read input file
-  auto inlet = serac::input::initialize(datastore, input_file_path);
+  auto inlet = serac::input::initialize(*datastore, input_file_path);
   serac::defineInputFileSchema(inlet);
 
   // Optionally, create input file documentation and quit
@@ -331,7 +344,7 @@ int main(int argc, char* argv[])
 
   // Save input values to file
   std::string input_values_path = axom::utilities::filesystem::joinPath(output_directory, "serac_input_values.json");
-  datastore.getRoot()->getGroup("input_file")->save(input_values_path, "json");
+  datastore->getRoot()->getGroup("input_file")->save(input_values_path, "json");
 
   // Initialize/set the time information
   double t       = 0;
@@ -386,7 +399,9 @@ int main(int argc, char* argv[])
   // Complete the solver setup
   main_physics->completeSetup();
 
-  main_physics->initializeSummary(datastore, t_final, dt);
+  if (!restart_cycle) {
+    main_physics->initializeSummary(*datastore, t_final, dt);
+  }
 
   // Enter the time step loop.
   bool last_step = false;
@@ -407,10 +422,14 @@ int main(int argc, char* argv[])
     main_physics->advanceTimestep(dt_real);
 
     // Output a visualization file
+    if (!restart_cycle) {
+      // just for easy demo
+      manager->snapshot(output_directory + "/metall-cycle-" + std::to_string(cycle));
+    }
     main_physics->outputStateToDisk(paraview_output_dir);
 
     // Save curve data to Sidre datastore to be output later
-    main_physics->saveSummary(datastore, t);
+    main_physics->saveSummary(*datastore, t);
 
     // Determine if this is the last timestep
     last_step = (t >= t_final - 1e-8 * dt);
@@ -420,7 +439,8 @@ int main(int argc, char* argv[])
   }
 
   // Output summary file (basic run info and curve data)
-  serac::output::outputSummary(datastore, output_directory);
+  serac::output::outputSummary(*datastore, output_directory);
 
+  delete manager;
   serac::exitGracefully();
 }

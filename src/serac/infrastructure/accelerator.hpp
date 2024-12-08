@@ -92,7 +92,7 @@ struct execution_to_memory {
 /// @overload
 template <>
 struct execution_to_memory<ExecutionSpace::CPU> {
-  static constexpr axom::MemorySpace value = axom::MemorySpace::Host;
+  static constexpr axom::MemorySpace value = axom::MemorySpace::Dynamic;
 };
 
 /// @overload

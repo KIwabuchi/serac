@@ -25,15 +25,25 @@ double StateManager::newDataCollection(const std::string& name, const std::optio
   SLIC_ERROR_ROOT_IF(!ds_, "Cannot construct a DataCollection without a DataStore");
   std::string coll_name = name + "_datacoll";
 
-  auto global_grp   = ds_->getRoot()->createGroup(coll_name + "_global");
-  auto bp_index_grp = global_grp->createGroup("blueprint_index/" + coll_name);
-  auto domain_grp   = ds_->getRoot()->createGroup(coll_name);
+  axom::sidre::Group* global_grp;
+  axom::sidre::Group* bp_index_grp;
+  axom::sidre::Group* domain_grp;
+  if (cycle_to_load) {
+    global_grp   = ds_->getRoot()->getGroup(coll_name + "_global");
+    bp_index_grp = global_grp->getGroup("blueprint_index/" + coll_name);
+    domain_grp   = ds_->getRoot()->getGroup(coll_name);
+  } else {
+    global_grp   = ds_->getRoot()->createGroup(coll_name + "_global");
+    bp_index_grp = global_grp->createGroup("blueprint_index/" + coll_name);
+    domain_grp   = ds_->getRoot()->createGroup(coll_name);
+  }
 
   // Needs to be configured to own the mesh data so all mesh data is saved to datastore/output file
   constexpr bool owns_mesh_data = true;
-  auto [iter, _]                = datacolls_.emplace(std::piecewise_construct, std::forward_as_tuple(name),
-                                                     std::forward_as_tuple(coll_name, bp_index_grp, domain_grp, owns_mesh_data));
-  auto& datacoll                = iter->second;
+  auto [iter, _] =
+      datacolls_.emplace(std::piecewise_construct, std::forward_as_tuple(name),
+                         std::forward_as_tuple(coll_name, bp_index_grp, domain_grp, owns_mesh_data, !!cycle_to_load));
+  auto& datacoll = iter->second;
   datacoll.SetComm(MPI_COMM_WORLD);
 
   datacoll.SetPrefixPath(output_dir_);
