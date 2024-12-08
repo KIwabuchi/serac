@@ -454,6 +454,17 @@ public:
    *   t - time
    * Returns:
    *   u, vector of applied displacements
+   * 
+   * Usage examples:
+   * 
+   * To constrain the Y component:
+   * setDisplacementBCs(applied_displacement, domain, Y_COMPONENT);
+   * 
+   * To constrain the X and Z components:
+   * setDisplacementBCs(applied_displacement, domain, X_COMPONENT | Z_COMPONENT);
+   * 
+   * To constrain all components:
+   * setDisplacementBCs((applied_displacement, domain);
    */
   template <typename AppliedDisplacementFunction>
   void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain, VectorComponents<dim> components = ALL_COMPONENTS<dim>)
