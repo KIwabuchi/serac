@@ -402,12 +402,12 @@ public:
   }
 
   /**
-   * @brief Set essential displacement boundary conditions on one component
+   * @brief Set essential displacement boundary conditions on selected components
    *
-   * @param[in] applied_displacement Function specifying the applied displacement vector. 
-   *   Only the value in the component @p component will be used, the others are ignored.
+   * @param[in] applied_displacement Function specifying the applied displacement vector.
    * @param[in] domain Domain over which to apply the boundary condition.
-   * @param[in] component Index of the displacement component that will be constrained
+   * @param[in] components (optional) Indicates which vector components will be constrained. 
+   *            If argument is omitted, the default is to constrain all components.
    *
    * @note This method must be called prior to completeSetup()
    *
@@ -420,34 +420,22 @@ public:
    *   u, vector of applied displacements
    */
   template <typename AppliedDisplacementFunction>
-  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain, int component)
+  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain, VectorComponents<dim> components = ALL_COMPONENTS<dim>)
   {
-    solid_.setDisplacementBCs(applied_displacement, domain, component);
+    solid_.setDisplacementBCs(applied_displacement, domain, components);
   }
 
   /**
-   * @brief Shortcut to set one component of displacements to zero for all time
+   * @brief Shortcut to set selected components of displacements to zero for all time
    *
    * @param[in] domain Domain to apply the homogeneous boundary condition to
-   * @param[in] component Index of the displacement component that will be constrained
+   * @param[in] components Indicates which vector components will be constrained.
    *
    * @note This method must be called prior to completeSetup()
    */
-  void setFixedBCs(const Domain& domain, int component)
+  void setFixedBCs(const Domain& domain, VectorComponents<dim> components = ALL_COMPONENTS<dim>)
   {
-    solid_.setFixedBCs(domain, component);
-  }
-
-  /**
-   * @brief Shortcut to set all displacements to zero for all time
-   *
-   * @param[in] domain Domain to apply the homogeneous boundary condition to
-   *
-   * @note This method must be called prior to completeSetup()
-   */
-  void setFixedBCs(const Domain& domain)
-  {
-    solid_.setFixedBCs(domain);
+    solid_.setFixedBCs(domain, components);
   }
 
   /**
