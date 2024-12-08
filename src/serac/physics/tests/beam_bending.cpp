@@ -73,7 +73,6 @@ TEST(BeamBending, TwoDimensional)
   solid_solver.setMaterial(mat);
 
   // Define a boundary attribute set and specify initial / boundary conditions
-  std::set<int> ess_bdr = {1};
   solid_solver.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)));
 
   // initial displacement

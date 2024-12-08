@@ -82,9 +82,7 @@ TEST_P(ContactTest, beam)
     return u;
   };
   auto driven_surface = Domain::ofBoundaryElements(pmesh, by_attr<dim>(6));
-  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 0);
-  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 1);
-  solid_solver.setDisplacementBCs(applied_displacement, driven_surface, 2);
+  solid_solver.setDisplacementBCs(applied_displacement, driven_surface);
 
   // Add the contact interaction
   solid_solver.addContactInteraction(0, {7}, {5}, contact_options);
