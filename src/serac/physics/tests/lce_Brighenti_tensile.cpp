@@ -125,8 +125,9 @@ TEST(LiquidCrystalElastomer, Brighenti)
                                     transition_temperature, Nb2);
 
   LiquidCrystElastomerBrighenti::State initial_state{};
-  auto                                 qdata = solid_solver.createQuadratureDataBuffer(initial_state);
-  solid_solver.setMaterial(DependsOn<TEMPERATURE_INDEX, GAMMA_INDEX>{}, mat, qdata);
+  auto                                 qdata      = solid_solver.createQuadratureDataBuffer(initial_state);
+  Domain                               whole_mesh = EntireDomain(pmesh);
+  solid_solver.setMaterial(DependsOn<TEMPERATURE_INDEX, GAMMA_INDEX>{}, mat, whole_mesh, qdata);
 
   // prescribe symmetry conditions
   solid_solver.setFixedBCs(xmin_face, X_COMPONENT);
@@ -158,18 +159,13 @@ TEST(LiquidCrystalElastomer, Brighenti)
         auto [X, dX_dxi] = position;
         auto [u, du_dxi] = displacement;
         auto n           = normalize(cross(dX_dxi));
-        return dot(u, n) * ((X[1] > 0.99 * ly) ? 1.0 : 0.0);
+        return dot(u, n);
       },
-      pmesh);
+      front_face);
 
   Functional<double(H1<p, dim>)> area({&solid_solver.displacement().space()});
   area.AddSurfaceIntegral(
-      DependsOn<>{},
-      [=](double /*t*/, auto position) {
-        auto X = get<0>(position);
-        return (X[1] > 0.99 * ly) ? 1.0 : 0.0;
-      },
-      pmesh);
+      DependsOn<>{}, [=](double /*t*/, auto /*position*/) { return 1.0; }, front_face);
 
   double t            = 0.0;
   double initial_area = area(t, solid_solver.displacement());

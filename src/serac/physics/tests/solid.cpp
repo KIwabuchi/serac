@@ -78,7 +78,8 @@ void functional_solid_test_static_J2()
 
   auto qdata = solid_solver.createQuadratureDataBuffer(initial_state);
 
-  solid_solver.setMaterial(mat, qdata);
+  Domain whole_domain = EntireDomain(pmesh);
+  solid_solver.setMaterial(mat, whole_domain, qdata);
 
   // prescribe zero displacement at the supported end of the beam,
   auto support = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
@@ -145,7 +146,8 @@ void functional_solid_spatial_essential_bc()
   constexpr double K = 1.0;
   constexpr double G = 1.0; 
   solid_mechanics::LinearIsotropic mat{.density = 1.0, .K = K, .G = G};
-  solid_solver.setMaterial(mat);
+  Domain                           whole_domain = EntireDomain(pmesh);
+  solid_solver.setMaterial(mat, whole_domain);
 
   constexpr double node_tol = 1e-1;
 
@@ -292,8 +294,11 @@ void functional_parameterized_solid_test(double expected_disp_norm)
   solid_solver.setParameter(0, user_defined_bulk_modulus);
   solid_solver.setParameter(1, user_defined_shear_modulus);
 
+  Domain whole_domain   = EntireDomain(pmesh);
+  Domain whole_boundary = EntireBoundary(pmesh);
+
   solid_mechanics::ParameterizedLinearIsotropicSolid mat{1.0, 0.0, 0.0};
-  solid_solver.setMaterial(DependsOn<0, 1>{}, mat);
+  solid_solver.setMaterial(DependsOn<0, 1>{}, mat, whole_domain);
 
   // Specify initial / boundary conditions
   Domain essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
@@ -311,16 +316,16 @@ void functional_parameterized_solid_test(double expected_disp_norm)
   }
 
   solid_mechanics::ConstantBodyForce<dim> force{constant_force};
-  solid_solver.addBodyForce(force, EntireDomain(pmesh));
+  solid_solver.addBodyForce(force, whole_domain);
 
   // add some nonexistent body forces / tractions to check that
   // these parameterized versions compile and run without error
   solid_solver.addBodyForce(
-      DependsOn<0>{}, [](const auto& x, double /*t*/, auto /* bulk */) { return x * 0.0; }, EntireDomain(pmesh));
+      DependsOn<0>{}, [](const auto& x, double /*t*/, auto /* bulk */) { return x * 0.0; }, whole_domain);
   solid_solver.addBodyForce(DependsOn<1>{}, ParameterizedBodyForce{[](const auto& x) { return 0.0 * x; }},
-                            EntireDomain(pmesh));
+                            whole_domain);
   solid_solver.setTraction(
-      DependsOn<1>{}, [](const auto& x, auto...) { return 0 * x; }, EntireBoundary(pmesh));
+      DependsOn<1>{}, [](const auto& x, auto...) { return 0 * x; }, whole_boundary);
 
   // Finalize the data structures
   solid_solver.completeSetup();

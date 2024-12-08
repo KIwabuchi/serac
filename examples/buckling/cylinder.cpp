@@ -161,8 +161,8 @@ int main(int argc, char* argv[])
   auto                        lambda = 1.0;
   auto                        G      = 0.1;
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = (3 * lambda + 2 * G) / 3, .G = G};
-
-  solid_solver->setMaterial(mat);
+  Domain                      whole_mesh = EntireDomain(pmesh);
+  solid_solver->setMaterial(mat, whole_mesh);
 
   // Set up essential boundary conditions
   // Bottom of cylinder is fixed

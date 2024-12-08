@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
   // Construct the appropriate dimension mesh and give it to the data store
   std::string filename = SERAC_REPO_DIR "/data/meshes/twohex_for_contact.mesh";
 
-  auto mesh = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 3, 0);
+  auto  mesh  = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 3, 0);
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "twist_mesh");
 
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};
@@ -62,7 +62,8 @@ int main(int argc, char* argv[])
       nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options, name, "twist_mesh");
 
   serac::solid_mechanics::NeoHookean mat{1.0, 10.0, 10.0};
-  solid_solver.setMaterial(mat);
+  serac::Domain                      whole_mesh = serac::EntireDomain(pmesh);
+  solid_solver.setMaterial(mat, whole_mesh);
 
   // Pass the BC information to the solver object
   solid_solver.setFixedBCs(serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3)));

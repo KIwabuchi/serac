@@ -67,7 +67,9 @@ void stress_extrapolation_test()
       50.0    // shear modulus
   };
 
-  solid_solver.setMaterial(mat);
+  Domain whole_domain = EntireDomain(pmesh);
+
+  solid_solver.setMaterial(mat, whole_domain);
 
   // prescribe small displacement at each hole, pulling the plate apart
   Domain top_hole = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));

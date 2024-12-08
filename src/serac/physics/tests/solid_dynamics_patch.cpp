@@ -227,7 +227,7 @@ public:
     // no natural BCs
 
     // body force
-    solid.addBodyForce([&material, *this](auto /* X */, auto /* t */) { return material.density * this->acceleration; });
+    solid.addBodyForce([&material, *this](auto /* X */, auto /* t */) { return material.density * this->acceleration; }, domain);
   }
 
 private:
@@ -293,7 +293,7 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
 
   std::string mesh_tag{"mesh"};
 
-  serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // Construct a functional-based solid mechanics solver
   serac::NonlinearSolverOptions nonlin_opts{.relative_tol = 1.0e-13, .absolute_tol = 1.0e-13};
@@ -303,7 +303,9 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
                                "solid_dynamics", mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = 1.0, .G = 1.0};
-  solid.setMaterial(mat);
+  Domain                      whole_domain   = EntireDomain(pmesh);
+  Domain                      whole_boundary = EntireBoundary(pmesh);
+  solid.setMaterial(mat, whole_domain);
 
   // initial conditions
   solid.setVelocity([exact_solution](const mfem::Vector& x, mfem::Vector& v) { exact_solution.velocity(x, 0.0, v); });
@@ -311,7 +313,13 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
   solid.setDisplacement([exact_solution](const mfem::Vector& x, mfem::Vector& u) { exact_solution(x, 0.0, u); });
 
   // forcing terms
-  exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc));
+  if constexpr (std::is_same<solution_type, ConstantAccelerationSolution<dim> >::value) {
+    exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc), whole_domain);
+  }
+
+  if constexpr (std::is_same<solution_type, AffineSolution<dim> >::value) {
+    exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc), whole_boundary);
+  }
 
   // Finalize the data structures
   solid.completeSetup();

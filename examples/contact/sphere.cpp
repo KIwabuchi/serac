@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
   cube_mesh.SetCurvature(p);
 
   std::vector<mfem::Mesh*> mesh_ptrs{&ball_mesh, &cube_mesh};
-  auto mesh = serac::mesh::refineAndDistribute(mfem::Mesh(mesh_ptrs.data(), static_cast<int>(mesh_ptrs.size())), 0, 0);
+  auto  mesh = serac::mesh::refineAndDistribute(mfem::Mesh(mesh_ptrs.data(), static_cast<int>(mesh_ptrs.size())), 0, 0);
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "sphere_mesh");
 
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};
@@ -76,7 +76,8 @@ int main(int argc, char* argv[])
       nonlinear_options, linear_options, serac::solid_mechanics::default_quasistatic_options, name, "sphere_mesh");
 
   serac::solid_mechanics::NeoHookean mat{1.0, 10.0, 0.25};
-  solid_solver.setMaterial(mat);
+  serac::Domain                      whole_mesh = serac::EntireDomain(pmesh);
+  solid_solver.setMaterial(mat, whole_mesh);
 
   // Pass the BC information to the solver object
   auto fixed_boundary = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));

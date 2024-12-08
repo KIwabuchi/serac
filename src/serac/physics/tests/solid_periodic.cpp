@@ -76,8 +76,10 @@ void periodic_test(mfem::Element::Type element_type)
   solid_solver.setParameter(0, user_defined_bulk_modulus);
   solid_solver.setParameter(1, user_defined_shear_modulus);
 
+  Domain whole_mesh = EntireDomain(pmesh);
+
   solid_mechanics::ParameterizedNeoHookeanSolid mat{1.0, 0.0, 0.0};
-  solid_solver.setMaterial(DependsOn<0, 1>{}, mat);
+  solid_solver.setMaterial(DependsOn<0, 1>{}, mat, whole_mesh);
 
   // Boundary conditions
   Domain support = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
@@ -87,17 +89,11 @@ void periodic_test(mfem::Element::Type element_type)
   auto   ini_displacement = [iniDispVal](const mfem::Vector&, mfem::Vector& u) -> void { u = iniDispVal; };
   solid_solver.setDisplacement(ini_displacement);
 
-  tensor<double, dim> constant_force;
-
-  constant_force[0] = 0.0;
+  tensor<double, dim> constant_force{};
   constant_force[1] = 1.0e-2;
 
-  if (dim == 3) {
-    constant_force[2] = 0.0;
-  }
-
   solid_mechanics::ConstantBodyForce<dim> force{constant_force};
-  solid_solver.addBodyForce(force, EntireDomain(pmesh));
+  solid_solver.addBodyForce(force, whole_mesh);
 
   // Finalize the data structures
   solid_solver.completeSetup();

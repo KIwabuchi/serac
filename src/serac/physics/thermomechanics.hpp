@@ -352,6 +352,7 @@ public:
    * @tparam MaterialType The thermomechanical material type
    * @tparam StateType The type that contains the internal variables for MaterialType
    * @param material A material that provides a function to evaluate stress, heat flux, density, and heat capacity
+   * @param domain which elements in the mesh are described by the specified material
    * @param qdata the buffer of material internal variables at each quadrature point
    *
    * @pre material must be a object that can be called with the following arguments:
@@ -371,22 +372,24 @@ public:
    * and thermal flux when operator() is called with the arguments listed above.
    */
   template <int... active_parameters, typename MaterialType, typename StateType>
-  void setMaterial(DependsOn<active_parameters...>, const MaterialType& material,
+  void setMaterial(DependsOn<active_parameters...>, const MaterialType& material, Domain& domain,
                    std::shared_ptr<QuadratureData<StateType>> qdata)
   {
     // note: these parameter indices are offset by 1 since, internally, this module uses the first parameter
     // to communicate the temperature and displacement field information to the other physics module
     //
-    thermal_.setMaterial(DependsOn<0, active_parameters + 1 ...>{}, ThermalMaterialInterface<MaterialType>{material});
+    thermal_.setMaterial(DependsOn<0, active_parameters + 1 ...>{}, ThermalMaterialInterface<MaterialType>{material},
+                         domain);
     solid_.setMaterial(DependsOn<0, active_parameters + 1 ...>{}, MechanicalMaterialInterface<MaterialType>{material},
-                       qdata);
+                       domain, qdata);
   }
 
   /// @overload
   template <typename MaterialType, typename StateType = Empty>
-  void setMaterial(const MaterialType& material, std::shared_ptr<QuadratureData<StateType>> qdata = EmptyQData)
+  void setMaterial(const MaterialType& material, Domain& domain,
+                   std::shared_ptr<QuadratureData<StateType>> qdata = EmptyQData)
   {
-    setMaterial(DependsOn<>{}, material, qdata);
+    setMaterial(DependsOn<>{}, material, domain, qdata);
   }
 
   /**

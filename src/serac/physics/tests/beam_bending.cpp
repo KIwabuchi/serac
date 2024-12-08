@@ -70,7 +70,8 @@ TEST(BeamBending, TwoDimensional)
   double                             K = 1.91666666666667;
   double                             G = 1.0;
   solid_mechanics::StVenantKirchhoff mat{1.0, K, G};
-  solid_solver.setMaterial(mat);
+  Domain                             material_block = EntireDomain(pmesh);
+  solid_solver.setMaterial(mat, material_block);
 
   // Define a boundary attribute set and specify initial / boundary conditions
   solid_solver.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)));
@@ -78,8 +79,10 @@ TEST(BeamBending, TwoDimensional)
   // initial displacement
   solid_solver.setDisplacement([](const mfem::Vector&, mfem::Vector& bc_vec) { bc_vec = 0.0; });
 
-  solid_solver.setTraction([](const auto& x, const auto& n, const double) { return -0.01 * n * (x[1] > 0.99); },
-                           EntireBoundary(StateManager::mesh(mesh_tag)));
+  Domain top_face = Domain::ofBoundaryElements(
+      pmesh, [](std::vector<vec2> vertices, int /*attr*/) { return (average(vertices)[1] > 0.99); });
+
+  solid_solver.setTraction([](auto /*x*/, auto n, auto /*t*/) { return -0.01 * n; }, top_face);
 
   // Finalize the data structures
   solid_solver.completeSetup();
