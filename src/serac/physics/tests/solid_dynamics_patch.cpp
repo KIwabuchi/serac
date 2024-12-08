@@ -141,11 +141,11 @@ public:
     auto ebc_func = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
     solid.setDisplacementBCs(ebc_func, essential_boundary);
 
-    // It's tempting to restrict the traction to the appropriate sub-boundaryby defining
+    // It's tempting to restrict the traction to the appropriate sub-boundary by defining
     // Domain natural_boundary = EntireBoundary(solid.mesh()) - essential_boundary;
     // ... and then passing natural_boundary to setTraction(). However, in some cases,
-    // natural_boundary will be empty, and we don't have any easy way to test for that
-    // yet.
+    // natural_boundary will be empty. It's easier to assign the traction to the
+    // entire boundary, and it will automatically be ignored on the essential boundary.
 
     // natural BCs
     auto traction = [material, *this](auto, auto n0, auto t) {
@@ -154,7 +154,8 @@ public:
       tensor<double, dim, dim> P = material(state, H);
       return dot(P, n0);
     };
-    solid.setTraction(traction);
+    Domain entire_boundary = EntireBoundary(solid.mesh());
+    solid.setTraction(traction, entire_boundary);
   }
 
 private:
@@ -227,6 +228,7 @@ public:
     // no natural BCs
 
     // body force
+    Domain domain = EntireDomain(solid.mesh());
     solid.addBodyForce([&material, *this](auto /* X */, auto /* t */) { return material.density * this->acceleration; }, domain);
   }
 
@@ -313,13 +315,7 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
   solid.setDisplacement([exact_solution](const mfem::Vector& x, mfem::Vector& u) { exact_solution(x, 0.0, u); });
 
   // forcing terms
-  if constexpr (std::is_same<solution_type, ConstantAccelerationSolution<dim> >::value) {
-    exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc), whole_domain);
-  }
-
-  if constexpr (std::is_same<solution_type, AffineSolution<dim> >::value) {
-    exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc), whole_boundary);
-  }
+  exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc));
 
   // Finalize the data structures
   solid.completeSetup();

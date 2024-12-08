@@ -161,11 +161,11 @@ TEST(LiquidCrystalElastomer, Brighenti)
         auto n           = normalize(cross(dX_dxi));
         return dot(u, n);
       },
-      front_face);
+      ymax_face);
 
   Functional<double(H1<p, dim>)> area({&solid_solver.displacement().space()});
   area.AddSurfaceIntegral(
-      DependsOn<>{}, [=](double /*t*/, auto /*position*/) { return 1.0; }, front_face);
+      DependsOn<>{}, [=](double /*t*/, auto /*position*/) { return 1.0; }, ymax_face);
 
   double t            = 0.0;
   double initial_area = area(t, solid_solver.displacement());

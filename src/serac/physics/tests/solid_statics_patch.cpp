@@ -87,10 +87,10 @@ public:
 
     // natural BCs
     typename Material::State state;
-    auto H = make_tensor<dim, dim>([&](int i, int j) { return A(i,j); });
-    tensor<double, dim, dim> P = material(state, H);
+    tensor<double, dim, dim> P = material(state, A);
     auto traction = [P](auto, auto n0, auto) { return dot(P, n0); };
-    sf.setTraction(traction);
+    Domain entire_boundary = EntireBoundary(sf.mesh());
+    sf.setTraction(traction, entire_boundary);
   }
 
   const tensor<double, dim, dim> A; /// Linear part of solution. Equivalently, the displacement gradient
@@ -194,10 +194,10 @@ double solution_error(PatchBoundaryCondition bc)
 
   solid_mechanics::NeoHookean mat{.density=1.0, .K=1.0, .G=1.0};
   Domain domain = EntireDomain(pmesh);
-  Domain boundary = EntireBoundary(pmesh);
+
   solid.setMaterial(mat, domain);
 
-  exact_displacement.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc), domain, boundary);
+  exact_displacement.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc));
 
   // Finalize the data structures
   solid.completeSetup();
