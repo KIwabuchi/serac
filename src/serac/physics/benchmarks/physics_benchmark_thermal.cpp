@@ -6,6 +6,8 @@
 
 #include <fstream>
 
+#include <metall/utility/metall_mpi_adaptor.hpp>
+#include <metall/metall.hpp>
 #include "axom/slic/core/SimpleLogger.hpp"
 #include "mfem.hpp"
 
@@ -24,9 +26,11 @@ void functional_test_static()
   int serial_refinement   = 1;
   int parallel_refinement = 2;
 
+  metall::utility::metall_mpi_adaptor mpi_adaptor(metall::create_only, "/tmp/metall_mpi", MPI_COMM_WORLD, true);
+  auto&                               manager = mpi_adaptor.get_local_manager();
   // Create DataStore
-  axom::sidre::DataStore datastore;
-  serac::StateManager::initialize(datastore, "thermal_functional_static_solve");
+  auto* datastore = manager.construct<axom::sidre::DataStore>("ds")(manager.get_allocator<std::byte>());
+  serac::StateManager::initialize(*datastore, "thermal_functional_static_solve");
 
   static_assert(dim == 2 || dim == 3, "Dimension must be 2 or 3 for thermal functional test");
 
@@ -96,9 +100,11 @@ void functional_test_dynamic()
   int serial_refinement   = 1;
   int parallel_refinement = 2;
 
+  metall::utility::metall_mpi_adaptor mpi_adaptor(metall::create_only, "/tmp/metall_mpi", MPI_COMM_WORLD, true);
+  auto&                               manager = mpi_adaptor.get_local_manager();
   // Create DataStore
-  axom::sidre::DataStore datastore;
-  serac::StateManager::initialize(datastore, "thermal_functional_dynamic_solve");
+  auto* datastore = manager.construct<axom::sidre::DataStore>("ds")(manager.get_allocator<std::byte>());
+  serac::StateManager::initialize(*datastore, "thermal_functional_dynamic_solve");
 
   static_assert(dim == 2 || dim == 3, "Dimension must be 2 or 3 for thermal functional test");
 
