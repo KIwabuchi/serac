@@ -306,7 +306,6 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
 
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = 1.0, .G = 1.0};
   Domain                      whole_domain   = EntireDomain(pmesh);
-  Domain                      whole_boundary = EntireBoundary(pmesh);
   solid.setMaterial(mat, whole_domain);
 
   // initial conditions
