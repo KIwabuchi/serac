@@ -2,24 +2,35 @@ name: Build and Test
 
 on: pull_request
 
-# strategy:
-#   matrix:
-#     VM_IMAGENAME: [ ubuntu-22.04 ]
-#     COMPILER_TYPE: [ clang, gcc, cuda ]
-#     TEST_TARGET: [ linux_clang14 ]
-#     HOST_CONFIG: [ clang@14.0.0.cmake ]
-#     BUILD_TYPE: [ Debug, Release ]
-
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        BUILD_TYPE: [ Debug, Release ]
+        config:
+        # CUDA
+        - COMPILER_IMAGE: seracllnl/tpls:cuda-12_08-15-24_21h-49m
+          HOST_CONFIG: gcc@12.3.0_cuda.cmake
+          CMAKE_OPTS: '-DBUILD_SHARED_LIBS=ON -DENABLE_WARNINGS_AS_ERRORS=OFF'
+          BUILD_SRC_OPTS: '--skip-install --skip-tests'
+        # CLANG (also tests co-develop)
+        - COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
+          HOST_CONFIG: clang@14.0.0.cmake
+          CMAKE_OPTS: ['-DBUILD_SHARED_LIBS=ON', '-DSERAC_ENABLE_CODEVELOP=ON']
+          BUILD_SRC_OPTS: ''
+        # GCC
+        - COMPILER_IMAGE: seracllnl/tpls:gcc-13_08-15-24_21h-49m
+          HOST_CONFIG: gcc@13.1.0.cmake
+          CMAKE_OPTS: '-DBUILD_SHARED_LIBS=ON'
+          BUILD_SRC_OPTS: ''
     container:
-      image: seracllnl/tpls:clang-14_08-15-24_21h-49m
+      image: ${{ matrix.config.COMPILER_IMAGE }}
       env:
-        BUILD_SRC_OPTS: ""
-        BUILD_TYPE: Release
-        CMAKE_OPTS: -DBUILD_SHARED_LIBS=ON
-        HOST_CONFIG: clang@14.0.0.cmake
+        BUILD_SRC_OPTS: ${{ matrix.config.BUILD_SRC_OPTS }}
+        BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
+        CMAKE_OPTS: ${{ matrix.config.CMAKE_OPTS }}
+        HOST_CONFIG: ${{ matrix.config.HOST_CONFIG }}
       volumes:
       - /home/serac/serac
     steps:
@@ -28,8 +39,6 @@ jobs:
           submodules: recursive
       - name: Build and Test
         run: |
-          ls
-          pwd
           ./scripts/llnl/build_src.py $BUILD_SRC_OPTS --verbose \
             --host-config $HOST_CONFIG \
             --extra-cmake-options "${CMAKE_OPTS} -DCMAKE_BUILD_TYPE=$BUILD_TYPE" \
