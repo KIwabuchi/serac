@@ -6,9 +6,11 @@ jobs:
   build_and_test:
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
+      max-parallel: 4
       matrix:
         BUILD_TYPE: [ Debug, Release ]
-        config:
+        include:
         # CUDA
         - COMPILER_IMAGE: seracllnl/tpls:cuda-12_08-15-24_21h-49m
           HOST_CONFIG: gcc@12.3.0_cuda.cmake
@@ -25,12 +27,12 @@ jobs:
           CMAKE_OPTS: '-DBUILD_SHARED_LIBS=ON'
           BUILD_SRC_OPTS: ''
     container:
-      image: ${{ matrix.config.COMPILER_IMAGE }}
+      image: ${{ matrix.COMPILER_IMAGE }}
       env:
-        BUILD_SRC_OPTS: ${{ matrix.config.BUILD_SRC_OPTS }}
+        BUILD_SRC_OPTS: ${{ matrix.BUILD_SRC_OPTS }}
         BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
-        CMAKE_OPTS: ${{ matrix.config.CMAKE_OPTS }}
-        HOST_CONFIG: ${{ matrix.config.HOST_CONFIG }}
+        CMAKE_OPTS: ${{ matrix.CMAKE_OPTS }}
+        HOST_CONFIG: ${{ matrix.HOST_CONFIG }}
       volumes:
       - /home/serac/serac
     steps:
