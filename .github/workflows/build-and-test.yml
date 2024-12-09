@@ -25,7 +25,7 @@ jobs:
         include:
         - BUILD_TYPE: Debug
           config:
-          - HOST_CONFIG: clang@14.0.0.cmake
+            HOST_CONFIG: clang@14.0.0.cmake
             CMAKE_OPTS: "-DSERAC_ENABLE_CODEVELOP=ON"
     container:
       image: ${{ matrix.config.COMPILER_IMAGE }}
