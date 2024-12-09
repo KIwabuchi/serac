@@ -21,11 +21,14 @@ jobs:
         CMAKE_OPTS: -DBUILD_SHARED_LIBS=ON
         CONFIG_OPTS: ""
       volumes:
-      - /home/serac/serac
+      - ~/:/home/serac/serac
     steps:
       - uses: actions/checkout@v4
       - name: Build and Test
-        run: ./serac/scripts/llnl/build_src.py $CONFIG_OPTS --verbose \
-          --host-config $HOST_CONFIG \
-          --extra-cmake-options "${CMAKE_OPTS} -DCMAKE_BUILD_TYPE=$BUILD_TYPE" \
-          --jobs 4
+        run: |
+          ls
+          pwd
+          ./serac/scripts/llnl/build_src.py $CONFIG_OPTS --verbose \
+            --host-config $HOST_CONFIG \
+            --extra-cmake-options "${CMAKE_OPTS} -DCMAKE_BUILD_TYPE=$BUILD_TYPE" \
+            --jobs 4
