@@ -21,7 +21,7 @@ jobs:
         CMAKE_OPTS: -DBUILD_SHARED_LIBS=ON
         CONFIG_OPTS: ""
       volumes:
-      - ~/:/home/serac/serac
+      - $HOME:/home/serac/serac
     steps:
       - uses: actions/checkout@v4
       - name: Build and Test
