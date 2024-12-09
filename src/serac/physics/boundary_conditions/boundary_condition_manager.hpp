@@ -44,20 +44,6 @@ public:
                     mfem::ParFiniteElementSpace& space, const std::optional<int> component = {});
 
   /**
-   * @brief Set a list of true degrees of freedom from a vector coefficient
-   *
-   * @param[in] true_dofs The true degrees of freedom to set with a Dirichlet condition
-   * @param[in] ess_bdr_coef The vector coefficient that evaluates to the Dirichlet condition
-   * @param[in] space The finite element space to which the BC should be applied
-   *
-   * @note The coefficient is required to be vector-valued. However, only the dofs specified in the @a true_dofs
-   * array will be set. This means that if the @a true_dofs array only contains dofs for a specific vector component in
-   * a vector-valued finite element space, only that component will be set.
-   */
-  void addEssential(const mfem::Array<int>& true_dofs, std::shared_ptr<mfem::VectorCoefficient> ess_bdr_coef,
-                    mfem::ParFiniteElementSpace& space);
-
-  /**
    * @brief Set a list of true degrees of freedom from a scalar coefficient
    *
    * @param[in] true_dofs The true degrees of freedom to set with a Dirichlet condition

@@ -52,10 +52,7 @@ TEST(BoundaryCond, DirectTrueDofs)
 
   BoundaryConditionManager bcs(par_mesh);
 
-  mfem::Vector vec(2);
-  vec = 1.0;
-
-  auto coef = std::make_shared<mfem::VectorConstantCoefficient>(vec);
+  auto coef = std::make_shared<mfem::ConstantCoefficient>(1.0);
 
   mfem::Array<int> true_dofs;
 
