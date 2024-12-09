@@ -6,42 +6,36 @@ jobs:
   build_and_test:
     runs-on: ubuntu-22.04
     strategy:
-      fail-fast: false
-      max-parallel: 4
       matrix:
         BUILD_TYPE: [ Debug, Release ]
-        include:
+        config:
         # CUDA
         - COMPILER_IMAGE: seracllnl/tpls:cuda-12_08-15-24_21h-49m
           HOST_CONFIG: gcc@12.3.0_cuda.cmake
           CMAKE_OPTS: '-DBUILD_SHARED_LIBS=ON -DENABLE_WARNINGS_AS_ERRORS=OFF'
           BUILD_SRC_OPTS: '--skip-install --skip-tests'
-        # CLANG (also tests co-develop)
+        # CLANG
         - COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
           HOST_CONFIG: clang@14.0.0.cmake
-          CMAKE_OPTS: ['-DBUILD_SHARED_LIBS=ON', '-DSERAC_ENABLE_CODEVELOP=ON']
-          BUILD_SRC_OPTS: ''
-        # GCC
+          CMAKE_OPTS: '-DBUILD_SHARED_LIBS=ON'
+        # CLANG CO-DEVLEOP
+        - COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
+          HOST_CONFIG: clang@14.0.0.cmake
+          CMAKE_OPTS: '-DSERAC_ENABLE_CODEVELOP=ON'
         - COMPILER_IMAGE: seracllnl/tpls:gcc-13_08-15-24_21h-49m
           HOST_CONFIG: gcc@13.1.0.cmake
           CMAKE_OPTS: '-DBUILD_SHARED_LIBS=ON'
-          BUILD_SRC_OPTS: ''
     container:
-      image: ${{ matrix.COMPILER_IMAGE }}
-      env:
-        BUILD_SRC_OPTS: ${{ matrix.BUILD_SRC_OPTS }}
-        BUILD_TYPE: ${{ matrix.BUILD_TYPE }}
-        CMAKE_OPTS: ${{ matrix.CMAKE_OPTS }}
-        HOST_CONFIG: ${{ matrix.HOST_CONFIG }}
+      image: ${{ matrix.config.COMPILER_IMAGE }}
       volumes:
       - /home/serac/serac
     steps:
       - uses: actions/checkout@v4
         with: 
           submodules: recursive
-      - name: Build and Test
+      - name: Build and Test ${{matrix.config.HOST_CONFIG}} ${{ matrix.BUILD_TYPE }}
         run: |
-          ./scripts/llnl/build_src.py $BUILD_SRC_OPTS --verbose \
-            --host-config $HOST_CONFIG \
-            --extra-cmake-options "${CMAKE_OPTS} -DCMAKE_BUILD_TYPE=$BUILD_TYPE" \
+          ./scripts/llnl/build_src.py ${{matrix.config.BUILD_SRC_OPTS}} --verbose \
+            --host-config ${{matrix.config.HOST_CONFIG}} \
+            --extra-cmake-options "${{matrix.config.CMAKE_OPTS}} -DCMAKE_BUILD_TYPE=${{matrix.BUILD_TYPE}}" \
             --jobs 4
