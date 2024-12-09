@@ -46,7 +46,6 @@ enum VECTOR_COMPONENT : unsigned char
 template <unsigned char dim>
 constexpr unsigned char ALL_COMPONENTS = (1 << (dim + 1)) - 1;
 
-
 namespace solid_mechanics {
 
 namespace detail {
