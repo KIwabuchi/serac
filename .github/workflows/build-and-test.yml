@@ -16,19 +16,21 @@ jobs:
     container:
       image: seracllnl/tpls:clang-14_08-15-24_21h-49m
       env:
-        HOST_CONFIG: clang@14.0.0.cmake
+        BUILD_SRC_OPTS: ""
         BUILD_TYPE: Release
         CMAKE_OPTS: -DBUILD_SHARED_LIBS=ON
-        CONFIG_OPTS: ""
+        HOST_CONFIG: clang@14.0.0.cmake
       volumes:
       - /home/serac/serac
     steps:
       - uses: actions/checkout@v4
+        with: 
+          submodules: recursive
       - name: Build and Test
         run: |
           ls
           pwd
-          ./serac/scripts/llnl/build_src.py $CONFIG_OPTS --verbose \
+          ./scripts/llnl/build_src.py $BUILD_SRC_OPTS --verbose \
             --host-config $HOST_CONFIG \
             --extra-cmake-options "${CMAKE_OPTS} -DCMAKE_BUILD_TYPE=$BUILD_TYPE" \
             --jobs 4
