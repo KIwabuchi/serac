@@ -81,7 +81,7 @@ void stress_extrapolation_test()
   solid_solver.setDisplacementBCs(up, top_hole);
 
   Domain bottom_hole = Domain::ofBoundaryElements(pmesh, by_attr<dim>(3));
-  auto   down        = [up](tensor<double, dim> X, double t) { return -up(X, t); };
+  auto   down        = [up](tensor<double, dim> X, double time) { return -up(X, time); };
   solid_solver.setDisplacementBCs(down, bottom_hole);
 
   auto zero_displacement = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 0.0; };
