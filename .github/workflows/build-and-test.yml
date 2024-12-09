@@ -9,6 +9,7 @@ jobs:
   build_and_test:
     runs-on: ubuntu-22.04
     strategy:
+      max-parallel: 4
       matrix:
         BUILD_TYPE: [ Debug, Release ]
         config:
@@ -26,6 +27,7 @@ jobs:
         - BUILD_TYPE: Debug
           config:
             HOST_CONFIG: clang@14.0.0.cmake
+            COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
             CMAKE_OPTS: "-DSERAC_ENABLE_CODEVELOP=ON"
     container:
       image: ${{ matrix.config.COMPILER_IMAGE }}
