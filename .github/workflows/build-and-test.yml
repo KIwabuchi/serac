@@ -2,6 +2,9 @@ name: Build and Test
 
 on: pull_request
 
+# TODO USE vars context FOR STORING COMPILER_IMAGE
+# https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/accessing-contextual-information-about-workflow-runs#vars-context
+
 jobs:
   build_and_test:
     runs-on: ubuntu-22.04
@@ -10,32 +13,46 @@ jobs:
         BUILD_TYPE: [ Debug, Release ]
         config:
         # CUDA
-        - COMPILER_IMAGE: seracllnl/tpls:cuda-12_08-15-24_21h-49m
-          HOST_CONFIG: gcc@12.3.0_cuda.cmake
-          CMAKE_OPTS: '-DBUILD_SHARED_LIBS=ON -DENABLE_WARNINGS_AS_ERRORS=OFF'
-          BUILD_SRC_OPTS: '--skip-install --skip-tests'
+        - HOST_CONFIG: gcc@12.3.0_cuda.cmake
+          COMPILER_IMAGE: seracllnl/tpls:cuda-12_08-15-24_21h-49m
+          CMAKE_OPTS: "-DBUILD_SHARED_LIBS=ON -DENABLE_WARNINGS_AS_ERRORS=OFF"
+          BUILD_SRC_OPTS: "--skip-install --skip-tests"
         # CLANG
-        - COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
-          HOST_CONFIG: clang@14.0.0.cmake
-          CMAKE_OPTS: '-DBUILD_SHARED_LIBS=ON'
+        - HOST_CONFIG: clang@14.0.0.cmake
+          COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
+          CMAKE_OPTS: "-DBUILD_SHARED_LIBS=ON"
         # CLANG CO-DEVLEOP
-        - COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
-          HOST_CONFIG: clang@14.0.0.cmake
-          CMAKE_OPTS: '-DSERAC_ENABLE_CODEVELOP=ON'
-        - COMPILER_IMAGE: seracllnl/tpls:gcc-13_08-15-24_21h-49m
-          HOST_CONFIG: gcc@13.1.0.cmake
-          CMAKE_OPTS: '-DBUILD_SHARED_LIBS=ON'
+        - HOST_CONFIG: clang@14.0.0.cmake
+          COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
+          CMAKE_OPTS: "-DSERAC_ENABLE_CODEVELOP=ON"
+        # GCC
+        - HOST_CONFIG: gcc@13.1.0.cmake
+          COMPILER_IMAGE: seracllnl/tpls:gcc-13_08-15-24_21h-49m
+          CMAKE_OPTS: "-DBUILD_SHARED_LIBS=ON"
     container:
       image: ${{ matrix.config.COMPILER_IMAGE }}
       volumes:
       - /home/serac/serac
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Serac
+        uses: actions/checkout@v4
         with: 
           submodules: recursive
-      - name: Build and Test ${{matrix.config.HOST_CONFIG}} ${{ matrix.BUILD_TYPE }}
+      - name: Print Matrix Variables
         run: |
-          ./scripts/llnl/build_src.py ${{matrix.config.BUILD_SRC_OPTS}} --verbose \
-            --host-config ${{matrix.config.HOST_CONFIG}} \
-            --extra-cmake-options "${{matrix.config.CMAKE_OPTS}} -DCMAKE_BUILD_TYPE=${{matrix.BUILD_TYPE}}" \
+          echo "BUILD_SRC_OPTS ${{ matrix.config.BUILD_SRC_OPTS }}"
+          echo "BUILD_TYPE     ${{ matrix.BUILD_TYPE }}"
+          echo "CMAKE_OPTS     ${{ matrix.config.CMAKE_OPTS }}"
+          echo "COMPILER_IMAGE ${{ matrix.config.COMPILER_IMAGE }}"
+          echo "HOST_CONFIG    ${{ matrix.config.HOST_CONFIG }}"
+      - name: Build and Test ${{ matrix.config.HOST_CONFIG }} ${{ matrix.BUILD_TYPE }}
+        run: |
+          ./scripts/llnl/build_src.py ${{ matrix.config.BUILD_SRC_OPTS }} --verbose \
+            --host-config ${{ matrix.config.HOST_CONFIG }} \
+            --extra-cmake-options "${{ matrix.config.CMAKE_OPTS }} -DCMAKE_BUILD_TYPE=${{ matrix.BUILD_TYPE }}" \
             --jobs 4
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: Test Results
+          path: "**/Test.xml"
