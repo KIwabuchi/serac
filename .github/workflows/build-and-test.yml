@@ -12,23 +12,21 @@ jobs:
       matrix:
         BUILD_TYPE: [ Debug, Release ]
         config:
-        # CUDA
         - HOST_CONFIG: gcc@12.3.0_cuda.cmake
           COMPILER_IMAGE: seracllnl/tpls:cuda-12_08-15-24_21h-49m
           CMAKE_OPTS: "-DBUILD_SHARED_LIBS=ON -DENABLE_WARNINGS_AS_ERRORS=OFF"
           BUILD_SRC_OPTS: "--skip-install --skip-tests"
-        # CLANG
         - HOST_CONFIG: clang@14.0.0.cmake
           COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
           CMAKE_OPTS: "-DBUILD_SHARED_LIBS=ON"
-        # CLANG CO-DEVLEOP
-        - HOST_CONFIG: clang@14.0.0.cmake
-          COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
-          CMAKE_OPTS: "-DSERAC_ENABLE_CODEVELOP=ON"
-        # GCC
         - HOST_CONFIG: gcc@13.1.0.cmake
           COMPILER_IMAGE: seracllnl/tpls:gcc-13_08-15-24_21h-49m
           CMAKE_OPTS: "-DBUILD_SHARED_LIBS=ON"
+        include:
+        - BUILD_TYPE: Debug
+          config:
+          - HOST_CONFIG: clang@14.0.0.cmake
+            CMAKE_OPTS: "-DSERAC_ENABLE_CODEVELOP=ON"
     container:
       image: ${{ matrix.config.COMPILER_IMAGE }}
       volumes:
