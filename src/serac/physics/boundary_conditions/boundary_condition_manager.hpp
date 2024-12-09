@@ -57,6 +57,13 @@ public:
   void addEssential(const mfem::Array<int>& true_dofs, std::shared_ptr<mfem::VectorCoefficient> ess_bdr_coef,
                     mfem::ParFiniteElementSpace& space);
 
+  /**
+   * @brief Set a list of true degrees of freedom from a scalar coefficient
+   * 
+   * @param[in] true_dofs The true degrees of freedom to set with a Dirichlet condition
+   * @param[in] ess_bdr_coef The scalar coefficient that evaluates to the Dirichlet condition
+   * @param[in] space The finite element space to which the BC should be applied
+   */
   void addEssential(const mfem::Array<int>& true_dofs, std::shared_ptr<mfem::Coefficient> ess_bdr_coef,
                     mfem::ParFiniteElementSpace& space, std::optional<int> component = {});
 

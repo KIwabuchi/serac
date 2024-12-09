@@ -30,9 +30,11 @@
 
 namespace serac {
 
+/// Bitmask to flag vector components for boundary conditions
 template <int dim>
 using VectorComponents = std::bitset<dim>;
 
+/// Convenience values to set bitmask with readable code
 enum VECTOR_COMPONENT : unsigned char
 {
   X_COMPONENT = 1 << 0,
@@ -40,8 +42,10 @@ enum VECTOR_COMPONENT : unsigned char
   Z_COMPONENT = 1 << 2
 };
 
+/// Convenience constant to set flag all components for a given dim-dimensional space
 template <unsigned char dim>
 constexpr unsigned char ALL_COMPONENTS = (1 << (dim + 1)) - 1;
+
 
 namespace solid_mechanics {
 
@@ -443,7 +447,7 @@ public:
    *
    * @param[in] applied_displacement Function specifying the applied displacement vector.
    * @param[in] domain Domain over which to apply the boundary condition.
-   * @param[in] components (optional) Indicates which vector components will be constrained.
+   * @param[in] components (optional) Bitmask indicating which vector components will be constrained.
    *            If argument is omitted, the default is to constrain all components.
    *
    * @note This method must be called prior to completeSetup()

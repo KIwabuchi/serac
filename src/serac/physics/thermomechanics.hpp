@@ -409,8 +409,9 @@ public:
    *
    * @param[in] applied_displacement Function specifying the applied displacement vector.
    * @param[in] domain Domain over which to apply the boundary condition.
-   * @param[in] components (optional) Indicates which vector components will be constrained.
-   *            If argument is omitted, the default is to constrain all components.
+   * @param[in] components (optional) Bitmask indicating which vector components will be
+   *            constrained. If argument is omitted, the default is to constrain all
+   *            components.
    *
    * @note This method must be called prior to completeSetup()
    *
