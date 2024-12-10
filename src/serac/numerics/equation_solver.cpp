@@ -322,7 +322,7 @@ protected:
   Solver& tr_precond;
 
   int num_leftmosts = 3;
-  bool use_subspace = true;
+  bool use_subspace = false; //true;
 
 public:
 #ifdef MFEM_USE_MPI
