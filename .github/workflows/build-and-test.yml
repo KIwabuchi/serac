@@ -81,4 +81,4 @@ jobs:
       if: ${{ matrix.check_type == 'coverage' }}
       run: export ci_env=$(bash <(curl -s https://codecov.io/env))
     - name: Check ${{ matrix.check_type }}
-      run: ./scripts/azure-pipelines/linux-check.sh 
+      run: ./scripts/github-actions/linux-check.sh 
