@@ -41,7 +41,7 @@ struct BasisVectors
     VecDestroy(&v);
   }
 
-  BV constructBases(const std::vector<mfem::Vector*>& states) const {
+  BV constructBases(const std::vector<const mfem::Vector*>& states) const {
     size_t num_cols = states.size();
     BV Q;
     BVCreate(PETSC_COMM_SELF, &Q);
@@ -183,7 +183,7 @@ auto eigenOrthonormalize(const std::vector<serac::FiniteElementState>& states)
 }
 */
 
-Mat dot(const std::vector<mfem::Vector*>& s, const std::vector<mfem::Vector*>& As)
+Mat dot(const std::vector<const mfem::Vector*>& s, const std::vector<const mfem::Vector*>& As)
 {
   SLIC_ERROR_IF(s.size() != As.size(), "Search directions and their linear operator result must have same number of columns");
   size_t num_cols = s.size();
@@ -200,7 +200,7 @@ Mat dot(const std::vector<mfem::Vector*>& s, const std::vector<mfem::Vector*>& A
   return sAs;
 }
 
-Vec dot(const std::vector<mfem::Vector*>& s, const mfem::Vector& b)
+Vec dot(const std::vector<const mfem::Vector*>& s, const mfem::Vector& b)
 {
   size_t num_cols = s.size();
   Vec sb;
@@ -211,7 +211,7 @@ Vec dot(const std::vector<mfem::Vector*>& s, const mfem::Vector& b)
   return sb;
 }
 
-auto qr(const std::vector<mfem::Vector*>& states)
+auto qr(const std::vector<const mfem::Vector*>& states)
 {
   BasisVectors bvs(*states[0]);
   BV Q = bvs.constructBases(states);
@@ -249,20 +249,19 @@ double qnorm_squared(const DenseVec& bvv, const DenseVec& sig) {
 //    N leftmost eigenvectors
 //    N smallest eigenvalue
 //    success status
-auto exactTrustRegionSolve(const DenseMat& A, const DenseVec& b, double delta, int num_leftmost)
+auto exactTrustRegionSolve(DenseMat A, const DenseVec& b, double delta, int num_leftmost)
 {
   // minimize 1/2 x^T A x - b^T x, s.t. norm(x) <= delta
-
   auto [isize,jsize] = A.size();
   auto isize2 = b.size();
   SLIC_ERROR_IF(isize!=jsize, "Exact trust region solver requires square matrices");
   SLIC_ERROR_IF(isize!=isize2, "The right hand size for exact trust region solve must be consistent with the input matrix size");
 
   auto [sigs, V] = eigh(A);
-
   std::vector<DenseVec> leftmosts;
   std::vector<double> minsigs;
-  for (int i=0; i < num_leftmost; ++i) {
+  int num_leftmost_possible = std::min(num_leftmost, int(isize));
+  for (int i=0; i < num_leftmost_possible; ++i) {
     leftmosts.emplace_back(V[i]);
     minsigs.emplace_back(sigs[i]);
   }
@@ -272,7 +271,7 @@ auto exactTrustRegionSolve(const DenseMat& A, const DenseVec& b, double delta, i
 
   // bv = V.T b, V has columns which are eigenvectors
   DenseVec bv(isize);
-  for (size_t i=0; i < static_cast<size_t>(isize); ++i) {
+  for (size_t i=0; i < size_t(isize); ++i) {
     bv.setValue(i, dot(V[i], b));
   }
 
@@ -322,7 +321,6 @@ auto exactTrustRegionSolve(const DenseMat& A, const DenseVec& b, double delta, i
 
     return std::make_tuple(x, leftmosts, minsigs, true);
   }
-
   DenseVec bvbv = bv * bv;
   sigsPlusLam = sigs + lam;
 
@@ -367,15 +365,46 @@ auto exactTrustRegionSolve(const DenseMat& A, const DenseVec& b, double delta, i
 }
 
 
+std::vector<const mfem::Vector*> remove_at(const std::vector<const mfem::Vector*>& a, size_t j)
+{
+  std::vector<const mfem::Vector*> b;
+  for (size_t i=0; i < a.size(); ++i) {
+    if (i!=j) {
+      b.emplace_back(a[i]);
+    }
+  }
+  return b;
+}
+
+
 // returns the solution, as well as a list of the N leftmost eigenvectors
-std::tuple<mfem::Vector, std::vector<mfem::Vector>, std::vector<double>> 
-solveSubspaceProblem(const std::vector<mfem::Vector*>& states, 
-                     const std::vector<mfem::Vector*>& Astates, 
+// and their eigenvalues, and the predicted model energy change
+std::tuple<mfem::Vector, std::vector<std::shared_ptr<mfem::Vector>>, std::vector<double>, double> 
+solveSubspaceProblem(const std::vector<const mfem::Vector*>& states, 
+                     const std::vector<const mfem::Vector*>& Astates, 
                      const mfem::Vector& b, double delta, int num_leftmost)
 {
   DenseMat sAs = dot(states, Astates);
 
   auto [Q_parallel,R] = qr(states);
+
+  auto [rows, cols] = R.size();
+  SLIC_ERROR_IF(rows != cols, "R matrix is not square in subspace problem solve\n");
+
+  double trace_mag = 0.0;
+  for (int i=0; i < rows; ++i) {
+    trace_mag += std::abs(R(i,i));
+  }
+
+  // remove any nearly colinear state
+  for (int i=0; i < rows; ++i) {
+    if (R(i,i) < 1e-9 * trace_mag) {
+      printf("removing after QR state number %d\n", i);
+      auto statesNew = remove_at(states, i);
+      auto AstatesNew = remove_at(Astates, i);
+      return solveSubspaceProblem(statesNew, AstatesNew, b, delta, num_leftmost);
+    }
+  }
 
   auto Rinv = inverse(R);
   DenseMat pAp = sAs.PtAP(Rinv);
@@ -387,6 +416,8 @@ solveSubspaceProblem(const std::vector<mfem::Vector*>& states,
 
   auto [reduced_x, leftvecs, leftvals, success] = exactTrustRegionSolve(pAp, pb, delta, num_leftmost);
 
+  double energy = quadraticEnergy(pAp, pb, reduced_x);
+
   Vec x_parallel; VecDuplicate(b_parallel, &x_parallel);
 
   std::vector<double> reduced_x_vec = reduced_x.getValues();
@@ -394,19 +425,57 @@ solveSubspaceProblem(const std::vector<mfem::Vector*>& states,
   mfem::Vector sol(b);
   copy(x_parallel, sol);
 
-  std::vector<mfem::Vector> leftmosts;
-  for (int i=0; i < num_leftmost; ++i) {
+  std::vector< std::shared_ptr<mfem::Vector> > leftmosts;
+  for (size_t i=0; i < leftvecs.size(); ++i) {
     auto reduced_leftvec = leftvecs[i].getValues();
     BVMultVec(Q_parallel, 1.0, 1.0, x_parallel, &reduced_leftvec[0]);
-    leftmosts.emplace_back(b);
-    copy(x_parallel, leftmosts[i]);
+    leftmosts.emplace_back(std::make_shared<mfem::Vector>(b));
+    copy(x_parallel, *leftmosts[i]);
   }
 
   BVDestroy(&Q_parallel);
   VecDestroy(&b_parallel);
   VecDestroy(&x_parallel);
 
-  return std::make_tuple(sol, leftmosts, leftvals);
+  return std::make_tuple(sol, leftmosts, leftvals, energy);
+}
+
+std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> 
+removeDependantDirections(std::vector<const mfem::Vector*> directions, std::vector<const mfem::Vector*> A_directions)
+{
+  std::vector<double> norms;
+  size_t num_dirs = directions.size();
+
+  for (size_t i=0; i < num_dirs; ++i) {
+    norms.push_back( std::sqrt( mfem::InnerProduct(PETSC_COMM_WORLD, *directions[i], *directions[i]) ) );
+  }
+
+  std::vector< std::pair<const mfem::Vector*, int>> kepts;
+  for (size_t i=0; i < num_dirs; ++i) {
+    bool keepi = true;
+    if (norms[i] == 0) keepi = false;
+    for (auto&& kept_and_j : kepts) {
+      int j = kept_and_j.second;
+      double dot_ij = mfem::InnerProduct(PETSC_COMM_WORLD, *directions[i], *kept_and_j.first);
+      if (dot_ij > 0.999 * norms[i] * norms[j]) {
+        keepi = false;
+      }
+    }
+    if (!keepi) printf("not keeping %zu\n",i);
+    if (keepi) {
+      kepts.emplace_back( std::make_pair(directions[i], i) );
+    }
+  }
+
+  std::vector<const mfem::Vector*> directions_new;
+  std::vector<const mfem::Vector*> A_directions_new;
+  
+  for (auto kept_and_j : kepts) {
+    directions_new.push_back(directions[kept_and_j.second]);
+    A_directions_new.push_back(A_directions[kept_and_j.second]);
+  }
+
+  return std::make_pair(directions_new, A_directions_new);
 }
 
 }

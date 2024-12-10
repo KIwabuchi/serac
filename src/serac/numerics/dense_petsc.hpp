@@ -27,6 +27,12 @@ struct DenseMat
     return std::make_pair(isize,jsize);
   }
 
+  double operator() (int i, int j) const {
+    double val;
+    MatGetValue(A, i, j, &val);
+    return val;
+  }
+
   DenseVec operator*(const DenseVec& v) const;
   DenseVec solve(const DenseVec& v) const;
   DenseMat PtAP(const DenseMat& P) const;

@@ -224,6 +224,8 @@ struct TrustRegionSettings {
   double eta2 = 0.1;
   /// ideal energy drop ratio.  trust region increases if energy drop is better than this.
   double eta3 = 0.6;
+  //double eta4 = 4.0;
+  double eta4 = 4.2; //2.0;
 };
 
 /// Internal structure for storing trust region stateful data
@@ -232,11 +234,14 @@ struct TrustRegionResults {
   TrustRegionResults(int size)
   {
     z.SetSize(size);
+    H_z.SetSize(size);
+    d_old.SetSize(size);
+    H_d_old.SetSize(size);
     d.SetSize(size);
+    H_d.SetSize(size);
     Pr.SetSize(size);
-    Hd.SetSize(size);
-    Hz.SetSize(size);
     cauchy_point.SetSize(size);
+    H_cauchy_point.SetSize(size);
   }
 
   /// resets trust region results for a new outer iteration
@@ -247,7 +252,7 @@ struct TrustRegionResults {
   }
 
   /// enumerates the possible final status of the trust region steps
-  enum class Status
+  enum Status
   {
     Interior,
     NegativeCurvature,
@@ -257,16 +262,22 @@ struct TrustRegionResults {
 
   /// step direction
   mfem::Vector z;
+  /// action of hessian on current step z
+  mfem::Vector H_z;
+  /// old step direction
+  mfem::Vector d_old;
+  /// action of hessian on previous step z_old
+  mfem::Vector H_d_old;
   /// incrementalCG direction
   mfem::Vector d;
+  /// action of hessian on direction d
+  mfem::Vector H_d;
   /// preconditioned residual
   mfem::Vector Pr;
-  /// action of hessian on direction d
-  mfem::Vector Hd;
-  /// action of hessian on current step z
-  mfem::Vector Hz;
   /// cauchy point
   mfem::Vector cauchy_point;
+  /// action of hessian on direction of cauchy point
+  mfem::Vector H_cauchy_point;
   /// specifies if step is interior, exterior, negative curvature, etc.
   Status interior_status = Status::Interior;
   /// iteration counter
@@ -294,17 +305,13 @@ class TrustRegion : public mfem::NewtonSolver {
 protected:
   /// predicted solution
   mutable mfem::Vector x_pred;
-  /// predicted solution
-  mutable mfem::Vector x_mid;
   /// predicted residual
   mutable mfem::Vector r_pred;
   /// mid residual
-  mutable mfem::Vector r_mid;
-  /// extra vector of scratch space for doing temporary calculations
   mutable mfem::Vector scratch;
 
-  mutable std::vector<mfem::Vector*> leftmosts;
-  mutable std::vector<double> leftvals;
+  mutable std::vector<std::shared_ptr<mfem::Vector>> left_mosts;
+  mutable std::vector<std::shared_ptr<mfem::Vector>> H_leftmosts;
 
   /// nonlinear solution options
   NonlinearSolverOptions nonlinear_options;
@@ -313,6 +320,9 @@ protected:
   /// handle to the preconditioner used by the trust region, it ignores the linear solver as a SPD preconditioner is
   /// currently required
   Solver& tr_precond;
+
+  int num_leftmosts = 1;
+  bool use_subspace = true;
 
 public:
 #ifdef MFEM_USE_MPI
@@ -325,39 +335,72 @@ public:
 #endif
 
   /// finds tau s.t. (z + tau*d)^2 = trSize^2
-  void projectToBoundaryWithCoefs(mfem::Vector& z, const mfem::Vector& d, double delta, double zz, double zd,
-                                  double dd) const
+  void projectToBoundaryWithCoefs(mfem::Vector& z,
+                                  const mfem::Vector& d,
+                                  double delta, double zz, double zd, double dd) const
   {
     // find z + tau d
     double deltadelta_m_zz = delta * delta - zz;
     if (deltadelta_m_zz == 0) return; // already on boundary
 
-    //double d_norm = std::sqrt(dd);
-    //double tau = zd == 0.0 ? delta / d_norm : deltadelta_m_zz / (zd/d_norm + sgn(zd)*std::sqrt(zd*zd/dd + deltadelta_m_zz));
     double tau = (std::sqrt(deltadelta_m_zz * dd + zd * zd) - zd) / dd;
-    //if ( std::abs(tau-tau2) > 1e-9) printf("taus = %g, %g\n", tau, tau2);
     z.Add(tau, d);
   }
 
   template <typename HessVecFunc>
-  void solveSubspaceProblem(const HessVecFunc& hess_vec_func,
-                            mfem::Vector& z, mfem::Vector& Hz,
-                            const mfem::Vector& d, const mfem::Vector& Hd,
-                            const mfem::Vector& g,
-                            double delta, double zz, double zd, double dd,
-                            int num_leftmosts, bool use_subspace) const
+  void solveTheSubspaceProblem(mfem::Vector& z,
+                              const HessVecFunc& hess_vec_func,
+                              const std::vector<const mfem::Vector*> ds,
+                              const std::vector<const mfem::Vector*> Hds,
+                              const mfem::Vector& g,
+                              double delta) const
   {
-    if (use_subspace) {
-      std::vector<FiniteElementState> Hvals;
-      //for (auto left : leftmosts) {
-      //  Hvals.emplace_back(*left);
-      //  hess_vec_func(*left, Hvals.back());
-      //}
-      // for (int)
+    #ifdef MFEM_USE_SLEPC
+
+    std::vector<const mfem::Vector*> directions;
+    for (auto& d : ds) {
+      directions.emplace_back(d);
+    }
+    for (auto& left : left_mosts) {
+      directions.emplace_back(left.get());
     }
 
-    projectToBoundaryWithCoefs(z, d, delta, zz, zd, dd);
+    std::vector<const mfem::Vector*> H_directions;
+    for (auto& Hd : Hds) {
+      H_directions.emplace_back(Hd);
+    }
 
+    H_leftmosts.clear();
+    for (auto& left : left_mosts) {
+      H_leftmosts.emplace_back( std::make_shared<mfem::Vector>(*left) );
+      hess_vec_func(*left, *H_leftmosts.back());
+      H_directions.emplace_back(H_leftmosts.back().get());
+    }
+
+    //std::cout << "num eigen in = " << left_mosts.size() << " , direct in = " << directions.size() << std::endl;
+    std::tie(directions, H_directions) = removeDependantDirections(directions, H_directions);
+    //std::cout << "num directions = " << directions.size() << std::endl;
+
+    mfem::Vector b(g);
+    b *= -1;
+    auto [sol, leftvecs, leftvals, energy_change] = solveSubspaceProblem(directions, H_directions, b, delta, num_leftmosts);
+
+    left_mosts.clear();
+    for (auto& lv : leftvecs) {
+      left_mosts.emplace_back(std::move(lv));
+    }
+
+    double base_energy = computeEnergy(g, hess_vec_func, z);
+    double subspace_energy = computeEnergy(g, hess_vec_func, sol);
+
+    if (print_options.iterations || print_options.warnings) {
+      mfem::out << "Energy using subspace solver from: " << base_energy << ", to: " << subspace_energy << " / " << energy_change << std::endl;
+    }
+
+    if (subspace_energy < base_energy) {
+      z = sol;
+    }
+    #endif
   }
 
   /// finds tau s.t. (z + tau*(y-z))^2 = trSize^2
@@ -421,8 +464,7 @@ public:
     auto& cgIter = results.cg_iterations_count;
     auto& d      = results.d;
     auto& Pr     = results.Pr;
-    auto& Hd     = results.Hd;
-    auto& Hz     = results.Hz;
+    auto& Hd     = results.H_d;
 
     const double cg_tol_squared = settings.cg_tol * settings.cg_tol;
 
@@ -432,14 +474,12 @@ public:
 
     rCurrent = r0;
     precond(rCurrent, Pr);
-    // std::cout << std::setprecision(16) << "r0 = " << r0.Norml2() << " " << rCurrent.Norml2() << std::endl;
 
     // d = -Pr
     d = Pr;
     d *= -1.0;
 
     z          = 0.0;
-    Hz         = 0.0;
     double zz  = 0.;
     double rPr = Dot(rCurrent, Pr);
     double zd  = 0.0;
@@ -463,14 +503,13 @@ public:
       add(z, alphaCg, d, zPred);
       double zzNp1 = Dot(zPred, zPred);
 
-      const int num_leftmosts = 1;
-      bool use_subspace = true;
-
       const bool go_to_boundary = curvature <= 0 || zzNp1 > trSize * trSize;
       if (go_to_boundary) {
-        solveSubspaceProblem(hess_vec_func, z, Hz, d, Hd, r0, trSize, zz, zd, dd, num_leftmosts, use_subspace);
-        //projectToBoundaryWithCoefs(z, d, trSize, zz, zd, dd);
+        projectToBoundaryWithCoefs(z, d, trSize, zz, zd, dd);
         if (curvature <= 0) {
+          if (print_options.iterations || print_options.warnings) {
+            mfem::out << "negative curvature direction found\n";
+          }
           results.interior_status = TrustRegionResults::Status::NegativeCurvature;
         } else {
           results.interior_status = TrustRegionResults::Status::OnBoundary;
@@ -479,13 +518,13 @@ public:
       }
 
       z = zPred;
-      add(Hz, alphaCg, Hd, Hz);
 
       if (results.interior_status == TrustRegionResults::Status::NonDescentDirection) {
+        if (print_options.iterations || print_options.warnings) {
+          mfem::out << "found a non descent direction\n";
+        }
         return;
       }
-
-      //std::cout << "energy at " << cgIter << " = " << computeEnergy(r0, hess_vec_func, z) << " " << std::sqrt(Dot(z,z)) << std::endl;
 
       add(rCurrent, alphaCg, Hd, rCurrent);
 
@@ -560,12 +599,8 @@ public:
     // local arrays
     x_pred.SetSize(X.Size());
     x_pred = 0.0;
-    x_mid.SetSize(X.Size());
-    x_mid = 0.0;
     r_pred.SetSize(X.Size());
     r_pred = 0.0;
-    r_mid.SetSize(X.Size());
-    r_mid = 0.0;
     scratch.SetSize(X.Size());
     scratch = 0.0;
 
@@ -579,9 +614,6 @@ public:
     double tr_size = nonlinear_options.trust_region_scaling * std::sqrt(Dot(scratch, scratch));
     size_t cumulative_cg_iters_from_last_precond_update = 0;
 
-    auto& d  = trResults.d;   // reuse, maybe dangerous!
-    auto& Hd = trResults.Hd;  // reuse, maybe dangerous!
-
     int it = 0;
     for (; true; it++) {
       MFEM_ASSERT(mfem::IsFinite(norm), "norm = " << norm);
@@ -589,7 +621,7 @@ public:
         mfem::out << "Newton iteration " << std::setw(3) << it << " : ||r|| = " << std::setw(13) << norm;
         if (it > 0) {
           mfem::out << ", ||r||/||r_0|| = " << std::setw(13) << (initial_norm != 0.0 ? norm / initial_norm : norm);
-          mfem::out << ", x_incr = " << std::setw(13) << d.Norml2();
+          mfem::out << ", x_incr = " << std::setw(13) << trResults.d.Norml2();
         } else {
           mfem::out << ", norm goal = " << std::setw(13) << norm_goal << "\n";
         }
@@ -616,9 +648,6 @@ public:
                       cumulative_cg_iters_from_last_precond_update >= settings.max_cumulative_iteration)) {
         tr_precond.SetOperator(*grad);
         cumulative_cg_iters_from_last_precond_update = 0;
-        if (print_options.iterations) {
-          // currently it will always be updated
-        }
       }
 
       auto hess_vec_func = [&](const mfem::Vector& x_, mfem::Vector& v_) { hessVec(x_, v_); };
@@ -627,8 +656,8 @@ public:
       double cauchyPointNormSquared = tr_size * tr_size;
       trResults.reset();
 
-      hess_vec_func(r, trResults.Hd);
-      const double gKg = Dot(r, trResults.Hd);
+      hess_vec_func(r, trResults.H_d);
+      const double gKg = Dot(r, trResults.H_d);
       if (gKg > 0) {
         const double alphaCp = -Dot(r, r) / gKg;
         add(trResults.cauchy_point, alphaCp, r, trResults.cauchy_point);
@@ -648,7 +677,8 @@ public:
                     << std::sqrt(cauchyPointNormSquared) << "\n";
         }
         trResults.cauchy_point *= (tr_size / std::sqrt(cauchyPointNormSquared));
-        trResults.z                   = trResults.cauchy_point;
+        trResults.z             = trResults.cauchy_point;
+
         trResults.cg_iterations_count = 1;
         trResults.interior_status     = TrustRegionResults::Status::OnBoundary;
       } else {
@@ -657,41 +687,51 @@ public:
       }
       cumulative_cg_iters_from_last_precond_update += trResults.cg_iterations_count;
 
-      if (it==20) exit(1);
+      if (use_subspace) {
+        // These may not be required in every case
+        hess_vec_func(trResults.z, trResults.H_z);
+        hess_vec_func(trResults.d_old, trResults.H_d_old);
+        hess_vec_func(trResults.cauchy_point, trResults.H_cauchy_point);
+      }
 
       bool happyAboutTrSize = false;
       int  lineSearchIter   = 0;
       while (!happyAboutTrSize && lineSearchIter <= nonlinear_options.max_line_search_iterations) {
         ++lineSearchIter;
 
-        doglegStep(trResults.cauchy_point, trResults.z, tr_size, d);
+        //trResults.d = trResults.z;
+        doglegStep(trResults.cauchy_point, trResults.z, tr_size, trResults.d);
+
+        if ( (Norm(trResults.d) > (1.0-1.0e-6) * tr_size || 
+              trResults.interior_status == TrustRegionResults::Status::NonDescentDirection ||
+              trResults.interior_status == TrustRegionResults::Status::NegativeCurvature) && use_subspace ) {
+          std::vector<const mfem::Vector*> ds{&trResults.z, &trResults.d_old, &trResults.cauchy_point};
+          std::vector<const mfem::Vector*> H_ds{&trResults.H_z, &trResults.H_d_old, &trResults.H_cauchy_point};
+          solveTheSubspaceProblem(trResults.d, hess_vec_func, ds, H_ds, r, tr_size);
+        }
 
         static constexpr double roundOffTol = 0.0;  // 1e-14;
 
-        hess_vec_func(d, Hd);
-        double dHd            = Dot(d, Hd);
-        double modelObjective = Dot(r, d) + 0.5 * dHd - roundOffTol;
+        hess_vec_func(trResults.d, trResults.H_d);
+        double dHd            = Dot(trResults.d, trResults.H_d);
+        double modelObjective = Dot(r, trResults.d) + 0.5 * dHd - roundOffTol;
 
-        add(X, d, x_pred);
+        add(X, trResults.d, x_pred);
 
         double realObjective = std::numeric_limits<double>::max();
         double normPred      = std::numeric_limits<double>::max();
         try {
           normPred    = computeResidual(x_pred, r_pred);
-          double obj1 = 0.5 * (Dot(r, d) + Dot(r_pred, d)) - roundOffTol;
+          double obj1 = 0.5 * (Dot(r, trResults.d) + Dot(r_pred, trResults.d)) - roundOffTol;
 
-          // midstep work estimate
-          // add(X, 0.5, d, x_mid);
-          // computeResidual(x_mid, r_mid);
-          // double obj2 = Dot(r_mid, d);
-
-          realObjective = obj1;  // 0.5 * obj1 + 0.5 * obj2;
+          realObjective = obj1;
         } catch (const std::exception&) {
           realObjective = std::numeric_limits<double>::max();
           normPred      = std::numeric_limits<double>::max();
         }
 
         if (normPred <= norm_goal) {
+          trResults.d_old = trResults.d;
           X                = x_pred;
           r                = r_pred;
           norm             = normPred;
@@ -715,9 +755,14 @@ public:
           rho = realImprove / -modelImprove;
         }
 
-        if (!(rho >= settings.eta2)) {  // write it this way to handle NaNs
+        //std::cout << "rho , stuff = " << rho << " " << settings.eta3 << std::endl;
+        //std::cout << "stat = "<< trResults.interior_status << std::endl;
+
+        if (!(rho >= settings.eta2) || rho > settings.eta4) {  // not enough progress, decrease trust region. write it this way to handle NaNs.
           tr_size *= settings.t1;
-        } else if ((rho > settings.eta3) && (trResults.interior_status == TrustRegionResults::Status::OnBoundary)) {
+        } else if (
+          (rho > settings.eta3 && rho <= settings.eta4 && trResults.interior_status == TrustRegionResults::Status::OnBoundary) ||
+          (rho > 0.95 && rho < 1.05 && trResults.interior_status == TrustRegionResults::Status::NegativeCurvature) ) { // good progress, on boundary, increase trust region
           tr_size *= settings.t2;
         }
 
@@ -725,7 +770,7 @@ public:
         // modelRes = g + Jd
         // modelResNorm = np.linalg.norm(modelRes)
         // realResNorm = np.linalg.norm(gy)
-        bool willAccept = rho >= settings.eta1;  // or (rho >= -0 and realResNorm <= gNorm)
+        bool willAccept = rho >= settings.eta1 && rho <= settings.eta4;  // or (rho >= -0 and realResNorm <= gNorm)
 
         if (print_options.iterations) {
           printTrustRegionInfo(realObjective, modelObjective, trResults.cg_iterations_count, tr_size, willAccept);
@@ -734,12 +779,14 @@ public:
         }
 
         if (willAccept) {
+          trResults.d_old = trResults.d;
           X                = x_pred;
           r                = r_pred;
           norm             = normPred;
           happyAboutTrSize = true;
           break;
         }
+
       }
     }
 

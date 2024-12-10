@@ -30,10 +30,13 @@ double innerProduct(const mfem::Vector& a, const mfem::Vector& b, const MPI_Comm
 //                      const std::vector<FiniteElementState>& Adirections,
 //                      const FiniteElementState& b,
 //                      double delta, int num_leftmost);
-std::tuple<mfem::Vector, std::vector<mfem::Vector>, std::vector<double>> 
-solveSubspaceProblem(const std::vector<mfem::Vector*>& directions,
-                     const std::vector<mfem::Vector*>& Adirections,
+std::tuple<mfem::Vector, std::vector<std::shared_ptr<mfem::Vector>>, std::vector<double>, double> 
+solveSubspaceProblem(const std::vector<const mfem::Vector*>& directions,
+                     const std::vector<const mfem::Vector*>& A_directions,
                      const mfem::Vector& b,
                      double delta, int num_leftmost);
+
+std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> 
+removeDependantDirections(std::vector<const mfem::Vector*> directions, std::vector<const mfem::Vector*> A_directions);
 
 }
