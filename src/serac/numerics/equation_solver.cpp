@@ -224,8 +224,8 @@ struct TrustRegionSettings {
   double eta2 = 0.1;
   /// ideal energy drop ratio.  trust region increases if energy drop is better than this.
   double eta3 = 0.6;
-  //double eta4 = 4.0;
-  double eta4 = 4.2; //2.0;
+  // double eta4 = 4.0;
+  double eta4 = 4.2;  // 2.0;
 };
 
 /// Internal structure for storing trust region stateful data
@@ -332,26 +332,22 @@ public:
 #endif
 
   /// finds tau s.t. (z + tau*d)^2 = trSize^2
-  void projectToBoundaryWithCoefs(mfem::Vector& z,
-                                  const mfem::Vector& d,
-                                  double delta, double zz, double zd, double dd) const
+  void projectToBoundaryWithCoefs(mfem::Vector& z, const mfem::Vector& d, double delta, double zz, double zd,
+                                  double dd) const
   {
     // find z + tau d
     double deltadelta_m_zz = delta * delta - zz;
-    if (deltadelta_m_zz == 0) return; // already on boundary
+    if (deltadelta_m_zz == 0) return;  // already on boundary
     double tau = (std::sqrt(deltadelta_m_zz * dd + zd * zd) - zd) / dd;
     z.Add(tau, d);
   }
 
   template <typename HessVecFunc>
-  void solveTheSubspaceProblem(mfem::Vector& z,
-                              const HessVecFunc& hess_vec_func,
-                              const std::vector<const mfem::Vector*> ds,
-                              const std::vector<const mfem::Vector*> Hds,
-                              const mfem::Vector& g,
-                              double delta, int num_leftmost) const
+  void solveTheSubspaceProblem(mfem::Vector& z, const HessVecFunc& hess_vec_func,
+                               const std::vector<const mfem::Vector*> ds, const std::vector<const mfem::Vector*> Hds,
+                               const mfem::Vector& g, double delta, int num_leftmost) const
   {
-    #ifdef MFEM_USE_SLEPC
+#ifdef MFEM_USE_SLEPC
 
     std::vector<const mfem::Vector*> directions;
     for (auto& d : ds) {
@@ -373,30 +369,33 @@ public:
 
     mfem::Vector b(g);
     b *= -1;
-    auto [sol, leftvecs, leftvals, energy_change] = solveSubspaceProblem(directions, H_directions, b, delta, num_leftmost);
+    auto [sol, leftvecs, leftvals, energy_change] =
+        solveSubspaceProblem(directions, H_directions, b, delta, num_leftmost);
 
     left_mosts.clear();
     for (auto& lv : leftvecs) {
       left_mosts.emplace_back(std::move(lv));
     }
 
-    double base_energy = computeEnergy(g, hess_vec_func, z);
+    double base_energy     = computeEnergy(g, hess_vec_func, z);
     double subspace_energy = computeEnergy(g, hess_vec_func, sol);
 
     // test that leftmost approximates its eigenvalue
     // mfem::Vector tmp(g);
     // hess_vec_func(*left_mosts[0], tmp);
 
-    // std::cout << "eigs = " << Dot(tmp, *left_mosts[0]) << " " << leftvals[0] << " " << Dot(*left_mosts[0], *left_mosts[0]) << std::endl;
+    // std::cout << "eigs = " << Dot(tmp, *left_mosts[0]) << " " << leftvals[0] << " " << Dot(*left_mosts[0],
+    // *left_mosts[0]) << std::endl;
 
     if (print_options.iterations || print_options.warnings) {
-      mfem::out << "Energy using subspace solver from: " << base_energy << ", to: " << subspace_energy << " / " << energy_change << ".  Min eig: " << leftvals[0] << std::endl;
+      mfem::out << "Energy using subspace solver from: " << base_energy << ", to: " << subspace_energy << " / "
+                << energy_change << ".  Min eig: " << leftvals[0] << std::endl;
     }
 
     if (subspace_energy < base_energy) {
       z = sol;
     }
-    #endif
+#endif
   }
 
   /// finds tau s.t. (z + tau*(y-z))^2 = trSize^2
@@ -437,8 +436,9 @@ public:
   }
 
   template <typename HessVecFunc>
-  double computeEnergy(const mfem::Vector& r, const HessVecFunc& H, const mfem::Vector& z) const {
-    double rz = Dot(r,z);
+  double computeEnergy(const mfem::Vector& r, const HessVecFunc& H, const mfem::Vector& z) const
+  {
+    double       rz = Dot(r, z);
     mfem::Vector tmp(r);
     tmp *= 0.0;
     H(z, tmp);
@@ -464,7 +464,7 @@ public:
 
     const double cg_tol_squared = settings.cg_tol * settings.cg_tol;
 
-    if (Dot(r0, r0) <= cg_tol_squared && settings.min_cg_iterations==0) {
+    if (Dot(r0, r0) <= cg_tol_squared && settings.min_cg_iterations == 0) {
       return;
     }
 
@@ -481,19 +481,18 @@ public:
     double zd  = 0.0;
     double dd  = Dot(d, d);
 
-    //std::cout << "initial energy = " << computeEnergy(r0, hess_vec_func, z) << std::endl;
+    // std::cout << "initial energy = " << computeEnergy(r0, hess_vec_func, z) << std::endl;
 
     for (cgIter = 1; cgIter <= settings.max_cg_iterations; ++cgIter) {
-
       // check if this is a decent direction
       if (Dot(d, rCurrent) > 0) {
         d *= -1;
         results.interior_status = TrustRegionResults::Status::NonDescentDirection;
       }
-      
+
       hess_vec_func(d, Hd);
       const double curvature = Dot(d, Hd);
-      const double alphaCg = curvature != 0.0 ? rPr / curvature : 0.0;
+      const double alphaCg   = curvature != 0.0 ? rPr / curvature : 0.0;
 
       auto& zPred = Pr;  // re-use Pr, carefully
       add(z, alphaCg, d, zPred);
@@ -539,7 +538,7 @@ public:
       zd = Dot(z, d);
       dd = Dot(d, d);
     }
-    cgIter--; // if all cg iterations are taken, correct for output
+    cgIter--;  // if all cg iterations are taken, correct for output
   }
 
   /// assemble the jacobian
@@ -607,7 +606,7 @@ public:
     settings.cg_tol            = 0.5 * norm_goal;
 
     int subspace_option = nonlinear_options.subspace_option;
-    int num_leftmost = nonlinear_options.num_leftmost;
+    int num_leftmost    = nonlinear_options.num_leftmost;
 
     scratch        = 1.0;
     double tr_size = nonlinear_options.trust_region_scaling * std::sqrt(Dot(scratch, scratch));
@@ -676,7 +675,7 @@ public:
                     << std::sqrt(cauchyPointNormSquared) << "\n";
         }
         trResults.cauchy_point *= (tr_size / std::sqrt(cauchyPointNormSquared));
-        trResults.z             = trResults.cauchy_point;
+        trResults.z = trResults.cauchy_point;
 
         trResults.cg_iterations_count = 1;
         trResults.interior_status     = TrustRegionResults::Status::OnBoundary;
@@ -695,14 +694,14 @@ public:
 
         doglegStep(trResults.cauchy_point, trResults.z, tr_size, trResults.d);
 
-        bool use_with_option1 = (subspace_option >= 1) && 
-              (trResults.interior_status == TrustRegionResults::Status::NonDescentDirection ||
-               trResults.interior_status == TrustRegionResults::Status::NegativeCurvature || 
-               ( (Norm(trResults.d) > (1.0-1.0e-6) * tr_size) && lineSearchIter > 1) );
-        bool use_with_option2 = (subspace_option >= 2) && (Norm(trResults.d) > (1.0-1.0e-6) * tr_size);
+        bool use_with_option1 =
+            (subspace_option >= 1) && (trResults.interior_status == TrustRegionResults::Status::NonDescentDirection ||
+                                       trResults.interior_status == TrustRegionResults::Status::NegativeCurvature ||
+                                       ((Norm(trResults.d) > (1.0 - 1.0e-6) * tr_size) && lineSearchIter > 1));
+        bool use_with_option2 = (subspace_option >= 2) && (Norm(trResults.d) > (1.0 - 1.0e-6) * tr_size);
         bool use_with_option3 = (subspace_option >= 3);
 
-        if ( use_with_option1 || use_with_option2 || use_with_option3 ) {
+        if (use_with_option1 || use_with_option2 || use_with_option3) {
           if (!have_computed_Hvs) {
             have_computed_Hvs = true;
 
@@ -713,7 +712,7 @@ public:
 
           H_left_mosts.clear();
           for (auto& left : left_mosts) {
-            H_left_mosts.emplace_back( std::make_shared<mfem::Vector>(*left) );
+            H_left_mosts.emplace_back(std::make_shared<mfem::Vector>(*left));
             hess_vec_func(*left, *H_left_mosts.back());
           }
 
@@ -743,7 +742,7 @@ public:
         }
 
         if (normPred <= norm_goal) {
-          trResults.d_old = trResults.d;
+          trResults.d_old  = trResults.d;
           X                = x_pred;
           r                = r_pred;
           norm             = normPred;
@@ -767,14 +766,18 @@ public:
           rho = realImprove / -modelImprove;
         }
 
-        //std::cout << "rho , stuff = " << rho << " " << settings.eta3 << std::endl;
-        //std::cout << "stat = "<< trResults.interior_status << std::endl;
+        // std::cout << "rho , stuff = " << rho << " " << settings.eta3 << std::endl;
+        // std::cout << "stat = "<< trResults.interior_status << std::endl;
 
-        if (!(rho >= settings.eta2) || rho > settings.eta4) {  // not enough progress, decrease trust region. write it this way to handle NaNs.
+        if (!(rho >= settings.eta2) ||
+            rho > settings.eta4) {  // not enough progress, decrease trust region. write it this way to handle NaNs.
           tr_size *= settings.t1;
-        } else if (
-          (rho > settings.eta3 && rho <= settings.eta4 && trResults.interior_status == TrustRegionResults::Status::OnBoundary) ||
-          (rho > 0.95 && rho < 1.05 && trResults.interior_status == TrustRegionResults::Status::NegativeCurvature) ) { // good progress, on boundary, increase trust region
+        } else if ((rho > settings.eta3 && rho <= settings.eta4 &&
+                    trResults.interior_status == TrustRegionResults::Status::OnBoundary) ||
+                   (rho > 0.95 && rho < 1.05 &&
+                    trResults.interior_status ==
+                        TrustRegionResults::Status::NegativeCurvature)) {  // good progress, on boundary, increase trust
+                                                                           // region
           tr_size *= settings.t2;
         }
 
@@ -791,14 +794,13 @@ public:
         }
 
         if (willAccept) {
-          trResults.d_old = trResults.d;
+          trResults.d_old  = trResults.d;
           X                = x_pred;
           r                = r_pred;
           norm             = normPred;
           happyAboutTrSize = true;
           break;
         }
-
       }
     }
 
