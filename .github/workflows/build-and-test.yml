@@ -37,6 +37,7 @@ jobs:
             host_config: clang@14.0.0.cmake
             compiler_image: seracllnl/tpls:clang-14_08-15-24_21h-49m
             cmake_opts: "-DSERAC_ENABLE_CODEVELOP=ON"
+            build_src_opts: "--skip-install"
     container:
       image: ${{ matrix.config.compiler_image }}
       volumes:
