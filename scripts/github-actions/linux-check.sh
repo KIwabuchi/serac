@@ -17,10 +17,6 @@ function or_die () {
     fi
 }
 
-or_die cd serac
-git submodule init
-git submodule update
-
 echo HOST_CONFIG
 echo $HOST_CONFIG
 
