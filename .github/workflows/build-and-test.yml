@@ -6,36 +6,49 @@ on:
     branches:
     - main
 
-# TODO USE vars context FOR STORING COMPILER_IMAGE
-# https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/accessing-contextual-information-about-workflow-runs#vars-context :)
-
 # Cancel previous jobs if an update has been made to the pull request
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+env:
+  CLANG_DOCKER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
+  CUDA_DOCKER_IMAGE: seracllnl/tpls:cuda-12_08-15-24_21h-49m
+  GCC_DOCKER_IMAGE: seracllnl/tpls:gcc-13_08-15-24_21h-49m
+
 jobs:
+  # Hacky solution to reference env variables outside of `run` steps https://stackoverflow.com/a/74217028
+  images:
+    runs-on: ubuntu-latest
+    steps:
+    - run: echo
+    outputs:
+      clang_docker_image: ${{ env.CLANG_DOCKER_IMAGE }}
+      cuda_docker_image: ${{ env.CUDA_DOCKER_IMAGE }}
+      gcc_docker_image: ${{ env.GCC_DOCKER_IMAGE }}
   build_and_test:
     runs-on: ubuntu-22.04
+    needs:
+    - images
     strategy:
       matrix:
         build_type: [ Debug, Release ]
         config:
+        - host_config: clang@14.0.0.cmake
+          compiler_image: ${{ needs.images.outputs.clang_docker_image }}
+          cmake_opts: "-DBUILD_SHARED_LIBS=ON"
         - host_config: gcc@12.3.0_cuda.cmake
-          compiler_image: seracllnl/tpls:cuda-12_08-15-24_21h-49m
+          compiler_image: ${{ needs.images.outputs.cuda_docker_image }}
           cmake_opts: "-DBUILD_SHARED_LIBS=ON -DENABLE_WARNINGS_AS_ERRORS=OFF"
           build_src_opts: "--skip-install --skip-tests"
-        - host_config: clang@14.0.0.cmake
-          compiler_image: seracllnl/tpls:clang-14_08-15-24_21h-49m
-          cmake_opts: "-DBUILD_SHARED_LIBS=ON"
         - host_config: gcc@13.1.0.cmake
-          compiler_image: seracllnl/tpls:gcc-13_08-15-24_21h-49m
+          compiler_image: ${{ needs.images.outputs.gcc_docker_image }}
           cmake_opts: "-DBUILD_SHARED_LIBS=ON"
         include:
         - build_type: Debug
           config:
             host_config: clang@14.0.0.cmake
-            compiler_image: seracllnl/tpls:clang-14_08-15-24_21h-49m
+            compiler_image: ${{ needs.images.outputs.clang_docker_image }}
             cmake_opts: "-DSERAC_ENABLE_CODEVELOP=ON"
             build_src_opts: "--skip-install"
     container:
@@ -67,14 +80,16 @@ jobs:
         with:
           name: Test Results ${{ matrix.config.host_config }} ${{ matrix.build_type }} ${{ matrix.config.cmake_opts }}
           path: "**/Test.xml"
-          if-no-files-found: ignore
+          if-no-files-found: ignore # Missing test file is expected on CUDA builds
   check_code:
     runs-on: ubuntu-22.04
+    needs:
+    - images
     strategy:
       matrix:
         check_type: [coverage, docs, style, header]
     container:
-      image: seracllnl/tpls:clang-14_08-15-24_21h-49m
+      image: ${{ needs.images.outputs.clang_docker_image }}
       volumes:
       - /home/serac/serac
       env:
