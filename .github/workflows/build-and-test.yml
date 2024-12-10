@@ -18,7 +18,7 @@ env:
 
 jobs:
   # Hacky solution to reference env variables outside of `run` steps https://stackoverflow.com/a/74217028
-  set-image-vars:
+  set_image_vars:
     runs-on: ubuntu-latest
     steps:
     - name: Do Nothing
@@ -30,26 +30,26 @@ jobs:
   build_and_test:
     runs-on: ubuntu-22.04
     needs:
-    - set-image-vars
+    - set_image_vars
     strategy:
       matrix:
         build_type: [ Debug, Release ]
         config:
         - host_config: clang@14.0.0.cmake
-          compiler_image: ${{ needs.set-image-vars.outputs.clang_docker_image }}
+          compiler_image: ${{ needs.set_image_vars.outputs.clang_docker_image }}
           cmake_opts: "-DBUILD_SHARED_LIBS=ON"
         - host_config: gcc@12.3.0_cuda.cmake
-          compiler_image: ${{ needs.set-image-vars.outputs.cuda_docker_image }}
+          compiler_image: ${{ needs.set_image_vars.outputs.cuda_docker_image }}
           cmake_opts: "-DBUILD_SHARED_LIBS=ON -DENABLE_WARNINGS_AS_ERRORS=OFF"
           build_src_opts: "--skip-install --skip-tests"
         - host_config: gcc@13.1.0.cmake
-          compiler_image: ${{ needs.set-image-vars.outputs.gcc_docker_image }}
+          compiler_image: ${{ needs.set_image_vars.outputs.gcc_docker_image }}
           cmake_opts: "-DBUILD_SHARED_LIBS=ON"
         include:
         - build_type: Debug
           config:
             host_config: clang@14.0.0.cmake
-            compiler_image: ${{ needs.set-image-vars.outputs.clang_docker_image }}
+            compiler_image: ${{ needs.set_image_vars.outputs.clang_docker_image }}
             cmake_opts: "-DSERAC_ENABLE_CODEVELOP=ON"
             build_src_opts: "--skip-install"
     container:
@@ -85,12 +85,12 @@ jobs:
   check_code:
     runs-on: ubuntu-22.04
     needs:
-    - set-image-vars
+    - set_image_vars
     strategy:
       matrix:
         check_type: [coverage, docs, style, header]
     container:
-      image: ${{ needs.set-image-vars.outputs.clang_docker_image }}
+      image: ${{ needs.set_image_vars.outputs.clang_docker_image }}
       volumes:
       - /home/serac/serac
       env:
