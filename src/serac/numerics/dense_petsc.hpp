@@ -33,6 +33,10 @@ struct DenseMat
     return val;
   }
 
+  void setValue(int i, int j, double val) {
+    MatSetValues(A, 1, &i, 1, &j, &val, INSERT_VALUES);
+  }
+
   DenseVec operator*(const DenseVec& v) const;
   DenseVec solve(const DenseVec& v) const;
   DenseMat PtAP(const DenseMat& P) const;
@@ -52,6 +56,21 @@ DenseMat inverse(const DenseMat& a)
   Mat inv; MatDuplicate(a.A, MAT_COPY_VALUES, &inv);
   MatSeqDenseInvert(inv);
   return inv;
+}
+
+DenseMat sym(const DenseMat& a) {
+  DenseMat b = a;
+  auto [rows, cols] = b.size();
+  SLIC_ERROR_IF(rows != cols, "Calling sym on a non-square DenseMat");
+
+  for (int i=0; i < rows; ++i) {
+    for (int j=0; j < i; ++j) {
+      auto val = 0.5 * a(i,j) + 0.5 * a(j,i);
+      b.setValue(i, j, val);
+      b.setValue(j, i, val);
+    }
+  }
+  return b;
 }
 
 struct DenseVec

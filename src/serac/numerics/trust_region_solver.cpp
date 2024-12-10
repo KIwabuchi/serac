@@ -384,7 +384,8 @@ solveSubspaceProblem(const std::vector<const mfem::Vector*>& states,
                      const std::vector<const mfem::Vector*>& Astates, 
                      const mfem::Vector& b, double delta, int num_leftmost)
 {
-  DenseMat sAs = dot(states, Astates);
+  DenseMat sAs1 = dot(states, Astates);
+  DenseMat sAs = sym(sAs1);
 
   auto [Q_parallel,R] = qr(states);
 
@@ -421,14 +422,14 @@ solveSubspaceProblem(const std::vector<const mfem::Vector*>& states,
   Vec x_parallel; VecDuplicate(b_parallel, &x_parallel);
 
   std::vector<double> reduced_x_vec = reduced_x.getValues();
-  BVMultVec(Q_parallel, 1.0, 1.0, x_parallel, &reduced_x_vec[0]);
+  BVMultVec(Q_parallel, 1.0, 0.0, x_parallel, &reduced_x_vec[0]);
   mfem::Vector sol(b);
   copy(x_parallel, sol);
 
   std::vector< std::shared_ptr<mfem::Vector> > leftmosts;
   for (size_t i=0; i < leftvecs.size(); ++i) {
     auto reduced_leftvec = leftvecs[i].getValues();
-    BVMultVec(Q_parallel, 1.0, 1.0, x_parallel, &reduced_leftvec[0]);
+    BVMultVec(Q_parallel, 1.0, 0.0, x_parallel, &reduced_leftvec[0]);
     leftmosts.emplace_back(std::make_shared<mfem::Vector>(b));
     copy(x_parallel, *leftmosts[i]);
   }

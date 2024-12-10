@@ -311,7 +311,7 @@ protected:
   mutable mfem::Vector scratch;
 
   mutable std::vector<std::shared_ptr<mfem::Vector>> left_mosts;
-  mutable std::vector<std::shared_ptr<mfem::Vector>> H_leftmosts;
+  mutable std::vector<std::shared_ptr<mfem::Vector>> H_left_mosts;
 
   /// nonlinear solution options
   NonlinearSolverOptions nonlinear_options;
@@ -320,9 +320,6 @@ protected:
   /// handle to the preconditioner used by the trust region, it ignores the linear solver as a SPD preconditioner is
   /// currently required
   Solver& tr_precond;
-
-  int num_leftmosts = 3;
-  bool use_subspace = false; //true;
 
 public:
 #ifdef MFEM_USE_MPI
@@ -342,7 +339,6 @@ public:
     // find z + tau d
     double deltadelta_m_zz = delta * delta - zz;
     if (deltadelta_m_zz == 0) return; // already on boundary
-
     double tau = (std::sqrt(deltadelta_m_zz * dd + zd * zd) - zd) / dd;
     z.Add(tau, d);
   }
@@ -353,7 +349,7 @@ public:
                               const std::vector<const mfem::Vector*> ds,
                               const std::vector<const mfem::Vector*> Hds,
                               const mfem::Vector& g,
-                              double delta) const
+                              double delta, int num_leftmost) const
   {
     #ifdef MFEM_USE_SLEPC
 
@@ -369,21 +365,15 @@ public:
     for (auto& Hd : Hds) {
       H_directions.emplace_back(Hd);
     }
-
-    H_leftmosts.clear();
-    for (auto& left : left_mosts) {
-      H_leftmosts.emplace_back( std::make_shared<mfem::Vector>(*left) );
-      hess_vec_func(*left, *H_leftmosts.back());
-      H_directions.emplace_back(H_leftmosts.back().get());
+    for (auto& H_left : H_left_mosts) {
+      H_directions.emplace_back(H_left.get());
     }
 
-    //std::cout << "num eigen in = " << left_mosts.size() << " , direct in = " << directions.size() << std::endl;
     std::tie(directions, H_directions) = removeDependantDirections(directions, H_directions);
-    //std::cout << "num directions = " << directions.size() << std::endl;
 
     mfem::Vector b(g);
     b *= -1;
-    auto [sol, leftvecs, leftvals, energy_change] = solveSubspaceProblem(directions, H_directions, b, delta, num_leftmosts);
+    auto [sol, leftvecs, leftvals, energy_change] = solveSubspaceProblem(directions, H_directions, b, delta, num_leftmost);
 
     left_mosts.clear();
     for (auto& lv : leftvecs) {
@@ -392,6 +382,12 @@ public:
 
     double base_energy = computeEnergy(g, hess_vec_func, z);
     double subspace_energy = computeEnergy(g, hess_vec_func, sol);
+
+    // test that leftmost approximates its eigenvalue
+    // mfem::Vector tmp(g);
+    // hess_vec_func(*left_mosts[0], tmp);
+
+    // std::cout << "eigs = " << Dot(tmp, *left_mosts[0]) << " " << leftvals[0] << " " << Dot(*left_mosts[0], *left_mosts[0]) << std::endl;
 
     if (print_options.iterations || print_options.warnings) {
       mfem::out << "Energy using subspace solver from: " << base_energy << ", to: " << subspace_energy << " / " << energy_change << ".  Min eig: " << leftvals[0] << std::endl;
@@ -610,6 +606,9 @@ public:
     settings.max_cg_iterations = static_cast<size_t>(linear_options.max_iterations);
     settings.cg_tol            = 0.5 * norm_goal;
 
+    int subspace_option = nonlinear_options.subspace_option;
+    int num_leftmost = nonlinear_options.num_leftmost;
+
     scratch        = 1.0;
     double tr_size = nonlinear_options.trust_region_scaling * std::sqrt(Dot(scratch, scratch));
     size_t cumulative_cg_iters_from_last_precond_update = 0;
@@ -687,27 +686,40 @@ public:
       }
       cumulative_cg_iters_from_last_precond_update += trResults.cg_iterations_count;
 
-      if (use_subspace) {
-        // These may not be required in every case
-        hess_vec_func(trResults.z, trResults.H_z);
-        hess_vec_func(trResults.d_old, trResults.H_d_old);
-        hess_vec_func(trResults.cauchy_point, trResults.H_cauchy_point);
-      }
+      bool have_computed_Hvs = false;
 
       bool happyAboutTrSize = false;
       int  lineSearchIter   = 0;
       while (!happyAboutTrSize && lineSearchIter <= nonlinear_options.max_line_search_iterations) {
         ++lineSearchIter;
 
-        //trResults.d = trResults.z;
         doglegStep(trResults.cauchy_point, trResults.z, tr_size, trResults.d);
 
-        if ( (Norm(trResults.d) > (1.0-1.0e-6) * tr_size || 
-              trResults.interior_status == TrustRegionResults::Status::NonDescentDirection ||
-              trResults.interior_status == TrustRegionResults::Status::NegativeCurvature) && use_subspace ) {
+        bool use_with_option1 = (subspace_option >= 1) && 
+              (trResults.interior_status == TrustRegionResults::Status::NonDescentDirection ||
+               trResults.interior_status == TrustRegionResults::Status::NegativeCurvature || 
+               ( (Norm(trResults.d) > (1.0-1.0e-6) * tr_size) && lineSearchIter > 1) );
+        bool use_with_option2 = (subspace_option >= 2) && (Norm(trResults.d) > (1.0-1.0e-6) * tr_size);
+        bool use_with_option3 = (subspace_option >= 3);
+
+        if ( use_with_option1 || use_with_option2 || use_with_option3 ) {
+          if (!have_computed_Hvs) {
+            have_computed_Hvs = true;
+
+            hess_vec_func(trResults.z, trResults.H_z);
+            hess_vec_func(trResults.d_old, trResults.H_d_old);
+            hess_vec_func(trResults.cauchy_point, trResults.H_cauchy_point);
+          }
+
+          H_left_mosts.clear();
+          for (auto& left : left_mosts) {
+            H_left_mosts.emplace_back( std::make_shared<mfem::Vector>(*left) );
+            hess_vec_func(*left, *H_left_mosts.back());
+          }
+
           std::vector<const mfem::Vector*> ds{&trResults.z, &trResults.d_old, &trResults.cauchy_point};
           std::vector<const mfem::Vector*> H_ds{&trResults.H_z, &trResults.H_d_old, &trResults.H_cauchy_point};
-          solveTheSubspaceProblem(trResults.d, hess_vec_func, ds, H_ds, r, tr_size);
+          solveTheSubspaceProblem(trResults.d, hess_vec_func, ds, H_ds, r, tr_size, num_leftmost);
         }
 
         static constexpr double roundOffTol = 0.0;  // 1e-14;
