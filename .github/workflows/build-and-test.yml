@@ -45,20 +45,16 @@ jobs:
           echo "CMAKE_OPTS     ${{ matrix.config.CMAKE_OPTS }}"
           echo "COMPILER_IMAGE ${{ matrix.config.COMPILER_IMAGE }}"
           echo "HOST_CONFIG    ${{ matrix.config.HOST_CONFIG }}"
-          echo
-          echo "GITHUB_JOB        $GITHUB_JOB"
-          echo "GITHUB_RUN_ID     $GITHUB_RUN_ID"
-          echo "GITHUB_RUN_NUMBER $GITHUB_RUN_NUMBER"
-          echo "GITHUB_ACTION     $GITHUB_ACTION"
       - name: Build and Test ${{ matrix.config.HOST_CONFIG }} ${{ matrix.BUILD_TYPE }}
         timeout-minutes: 30
         run: |
-          ./scripts/llnl/build_src.py ${{ matrix.config.BUILD_SRC_OPTS }} --verbose \
+          ./scripts/llnl/build_src.py ${{ matrix.config.BUILD_SRC_OPTS }} \
+            --verbose \
             --host-config ${{ matrix.config.HOST_CONFIG }} \
             --extra-cmake-options "${{ matrix.config.CMAKE_OPTS }} -DCMAKE_BUILD_TYPE=${{ matrix.BUILD_TYPE }}" \
             --jobs 4
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
         with:
-          name: Test Results
+          name: Test Results ${{ matrix.config.HOST_CONFIG }} ${{ matrix.BUILD_TYPE }} ${{ matrix.config.CMAKE_OPTS }}
           path: "**/Test.xml"
