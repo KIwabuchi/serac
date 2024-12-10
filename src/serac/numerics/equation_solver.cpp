@@ -321,7 +321,7 @@ protected:
   /// currently required
   Solver& tr_precond;
 
-  int num_leftmosts = 1;
+  int num_leftmosts = 3;
   bool use_subspace = true;
 
 public:
@@ -394,7 +394,7 @@ public:
     double subspace_energy = computeEnergy(g, hess_vec_func, sol);
 
     if (print_options.iterations || print_options.warnings) {
-      mfem::out << "Energy using subspace solver from: " << base_energy << ", to: " << subspace_energy << " / " << energy_change << std::endl;
+      mfem::out << "Energy using subspace solver from: " << base_energy << ", to: " << subspace_energy << " / " << energy_change << ".  Min eig: " << leftvals[0] << std::endl;
     }
 
     if (subspace_energy < base_energy) {

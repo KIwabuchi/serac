@@ -399,7 +399,7 @@ solveSubspaceProblem(const std::vector<const mfem::Vector*>& states,
   // remove any nearly colinear state
   for (int i=0; i < rows; ++i) {
     if (R(i,i) < 1e-9 * trace_mag) {
-      printf("removing after QR state number %d\n", i);
+      //printf("removing after QR state number %d\n", i);
       auto statesNew = remove_at(states, i);
       auto AstatesNew = remove_at(Astates, i);
       return solveSubspaceProblem(statesNew, AstatesNew, b, delta, num_leftmost);
@@ -461,7 +461,7 @@ removeDependantDirections(std::vector<const mfem::Vector*> directions, std::vect
         keepi = false;
       }
     }
-    if (!keepi) printf("not keeping %zu\n",i);
+    //if (!keepi) printf("not keeping %zu\n",i);
     if (keepi) {
       kepts.emplace_back( std::make_pair(directions[i], i) );
     }
