@@ -76,9 +76,5 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
-    # TODO DO WE NEED THIS?
-    - name: Set Codecov Environment Variable
-      if: ${{ matrix.check_type == 'coverage' }}
-      run: export ci_env=$(bash <(curl -s https://codecov.io/env))
     - name: Check ${{ matrix.check_type }}
       run: ./scripts/github-actions/linux-check.sh 
