@@ -11,26 +11,26 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        BUILD_TYPE: [ Debug, Release ]
+        build_type: [ Debug, Release ]
         config:
-        - HOST_CONFIG: gcc@12.3.0_cuda.cmake
-          COMPILER_IMAGE: seracllnl/tpls:cuda-12_08-15-24_21h-49m
-          CMAKE_OPTS: "-DBUILD_SHARED_LIBS=ON -DENABLE_WARNINGS_AS_ERRORS=OFF"
-          BUILD_SRC_OPTS: "--skip-install --skip-tests"
-        - HOST_CONFIG: clang@14.0.0.cmake
-          COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
-          CMAKE_OPTS: "-DBUILD_SHARED_LIBS=ON"
-        - HOST_CONFIG: gcc@13.1.0.cmake
-          COMPILER_IMAGE: seracllnl/tpls:gcc-13_08-15-24_21h-49m
-          CMAKE_OPTS: "-DBUILD_SHARED_LIBS=ON"
+        - host_config: gcc@12.3.0_cuda.cmake
+          compiler_image: seracllnl/tpls:cuda-12_08-15-24_21h-49m
+          cmake_opts: "-DBUILD_SHARED_LIBS=ON -DENABLE_WARNINGS_AS_ERRORS=OFF"
+          build_src_opts: "--skip-install --skip-tests"
+        - host_config: clang@14.0.0.cmake
+          compiler_image: seracllnl/tpls:clang-14_08-15-24_21h-49m
+          cmake_opts: "-DBUILD_SHARED_LIBS=ON"
+        - host_config: gcc@13.1.0.cmake
+          compiler_image: seracllnl/tpls:gcc-13_08-15-24_21h-49m
+          cmake_opts: "-DBUILD_SHARED_LIBS=ON"
         include:
-        - BUILD_TYPE: Debug
+        - build_type: Debug
           config:
-            HOST_CONFIG: clang@14.0.0.cmake
-            COMPILER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
-            CMAKE_OPTS: "-DSERAC_ENABLE_CODEVELOP=ON"
+            host_config: clang@14.0.0.cmake
+            compiler_image: seracllnl/tpls:clang-14_08-15-24_21h-49m
+            cmake_opts: "-DSERAC_ENABLE_CODEVELOP=ON"
     container:
-      image: ${{ matrix.config.COMPILER_IMAGE }}
+      image: ${{ matrix.config.compiler_image }}
       volumes:
       - /home/serac/serac
     steps:
@@ -40,21 +40,45 @@ jobs:
           submodules: recursive
       - name: Print Matrix Variables
         run: |
-          echo "BUILD_SRC_OPTS ${{ matrix.config.BUILD_SRC_OPTS }}"
-          echo "BUILD_TYPE     ${{ matrix.BUILD_TYPE }}"
-          echo "CMAKE_OPTS     ${{ matrix.config.CMAKE_OPTS }}"
-          echo "COMPILER_IMAGE ${{ matrix.config.COMPILER_IMAGE }}"
-          echo "HOST_CONFIG    ${{ matrix.config.HOST_CONFIG }}"
-      - name: Build and Test ${{ matrix.config.HOST_CONFIG }} ${{ matrix.BUILD_TYPE }}
+          echo "build_src_opts ${{ matrix.config.build_src_opts }}"
+          echo "build_type     ${{ matrix.build_type }}"
+          echo "cmake_opts     ${{ matrix.config.cmake_opts }}"
+          echo "compiler_image ${{ matrix.config.compiler_image }}"
+          echo "host_config    ${{ matrix.config.host_config }}"
+      - name: Build and Test ${{ matrix.config.host_config }} ${{ matrix.build_type }}
         timeout-minutes: 30
         run: |
-          ./scripts/llnl/build_src.py ${{ matrix.config.BUILD_SRC_OPTS }} \
+          ./scripts/llnl/build_src.py ${{ matrix.config.build_src_opts }} \
             --verbose \
-            --host-config ${{ matrix.config.HOST_CONFIG }} \
-            --extra-cmake-options "${{ matrix.config.CMAKE_OPTS }} -DCMAKE_BUILD_TYPE=${{ matrix.BUILD_TYPE }}" \
+            --host-config ${{ matrix.config.host_config }} \
+            --extra-cmake-options "${{ matrix.config.cmake_opts }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}" \
             --jobs 4
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
         with:
-          name: Test Results ${{ matrix.config.HOST_CONFIG }} ${{ matrix.BUILD_TYPE }} ${{ matrix.config.CMAKE_OPTS }}
+          name: Test Results ${{ matrix.config.host_config }} ${{ matrix.build_type }} ${{ matrix.config.cmake_opts }}
           path: "**/Test.xml"
+          if-no-files-found: ignore
+  check_code:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        check_type: [coverage, docs, style, header]
+    container:
+      image: seracllnl/tpls:clang-14_08-15-24_21h-49m
+      volumes:
+      - /home/serac/serac
+      env:
+        CHECK_TYPE: ${{ matrix.check_type }}
+        HOST_CONFIG: clang@14.0.0.cmake
+    steps:
+    - name: Checkout Serac
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    # TODO DO WE NEED THIS?
+    - name: Set Codecov Environment Variable
+      if: ${{ matrix.check_type == 'coverage' }}
+      run: export ci_env=$(bash <(curl -s https://codecov.io/env))
+    - name: Check ${{ matrix.check_type }}
+      run: ./scripts/azure-pipelines/linux-check.sh 
