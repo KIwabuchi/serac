@@ -143,13 +143,13 @@ TEST_F(MeshFixture, QR)
     AstatePtrs.push_back(&Astates[i]);
   }
 
-  double delta                   = 0.001;
+  double delta                           = 0.001;
   auto [sol, leftvecs, leftvals, energy] = serac::solveSubspaceProblem(states, AstatePtrs, b, delta, 1);
 
   serac::FiniteElementState serac_sol(b);
   serac_sol = sol;
 
-  ASSERT_NEAR( std::sqrt(serac::innerProduct(serac_sol, serac_sol)), delta, 1e-12 );
+  ASSERT_NEAR(std::sqrt(serac::innerProduct(serac_sol, serac_sol)), delta, 1e-12);
 
   MatDestroy(&A_parallel);
 }

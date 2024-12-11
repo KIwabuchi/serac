@@ -260,7 +260,7 @@ auto exactTrustRegionSolve(DenseMat A, const DenseVec& b, double delta, int num_
   auto [sigs, V] = eigh(A);
   std::vector<DenseVec> leftmosts;
   std::vector<double>   minsigs;
-  size_t num_leftmost_possible(size_t(std::min(num_leftmost, isize)));
+  size_t                num_leftmost_possible(size_t(std::min(num_leftmost, isize)));
   for (size_t i = 0; i < num_leftmost_possible; ++i) {
     leftmosts.emplace_back(V[i]);
     minsigs.emplace_back(sigs[i]);
