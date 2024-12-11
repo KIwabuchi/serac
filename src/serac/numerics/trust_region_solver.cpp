@@ -83,8 +83,8 @@ private:
  */
 Vec petscVec(const mfem::Vector& state)
 {
-  const int local_rows  = s.Size();
-  const int global_rows = globalSize(s, PETSC_COMM_WORLD);
+  const int local_rows  = state.Size();
+  const int global_rows = globalSize(state, PETSC_COMM_WORLD);
 
   Vec v;
   VecCreateMPI(PETSC_COMM_WORLD, local_rows, global_rows, &v);
@@ -98,7 +98,7 @@ Vec petscVec(const mfem::Vector& state)
     col_indices.push_back(i);
   }
 
-  VecSetValues(v, local_rows, &col_indices[0], &s[0], INSERT_VALUES);
+  VecSetValues(v, local_rows, &col_indices[0], &state[0], INSERT_VALUES);
 
   VecAssemblyBegin(v);
   VecAssemblyEnd(v);
