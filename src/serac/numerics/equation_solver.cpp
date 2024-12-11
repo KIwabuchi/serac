@@ -382,10 +382,9 @@ public:
     double base_energy     = computeEnergy(g, hess_vec_func, z);
     double subspace_energy = computeEnergy(g, hess_vec_func, sol);
 
-    // test that leftmost approximates its eigenvalue
+    // check that leftmost approximates its eigenvalue
     // mfem::Vector tmp(g);
     // hess_vec_func(*left_mosts[0], tmp);
-
     // std::cout << "eigs = " << Dot(tmp, *left_mosts[0]) << " " << leftvals[0] << " " << Dot(*left_mosts[0],
     // *left_mosts[0]) << std::endl;
 

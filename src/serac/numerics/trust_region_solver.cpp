@@ -5,6 +5,9 @@
 // SPDX-License-Identifier: (BSD-3-Clause)
 
 #include "serac/numerics/trust_region_solver.hpp"
+
+#ifdef MFEM_USE_SLEPC
+
 #include <iostream>
 #include "serac/infrastructure/profiling.hpp"
 #include "serac/numerics/dense_petsc.hpp"
@@ -473,3 +476,5 @@ std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> re
 }
 
 }  // namespace serac
+
+#endif // MFEM_USE_SLEPC

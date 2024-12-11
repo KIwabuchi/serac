@@ -1,3 +1,6 @@
+#pragma once
+
+#ifdef MFEM_USE_SLEPC
 
 #include <slepcsvd.h>
 #include <slepcbv.h>
@@ -360,3 +363,5 @@ auto eigh(const DenseMat& Adense)
   EPSDestroy(&eps);
   return std::make_pair(std::move(eigenvalues), std::move(eigenvectors));
 }
+
+#endif // MFEM_USE_SLEPC

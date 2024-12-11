@@ -7,10 +7,14 @@
 /**
  * @file equation_solver.hpp
  *
- * @brief This file contains the declaration of an equation solver wrapper
+ * @brief This file contains the declaration of a trust region subspace solver
  */
 
 #pragma once
+
+#include "serac/serac_config.hpp"
+
+#ifdef MFEM_USE_SLEPC
 
 #include <memory>
 #include <optional>
@@ -37,3 +41,5 @@ std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> re
     std::vector<const mfem::Vector*> directions, std::vector<const mfem::Vector*> A_directions);
 
 }  // namespace serac
+
+#endif // MFEM_USE_SLEPC
