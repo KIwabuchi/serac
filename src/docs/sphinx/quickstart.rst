@@ -12,7 +12,8 @@ Quickstart Guide
 Getting Serac
 -------------
 
-Serac is hosted on `GitHub <https://github.com/LLNL/serac>`_. Serac uses git submodules, so the project must be cloned recursively. Use either of the following commands to pull Serac's repository:
+Serac is hosted on `GitHub <https://github.com/LLNL/serac>`_. Serac uses git submodules, so the project must be cloned
+recursively. Use either of the following commands to pull Serac's repository:
 
 .. code-block:: bash
 
