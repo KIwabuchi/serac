@@ -345,9 +345,13 @@ public:
 
   /// solve the exact trust-region subspace problem with directions ds, and the leftmosts
   template <typename HessVecFunc>
-  void solveTheSubspaceProblem(mfem::Vector& z, const HessVecFunc& hess_vec_func,
-                               const std::vector<const mfem::Vector*> ds, const std::vector<const mfem::Vector*> Hds,
-                               const mfem::Vector& g, double delta, int num_leftmost) const
+  void solveTheSubspaceProblem([[maybe_unused]] mfem::Vector& z,
+                               [[maybe_unused]] const HessVecFunc& hess_vec_func,
+                               [[maybe_unused]] const std::vector<const mfem::Vector*> ds,
+                               [[maybe_unused]] const std::vector<const mfem::Vector*> Hds,
+                               [[maybe_unused]] const mfem::Vector& g,
+                               [[maybe_unused]] double delta,
+                               [[maybe_unused]] int num_leftmost) const
   {
 #ifdef SERAC_USE_SLEPC
 
