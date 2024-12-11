@@ -42,4 +42,4 @@ std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> re
 
 }  // namespace serac
 
-#endif // MFEM_USE_SLEPC
+#endif  // MFEM_USE_SLEPC

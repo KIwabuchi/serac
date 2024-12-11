@@ -364,4 +364,4 @@ auto eigh(const DenseMat& Adense)
   return std::make_pair(std::move(eigenvalues), std::move(eigenvectors));
 }
 
-#endif // MFEM_USE_SLEPC
+#endif  // MFEM_USE_SLEPC
