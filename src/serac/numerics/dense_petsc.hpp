@@ -5,23 +5,32 @@
 
 struct DenseVec;
 
+/// Dense Matrix class which wraps petsc matrix for the case of a SeqDense matrix (on 1 processor)
 struct DenseMat {
+  /// @brief copy constructor
+  /// @param a matrix
   DenseMat(const Mat& a) : A(a) {}
 
+  /// @brief constructor
+  /// @param a matrix
   DenseMat(const DenseMat& a)
   {
     MatDuplicate(a.A, MAT_COPY_VALUES, &A);
     MatCopy(a.A, A, SAME_NONZERO_PATTERN);
   }
 
+  /// @brief assignment
+  /// @param a matrix
   DenseMat& operator=(const DenseMat& a)
   {
     MatCopy(a.A, A, SAME_NONZERO_PATTERN);
     return *this;
   }
 
+  /// @brief destructor
   ~DenseMat() { MatDestroy(&A); }
 
+  /// @brief size
   auto size() const
   {
     int isize;
@@ -30,6 +39,7 @@ struct DenseMat {
     return std::make_pair(isize, jsize);
   }
 
+  /// @brief index into
   double operator()(int i, int j) const
   {
     double val;
@@ -37,12 +47,19 @@ struct DenseMat {
     return val;
   }
 
+  /// @brief set value
   void setValue(int i, int j, double val) { MatSetValues(A, 1, &i, 1, &j, &val, INSERT_VALUES); }
 
+  /// @brief scalar multiply
   DenseVec operator*(const DenseVec& v) const;
+
+  /// @brief solve
   DenseVec solve(const DenseVec& v) const;
+
+  /// @brief multiply this by P transpose on left and P on the right
   DenseMat PtAP(const DenseMat& P) const;
 
+  /// @brief print utility
   void print(std::string first = "") const
   {
     if (first.size()) {
@@ -51,9 +68,12 @@ struct DenseMat {
     MatView(A, PETSC_VIEWER_STDOUT_SELF);
   }
 
+  /// petsc matrix
   Mat A;
 };
 
+/// matrix inverse
+/// @param a matrix
 DenseMat inverse(const DenseMat& a)
 {
   Mat inv;
@@ -62,6 +82,8 @@ DenseMat inverse(const DenseMat& a)
   return inv;
 }
 
+/// compute the symmetric part
+/// @param a matrix
 DenseMat sym(const DenseMat& a)
 {
   DenseMat b        = a;
@@ -78,30 +100,25 @@ DenseMat sym(const DenseMat& a)
   return b;
 }
 
+/// Dense Vector class which wraps petsc vector for the case of a SeqDense vector (on 1 processor)
 struct DenseVec {
+  /// @brief constructor
   DenseVec(const Vec& vin) : v(vin) {}
 
+  /// @brief constructor
   DenseVec(const DenseVec& vin)
   {
     VecDuplicate(vin.v, &v);
     VecCopy(vin.v, v);
   }
 
-  DenseVec& operator=(const DenseVec& vin)
-  {
-    VecCopy(vin.v, v);
-    return *this;
-  }
-
-  DenseVec& operator=(const double val)
-  {
-    VecSet(v, val);
-    return *this;
-  }
-
+  /// @brief constructor from size
   DenseVec(size_t size) { VecCreateSeq(PETSC_COMM_SELF, static_cast<int>(size), &v); }
+
+  /// @brief constructor from size
   DenseVec(int size) { VecCreateSeq(PETSC_COMM_SELF, size, &v); }
 
+  /// @brief constructor standard vector
   DenseVec(const std::vector<double> vin)
   {
     const auto       sz = vin.size();
@@ -114,11 +131,27 @@ struct DenseVec {
     VecSetValues(v, sz_int, &allints[0], &vin[0], INSERT_VALUES);
   }
 
+  /// @brief assignment
+  DenseVec& operator=(const DenseVec& vin)
+  {
+    VecCopy(vin.v, v);
+    return *this;
+  }
+
+  /// @brief assignment from scalar
+  DenseVec& operator=(const double val)
+  {
+    VecSet(v, val);
+    return *this;
+  }
+
+  /// @brief destructor
   ~DenseVec()
   {
     if (v) VecDestroy(&v);
   }
 
+  /// @brief negate
   DenseVec operator-() const
   {
     Vec minus;
@@ -128,12 +161,14 @@ struct DenseVec {
     return minus;
   }
 
+  /// @brief scale
   DenseVec& operator*=(double scale)
   {
     VecScale(v, scale);
     return *this;
   }
 
+  /// @brief size
   auto size() const
   {
     int isize;
@@ -141,6 +176,7 @@ struct DenseVec {
     return isize;
   }
 
+  /// @brief index into
   double operator[](int i) const
   {
     double val;
@@ -148,6 +184,7 @@ struct DenseVec {
     return val;
   }
 
+  /// @brief index into
   double operator[](size_t i) const
   {
     int    i_int = static_cast<int>(i);
@@ -156,16 +193,20 @@ struct DenseVec {
     return val;
   }
 
+  /// @brief set value
   void setValue(int i, double val) { VecSetValues(v, 1, &i, &val, INSERT_VALUES); }
 
+  /// @brief set value
   void setValue(size_t i, double val)
   {
     int i_int = static_cast<int>(i);
     VecSetValues(v, 1, &i_int, &val, INSERT_VALUES);
   }
 
+  /// @brief add scaled vector
   void add(double val, const DenseVec& w) { VecAXPY(v, val, w.v); }
 
+  /// @brief convert to standard vector
   std::vector<double> getValues() const
   {
     size_t              sz = static_cast<size_t>(size());
@@ -179,6 +220,7 @@ struct DenseVec {
     return vout;
   }
 
+  /// @brief print utility
   void print(std::string first = "") const
   {
     if (first.size()) {
@@ -187,9 +229,11 @@ struct DenseVec {
     VecView(v, PETSC_VIEWER_STDOUT_SELF);
   }
 
+  /// petsc vector
   Vec v;
 };
 
+/// @brief matrix vector multiply
 DenseVec DenseMat::operator*(const DenseVec& v) const
 {
   Vec out;
@@ -198,6 +242,7 @@ DenseVec DenseMat::operator*(const DenseVec& v) const
   return out;
 }
 
+/// @brief matrix linear solve
 DenseVec DenseMat::solve(const DenseVec& v) const
 {
   Vec out;
@@ -207,6 +252,7 @@ DenseVec DenseMat::solve(const DenseVec& v) const
   return out;
 }
 
+/// @brief multiply matrix by P-transpose on left, P on right
 DenseMat DenseMat::PtAP(const DenseMat& P) const
 {
   Mat pAp;
@@ -214,6 +260,7 @@ DenseMat DenseMat::PtAP(const DenseMat& P) const
   return pAp;
 }
 
+/// @brief vector dot product
 double dot(const DenseVec& a, const DenseVec& b)
 {
   double d;
@@ -221,6 +268,7 @@ double dot(const DenseVec& a, const DenseVec& b)
   return d;
 }
 
+/// @brief add a scalar to a vector
 DenseVec operator+(const DenseVec& a, double b)
 {
   Vec c;
@@ -230,6 +278,7 @@ DenseVec operator+(const DenseVec& a, double b)
   return c;
 }
 
+/// @brief component-wise multiplication of vectors
 DenseVec operator*(const DenseVec& a, const DenseVec& b)
 {
   Vec c;
@@ -238,6 +287,7 @@ DenseVec operator*(const DenseVec& a, const DenseVec& b)
   return c;
 }
 
+/// @brief component-wise vector divide
 DenseVec operator/(const DenseVec& a, const DenseVec& b)
 {
   Vec c;
@@ -246,6 +296,7 @@ DenseVec operator/(const DenseVec& a, const DenseVec& b)
   return c;
 }
 
+/// @brief component-wise vector absolute value
 DenseVec abs(const DenseVec& a)
 {
   Vec absa;
@@ -255,6 +306,7 @@ DenseVec abs(const DenseVec& a)
   return absa;
 }
 
+/// @brief sum values in a vector
 double sum(const DenseVec& a)
 {
   double s;
@@ -262,6 +314,7 @@ double sum(const DenseVec& a)
   return s;
 }
 
+/// @brief l2-norm of vector
 double norm(const DenseVec& a)
 {
   double n;
@@ -269,6 +322,7 @@ double norm(const DenseVec& a)
   return n;
 }
 
+/// @brief computes the eigenvectors and eigenvalues of a dense symmetric matrix
 auto eigh(const DenseMat& Adense)
 {
   auto [isize, jsize] = Adense.size();

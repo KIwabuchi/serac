@@ -224,8 +224,8 @@ struct TrustRegionSettings {
   double eta2 = 0.1;
   /// ideal energy drop ratio.  trust region increases if energy drop is better than this.
   double eta3 = 0.6;
-  // double eta4 = 4.0;
-  double eta4 = 4.2;  // 2.0;
+  /// parameter limiting how fast the energy can drop relative to the prediction (in case the energy surrogate is poor)
+  double eta4 = 4.2;
 };
 
 /// Internal structure for storing trust region stateful data
@@ -307,10 +307,11 @@ protected:
   mutable mfem::Vector x_pred;
   /// predicted residual
   mutable mfem::Vector r_pred;
-  /// mid residual
+  /// scratch
   mutable mfem::Vector scratch;
-
+  /// left most eigenvectors
   mutable std::vector<std::shared_ptr<mfem::Vector>> left_mosts;
+  /// the action of the stiffness/hessian (H) on the left most eigenvectors
   mutable std::vector<std::shared_ptr<mfem::Vector>> H_left_mosts;
 
   /// nonlinear solution options
@@ -342,6 +343,7 @@ public:
     z.Add(tau, d);
   }
 
+  /// solve the exact trust-region subspace problem with directions ds, and the leftmosts
   template <typename HessVecFunc>
   void solveTheSubspaceProblem(mfem::Vector& z, const HessVecFunc& hess_vec_func,
                                const std::vector<const mfem::Vector*> ds, const std::vector<const mfem::Vector*> Hds,
@@ -435,11 +437,12 @@ public:
     }
   }
 
+  /// compute the energy of the linearized system for a given solution vector z
   template <typename HessVecFunc>
-  double computeEnergy(const mfem::Vector& r, const HessVecFunc& H, const mfem::Vector& z) const
+  double computeEnergy(const mfem::Vector& r_local, const HessVecFunc& H, const mfem::Vector& z) const
   {
-    double       rz = Dot(r, z);
-    mfem::Vector tmp(r);
+    double       rz = Dot(r_local, z);
+    mfem::Vector tmp(r_local);
     tmp *= 0.0;
     H(z, tmp);
     return rz + 0.5 * Dot(z, tmp);

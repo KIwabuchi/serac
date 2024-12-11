@@ -21,14 +21,14 @@
 
 namespace serac {
 
-int    globalSize(const mfem::Vector& parallel_v, const MPI_Comm& comm);
+/// @brief computes the global size of mfem::Vector
+int globalSize(const mfem::Vector& parallel_v, const MPI_Comm& comm);
+
+/// @brief computes the l2 inner product between two mfem::Vector in parallal
 double innerProduct(const mfem::Vector& a, const mfem::Vector& b, const MPI_Comm& comm);
 
-// std::tuple<FiniteElementState, std::vector<FiniteElementState>, std::vector<double>>
-// solveSubspaceProblem(const std::vector<FiniteElementState>& directions,
-//                      const std::vector<FiniteElementState>& Adirections,
-//                      const FiniteElementState& b,
-//                      double delta, int num_leftmost);
+/// @brief returns the solution, as well as a list of the N leftmost eigenvectors
+/// and their eigenvalues, and the predicted model energy change
 std::tuple<mfem::Vector, std::vector<std::shared_ptr<mfem::Vector>>, std::vector<double>, double> solveSubspaceProblem(
     const std::vector<const mfem::Vector*>& directions, const std::vector<const mfem::Vector*>& A_directions,
     const mfem::Vector& b, double delta, int num_leftmost);

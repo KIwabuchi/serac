@@ -11,6 +11,11 @@
 
 namespace serac {
 
+/**
+ * @brief Get the global size of a mfem vector
+ * @param parallel_v Vector to check global size
+ * @param comm Parallel communicator
+ */
 int globalSize(const mfem::Vector& parallel_v, const MPI_Comm& comm)
 {
   int local_size = parallel_v.Size();
@@ -19,8 +24,12 @@ int globalSize(const mfem::Vector& parallel_v, const MPI_Comm& comm)
   return global_size;
 }
 
+/// @brief struct which aids in moving between mfem::Vector and petsc BV
 struct BasisVectors {
-  // construct with a representative state to set sizes
+  /**
+   * @brief Construct with a representative state to set sizes
+   * @param state The state which is used to set sizes for basis vectors
+   */
   BasisVectors(const mfem::Vector& state) : local_rows(state.Size()), global_rows(globalSize(state, PETSC_COMM_WORLD))
   {
     VecCreateMPI(PETSC_COMM_WORLD, local_rows, global_rows, &v);
@@ -34,8 +43,15 @@ struct BasisVectors {
     }
   }
 
+  /**
+   * @brief Destructor
+   */
   ~BasisVectors() { VecDestroy(&v); }
 
+  /**
+   * @brief Construct petsc BV from vector of mfem::Vector
+   * @param states The states used to construct basis vectors
+   */
   BV constructBases(const std::vector<const mfem::Vector*>& states) const
   {
     size_t num_cols = states.size();
@@ -61,7 +77,11 @@ private:
   Vec              v;
 };
 
-Vec petscVec(const mfem::Vector& s)
+/**
+ * @brief Create a petsc vector from a mfem::Vector
+ * @param state The state used to create an mfem::Vector
+ */
+Vec petscVec(const mfem::Vector& state)
 {
   const int local_rows  = s.Size();
   const int global_rows = globalSize(s, PETSC_COMM_WORLD);
@@ -86,6 +106,11 @@ Vec petscVec(const mfem::Vector& s)
   return v;
 }
 
+/**
+ * @brief Copy a petsc vector to an mfem::Vector
+ * @param v The petsc vector
+ * @param s The mfem vector
+ */
 void copy(const Vec& v, mfem::Vector& s)
 {
   const int local_rows = s.Size();
@@ -104,80 +129,11 @@ void copy(const Vec& v, mfem::Vector& s)
   VecGetValues(v, local_rows, &col_indices[0], &s[0]);
 }
 
-/*
-auto eigenOrthonormalize(const std::vector<serac::FiniteElementState>& states)
-{
-  const int local_rows = states[0].Size();
-  const int global_rows = states[0].GlobalSize();
-
-  size_t num_cols = states.size();
-
-  SVD svd;
-  SVDCreate(PETSC_COMM_WORLD, &svd);
-
-  Mat Bases;
-  MatCreate(PETSC_COMM_WORLD, &Bases);
-  MatSetSizes(Bases, local_rows, static_cast<int>(num_cols), global_rows, static_cast<int>(num_cols));
-
-  std::vector<Vec> left_vecs(num_cols);
-  std::vector<Vec> right_vecs(num_cols);
-  for (size_t c=0; c < num_cols; ++c) {
-    MatCreateVecs(Bases, &right_vecs[c], &left_vecs[c]);
-  }
-
-  PetscInt Istart,Iend;
-  MatGetOwnershipRange(Bases,&Istart,&Iend);
-  std::vector<int> row_ids;
-  row_ids.reserve(static_cast<size_t>(local_rows));
-  for (int i=Istart; i < Iend; ++i) {
-    row_ids.push_back(i);
-  }
-
-  for (size_t col=0; col < num_cols; ++col) {
-    int col_int = static_cast<int>(col);
-    MatSetValues(Bases, local_rows, &row_ids[0], 1, &col_int, &states[col][0], INSERT_VALUES);
-  }
-
-  MatAssemblyBegin(Bases, MAT_FINAL_ASSEMBLY);
-  MatAssemblyEnd(Bases, MAT_FINAL_ASSEMBLY);
-
-  SVDSetOperators(svd, Bases, NULL);
-  SVDSetDimensions(svd, static_cast<int>(num_cols), PETSC_DETERMINE, PETSC_DETERMINE);
-
-  SVDSetWhichSingularTriplets(svd, SVD_LARGEST);
-  SVDSolve(svd);
-  int nconv;
-  SVDGetConverged(svd, &nconv);
-
-  if (static_cast<size_t>(nconv)!=num_cols) {
-    SLIC_WARNING("Slepc svd solve was unable to converge");
-    // consider trying to return just the converged basis?
-  }
-
-  std::vector<double> eigenvals(num_cols);
-  for (size_t col=0; col < num_cols; ++col) {
-    SVDGetSingularTriplet(svd, static_cast<int>(col), &eigenvals[col], left_vecs[col], right_vecs[col]);
-  }
-
-  for (size_t col=0; col < num_cols; ++col) {
-    double norm;
-    VecNorm( left_vecs[col], NORM_2, &norm);
-    VecNorm( right_vecs[col], NORM_2, &norm);
-  }
-
-  //std::cout << "nconv = " << nconv1 << std::endl;
-
-  SVDDestroy(&svd);
-  MatDestroy(&Bases);
-  for (auto& v : left_vecs) {
-    VecDestroy(&v);
-  }
-  for (auto& v : right_vecs) {
-    VecDestroy(&v);
-  }
-}
-*/
-
+/**
+ * @brief The reduced matrix in the space of {s}
+ * @param s The vector of mfem::Vector of directions
+ * @param As The vector of mfem::Vector of a global matrix A operated on directions
+ */
 Mat dot(const std::vector<const mfem::Vector*>& s, const std::vector<const mfem::Vector*>& As)
 {
   SLIC_ERROR_IF(s.size() != As.size(),
@@ -197,6 +153,11 @@ Mat dot(const std::vector<const mfem::Vector*>& s, const std::vector<const mfem:
   return sAs;
 }
 
+/**
+ * @brief The reduced vector s.T*b
+ * @param s The vector of mfem::vector of directions
+ * @param b The right hand size vector to be reduced
+ */
 Vec dot(const std::vector<const mfem::Vector*>& s, const mfem::Vector& b)
 {
   size_t num_cols = s.size();
@@ -208,6 +169,10 @@ Vec dot(const std::vector<const mfem::Vector*>& s, const mfem::Vector& b)
   return sb;
 }
 
+/**
+ * @brief The qr decomposition of the state vectors
+ * @param states The vector of mfem::vectors of directions
+ */
 auto qr(const std::vector<const mfem::Vector*>& states)
 {
   BasisVectors bvs(*states[0]);
@@ -221,6 +186,12 @@ auto qr(const std::vector<const mfem::Vector*>& states)
   return std::make_pair(Q, DenseMat(R));
 }
 
+/**
+ * @brief compute the quadratic energy from small dense matrices and vectors
+ * @param A The stiffness matrix
+ * @param b The rhs vector
+ * @param x The current solution vector
+ */
 double quadraticEnergy(const DenseMat& A, const DenseVec& b, const DenseVec& x)
 {
   DenseVec Ax  = A * x;
@@ -229,13 +200,22 @@ double quadraticEnergy(const DenseMat& A, const DenseVec& b, const DenseVec& x)
   return 0.5 * xAx - xb;
 }
 
+/**
+ * @brief compute the pnorm_squared
+ * @param bvv input vector
+ * @param sig eigenvectors
+ */
 double pnorm_squared(const DenseVec& bvv, const DenseVec& sig)
 {
   auto bvv_div_sig_squared = bvv / (sig * sig);
   return sum(bvv_div_sig_squared);
-  // return bvv.dot((1.0 / (sig * sig)).matrix());
 }
 
+/**
+ * @brief compute the qnorm_squared
+ * @param bvv input vector
+ * @param sig eigenvectors
+ */
 double qnorm_squared(const DenseVec& bvv, const DenseVec& sig)
 {
   auto bvv_div_sig_cubed = bvv / (sig * sig * sig);
@@ -248,6 +228,16 @@ double qnorm_squared(const DenseVec& bvv, const DenseVec& sig)
 //    N leftmost eigenvectors
 //    N smallest eigenvalue
 //    success status
+
+/**
+ * @brief solve the trust region problem exactly using a variant of the Moore Sorensen algorithm
+ * @param A matrix
+ * @param b rhs
+ * @param delta trust region radius
+ * @param num_leftmost the number of leftmost eigenvector/values to output
+ * returns the solution vector, a std::vector of leftmost vectors
+ * a std::vector of leftmost eigenvalues and the energy change (relative to x=0)
+ */
 auto exactTrustRegionSolve(DenseMat A, const DenseVec& b, double delta, int num_leftmost)
 {
   // minimize 1/2 x^T A x - b^T x, s.t. norm(x) <= delta
@@ -366,6 +356,7 @@ auto exactTrustRegionSolve(DenseMat A, const DenseVec& b, double delta, int num_
   return std::make_tuple(x, leftmosts, minsigs, success);
 }
 
+/// @brief remove the vector at location j and return what is left
 std::vector<const mfem::Vector*> remove_at(const std::vector<const mfem::Vector*>& a, size_t j)
 {
   std::vector<const mfem::Vector*> b;
@@ -377,8 +368,8 @@ std::vector<const mfem::Vector*> remove_at(const std::vector<const mfem::Vector*
   return b;
 }
 
-// returns the solution, as well as a list of the N leftmost eigenvectors
-// and their eigenvalues, and the predicted model energy change
+/// @brief returns the solution, as well as a list of the N leftmost eigenvectors
+/// and their eigenvalues, and the predicted model energy change
 std::tuple<mfem::Vector, std::vector<std::shared_ptr<mfem::Vector>>, std::vector<double>, double> solveSubspaceProblem(
     const std::vector<const mfem::Vector*>& states, const std::vector<const mfem::Vector*>& Astates,
     const mfem::Vector& b, double delta, int num_leftmost)
@@ -441,6 +432,8 @@ std::tuple<mfem::Vector, std::vector<std::shared_ptr<mfem::Vector>>, std::vector
   return std::make_tuple(sol, leftmosts, leftvals, energy);
 }
 
+/// @brief Remove any obvious dependent directions, namely ones which are scaled version of previous directions
+/// The case where they are linear combinations of previous direction will be handled in the QR solver
 std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> removeDependantDirections(
     std::vector<const mfem::Vector*> directions, std::vector<const mfem::Vector*> A_directions)
 {
