@@ -28,7 +28,7 @@ struct BasisVectors {
     PetscInt iStart, iEnd;
     VecGetOwnershipRange(v, &iStart, &iEnd);
 
-    col_indices.reserve(static_cast<size_t>(local_rows));
+    col_indices.reserve(size_t(local_rows));
     for (int i = iStart; i < iEnd; ++i) {
       col_indices.push_back(i);
     }
@@ -260,8 +260,8 @@ auto exactTrustRegionSolve(DenseMat A, const DenseVec& b, double delta, int num_
   auto [sigs, V] = eigh(A);
   std::vector<DenseVec> leftmosts;
   std::vector<double>   minsigs;
-  int                   num_leftmost_possible = std::min(num_leftmost, int(isize));
-  for (int i = 0; i < num_leftmost_possible; ++i) {
+  size_t num_leftmost_possible(size_t(std::min(num_leftmost, isize)));
+  for (size_t i = 0; i < num_leftmost_possible; ++i) {
     leftmosts.emplace_back(V[i]);
     minsigs.emplace_back(sigs[i]);
   }
@@ -299,7 +299,7 @@ auto exactTrustRegionSolve(DenseMat A, const DenseVec& b, double delta, int num_
     DenseVec p(isize);
     p = 0.0;
     for (int i = 0; i < isize; ++i) {
-      p.add(bv[i], V[i]);
+      p.add(bv[i], V[size_t(i)]);
     }
 
     const auto& z     = leftMost;
@@ -351,7 +351,7 @@ auto exactTrustRegionSolve(DenseMat A, const DenseVec& b, double delta, int num_
   DenseVec x(isize);
   x = 0.0;
   for (int i = 0; i < isize; ++i) {
-    x.add(bvOverSigs[i], V[i]);
+    x.add(bvOverSigs[i], V[size_t(i)]);
   }
 
   double e1 = quadraticEnergy(A, b, x);
@@ -400,8 +400,8 @@ std::tuple<mfem::Vector, std::vector<std::shared_ptr<mfem::Vector>>, std::vector
   for (int i = 0; i < rows; ++i) {
     if (R(i, i) < 1e-9 * trace_mag) {
       // printf("removing after QR state number %d\n", i);
-      auto statesNew  = remove_at(states, i);
-      auto AstatesNew = remove_at(Astates, i);
+      auto statesNew  = remove_at(states, size_t(i));
+      auto AstatesNew = remove_at(Astates, size_t(i));
       return solveSubspaceProblem(statesNew, AstatesNew, b, delta, num_leftmost);
     }
   }
@@ -451,12 +451,12 @@ std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> re
     norms.push_back(std::sqrt(mfem::InnerProduct(PETSC_COMM_WORLD, *directions[i], *directions[i])));
   }
 
-  std::vector<std::pair<const mfem::Vector*, int>> kepts;
+  std::vector<std::pair<const mfem::Vector*, size_t>> kepts;
   for (size_t i = 0; i < num_dirs; ++i) {
     bool keepi = true;
     if (norms[i] == 0) keepi = false;
     for (auto&& kept_and_j : kepts) {
-      int    j      = kept_and_j.second;
+      size_t j      = kept_and_j.second;
       double dot_ij = mfem::InnerProduct(PETSC_COMM_WORLD, *directions[i], *kept_and_j.first);
       if (dot_ij > 0.999 * norms[i] * norms[j]) {
         keepi = false;

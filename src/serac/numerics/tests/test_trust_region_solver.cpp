@@ -41,7 +41,7 @@ struct MeshFixture : public testing::Test {
   mfem::ParMesh*         mesh;
 };
 
-std::vector<mfem::Vector> applyLinearOperator(const Mat& A, const std::vector<mfem::Vector*>& states)
+std::vector<mfem::Vector> applyLinearOperator(const Mat& A, const std::vector<const mfem::Vector*>& states)
 {
   std::vector<mfem::Vector> Astates;
   for (auto s : states) {
@@ -133,37 +133,23 @@ TEST_F(MeshFixture, QR)
     a[i]  = 2 * i + 0.01 * i * i + 1.25;
     b[i]  = -i + 0.02 * i * i + 0.1;
   }
-  std::vector<mfem::Vector*> states = {&u1, &u2, &u3};  //,u4};
-
-  /*
-  for (int s=0; s < states.size(); ++s) {
-    for (int i=0; i < u1.Size(); ++i) {
-      std::cout << states[s][i] << " ";
-    }
-    printf("\n");
-  }
-
-  for (int i=0; i < u1.Size(); ++i) {
-    std::cout << a[i] << " ";
-  }
-  printf("\n");
-
-  for (int i=0; i < u1.Size(); ++i) {
-    std::cout << b[i] << " ";
-  }
-  printf("\n");
-  */
+  std::vector<const mfem::Vector*> states = {&u1, &u2, &u3};  //,u4};
 
   auto                      A_parallel = createDiagonalTestMatrix(a);
   std::vector<mfem::Vector> Astates    = applyLinearOperator(A_parallel, states);
 
-  std::vector<mfem::Vector*> AstatePtrs;
+  std::vector<const mfem::Vector*> AstatePtrs;
   for (size_t i = 0; i < Astates.size(); ++i) {
     AstatePtrs.push_back(&Astates[i]);
   }
 
-  double delta                   = 3.4;  // 0.001;
-  auto [sol, leftvecs, leftvals] = serac::solveSubspaceProblem(states, AstatePtrs, b, delta, 1);
+  double delta                   = 0.001;
+  auto [sol, leftvecs, leftvals, energy] = serac::solveSubspaceProblem(states, AstatePtrs, b, delta, 1);
+
+  serac::FiniteElementState serac_sol(b);
+  serac_sol = sol;
+
+  ASSERT_NEAR( std::sqrt(serac::innerProduct(serac_sol, serac_sol)), delta, 1e-12 );
 
   MatDestroy(&A_parallel);
 }
