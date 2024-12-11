@@ -6,7 +6,7 @@
 
 #include "serac/numerics/trust_region_solver.hpp"
 
-#ifdef MFEM_USE_SLEPC
+#ifdef SERAC_USE_SLEPC
 
 #include <iostream>
 #include "serac/infrastructure/profiling.hpp"
@@ -477,4 +477,4 @@ std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> re
 
 }  // namespace serac
 
-#endif  // MFEM_USE_SLEPC
+#endif  // SERAC_USE_SLEPC

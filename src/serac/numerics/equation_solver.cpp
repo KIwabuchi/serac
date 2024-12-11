@@ -349,7 +349,7 @@ public:
                                const std::vector<const mfem::Vector*> ds, const std::vector<const mfem::Vector*> Hds,
                                const mfem::Vector& g, double delta, int num_leftmost) const
   {
-#ifdef MFEM_USE_SLEPC
+#ifdef SERAC_USE_SLEPC
 
     std::vector<const mfem::Vector*> directions;
     for (auto& d : ds) {

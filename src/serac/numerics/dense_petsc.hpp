@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef MFEM_USE_SLEPC
+#ifdef SERAC_USE_SLEPC
 
 #include <slepcsvd.h>
 #include <slepcbv.h>
@@ -364,4 +364,4 @@ auto eigh(const DenseMat& Adense)
   return std::make_pair(std::move(eigenvalues), std::move(eigenvectors));
 }
 
-#endif  // MFEM_USE_SLEPC
+#endif  // SERAC_USE_SLEPC
