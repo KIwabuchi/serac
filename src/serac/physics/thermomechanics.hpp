@@ -15,6 +15,7 @@
 #include "mfem.hpp"
 
 #include "serac/physics/base_physics.hpp"
+#include "serac/physics/boundary_conditions/components.hpp"
 #include "serac/physics/thermomechanics_input.hpp"
 #include "serac/physics/solid_mechanics.hpp"
 #include "serac/physics/heat_transfer.hpp"
@@ -425,7 +426,7 @@ public:
    */
   template <typename AppliedDisplacementFunction>
   void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain,
-                          VectorComponents<dim> components = ALL_COMPONENTS<dim>)
+                          Components components = Component::ALL)
   {
     solid_.setDisplacementBCs(applied_displacement, domain, components);
   }
@@ -438,7 +439,7 @@ public:
    *
    * @note This method must be called prior to completeSetup()
    */
-  void setFixedBCs(const Domain& domain, VectorComponents<dim> components = ALL_COMPONENTS<dim>)
+  void setFixedBCs(const Domain& domain, Components components = Component::ALL)
   {
     solid_.setFixedBCs(domain, components);
   }

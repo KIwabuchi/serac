@@ -12,8 +12,6 @@
 
 #pragma once
 
-#include <bitset>
-
 #include "mfem.hpp"
 
 #include "serac/serac_config.hpp"
@@ -21,6 +19,7 @@
 #include "serac/physics/common.hpp"
 #include "serac/physics/solid_mechanics_input.hpp"
 #include "serac/physics/base_physics.hpp"
+#include "serac/physics/boundary_conditions/components.hpp"
 #include "serac/numerics/odes.hpp"
 #include "serac/numerics/stdfunction_operator.hpp"
 #include "serac/numerics/functional/shape_aware_functional.hpp"
@@ -29,23 +28,6 @@
 #include "serac/physics/materials/solid_material.hpp"
 
 namespace serac {
-
-/// Bitmask to flag vector components for boundary conditions
-template <int dim>
-using VectorComponents = std::bitset<dim>;
-
-/// Convenience values to set bitmask with readable code
-enum VECTOR_COMPONENT : unsigned char
-{
-  X_COMPONENT = 1 << 0,
-  Y_COMPONENT = 1 << 1,
-  Z_COMPONENT = 1 << 2
-};
-
-/// Convenience constant to set flag all components for a given dim-dimensional space
-template <unsigned char dim>
-constexpr unsigned char ALL_COMPONENTS = (1 << (dim + 1)) - 1;
-
 namespace solid_mechanics {
 
 namespace detail {
@@ -472,7 +454,7 @@ public:
    */
   template <typename AppliedDisplacementFunction>
   void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain,
-                          VectorComponents<dim> components = ALL_COMPONENTS<dim>)
+                          Components components = Component::ALL)
   {
     for (size_t i = 0; i < dim; ++i) {
       if (components[i]) {
@@ -499,7 +481,7 @@ public:
    *
    * @note This method must be called prior to completeSetup()
    */
-  void setFixedBCs(const Domain& domain, VectorComponents<dim> components = ALL_COMPONENTS<dim>)
+  void setFixedBCs(const Domain& domain, Components components = Component::ALL)
   {
     auto zero_vector_function = [](tensor<double, dim>, double) { return tensor<double, dim>{}; };
     setDisplacementBCs(zero_vector_function, domain, components);
