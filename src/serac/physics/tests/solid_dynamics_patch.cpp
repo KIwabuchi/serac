@@ -137,10 +137,8 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <int p, typename Material>
-  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundary_attrs) const
+  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, Domain essential_boundary, Domain /* whole_domain */) const
   {
-    Domain essential_boundary = Domain::ofBoundaryElements(solid.mesh(), by_attr<dim>(essential_boundary_attrs));
-
     // essential BCs
     auto ebc_func = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
     solid.setDisplacementBCs(ebc_func, essential_boundary);
@@ -221,19 +219,17 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <int p, typename Material>
-  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, std::set<int> essential_boundary_attrs) const
+  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, Domain essential_boundary, Domain whole_domain) const
   {
     // essential BCs
-    Domain essential_boundary = Domain::ofBoundaryElements(solid.mesh(), by_attr<dim>(essential_boundary_attrs));
-    auto   ebc_func           = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
+    auto ebc_func = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
     solid.setDisplacementBCs(ebc_func, essential_boundary);
 
     // no natural BCs
 
     // body force
-    Domain domain = EntireDomain(solid.mesh());
     solid.addBodyForce([&material, *this](auto /* X */, auto /* t */) { return material.density * this->acceleration; },
-                       domain);
+                       whole_domain);
   }
 
 private:
@@ -318,7 +314,8 @@ double solution_error(solution_type exact_solution, PatchBoundaryCondition bc)
   solid.setDisplacement([exact_solution](const mfem::Vector& x, mfem::Vector& u) { exact_solution(x, 0.0, u); });
 
   // forcing terms
-  exact_solution.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc));
+  Domain essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(essentialBoundaryAttributes<dim>(bc)));
+  exact_solution.applyLoads(mat, solid, essential_boundary, whole_domain);
 
   // Finalize the data structures
   solid.completeSetup();

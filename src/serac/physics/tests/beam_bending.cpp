@@ -73,8 +73,8 @@ TEST(BeamBending, TwoDimensional)
   Domain                             material_block = EntireDomain(pmesh);
   solid_solver.setMaterial(mat, material_block);
 
-  // Define a boundary attribute set and specify initial / boundary conditions
-  solid_solver.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)));
+  Domain support = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+  solid_solver.setFixedBCs(support);
 
   // initial displacement
   solid_solver.setDisplacement([](const mfem::Vector&, mfem::Vector& bc_vec) { bc_vec = 0.0; });

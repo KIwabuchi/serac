@@ -16,6 +16,7 @@
 
 #include "serac/mesh/mesh_utils.hpp"
 #include "serac/numerics/functional/domain.hpp"
+#include "serac/physics/boundary_conditions/components.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/physics/materials/solid_material.hpp"
 #include "serac/serac_config.hpp"
@@ -76,12 +77,10 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <int p, typename Material>
-  void applyLoads(const Material& material, SolidMechanics<p, dim>& sf, std::set<int> essential_boundary_attrs) const
+  void applyLoads(const Material& material, SolidMechanics<p, dim>& sf, Domain essential_boundary) const
   {
     // essential BCs
     auto ebc_func = [*this](tensor<double, dim> X, double) { return this->eval(X); };
-
-    Domain essential_boundary = Domain::ofBoundaryElements(sf.mesh(), by_attr<dim>(essential_boundary_attrs));
 
     sf.setDisplacementBCs(ebc_func, essential_boundary);
 
@@ -217,7 +216,8 @@ double solution_error(PatchBoundaryCondition bc)
 
   solid.setMaterial(mat, domain);
 
-  exact_displacement.applyLoads(mat, solid, essentialBoundaryAttributes<dim>(bc));
+  Domain essential_boundary = Domain::ofBoundaryElements(pmesh, by_attr<dim>(essentialBoundaryAttributes<dim>(bc)));
+  exact_displacement.applyLoads(mat, solid, essential_boundary);
 
   // Finalize the data structures
   solid.completeSetup();
@@ -266,18 +266,30 @@ double pressure_error()
 
   std::string meshdir = std::string(SERAC_REPO_DIR) + "/data/meshes/";
   std::string filename;
+  int driven_attr = -1;
+  std::set<int> fixed_y_attrs, fixed_z_attrs;
   switch (element_type::geometry) {
     case mfem::Geometry::TRIANGLE:
       filename = meshdir + "patch2D_tris.mesh";
+      driven_attr = 4;
+      fixed_y_attrs.insert({1, 3});
       break;
     case mfem::Geometry::SQUARE:
       filename = meshdir + "patch2D_quads.mesh";
+      driven_attr = 1;
+      fixed_y_attrs.insert({1, 3});
       break;
     case mfem::Geometry::TETRAHEDRON:
       filename = meshdir + "patch3D_tets.mesh";
+      driven_attr = 1;
+      fixed_y_attrs.insert({2, 5});
+      fixed_z_attrs.insert({3, 6});
       break;
     case mfem::Geometry::CUBE:
       filename = meshdir + "patch3D_hexes.mesh";
+      driven_attr = 1;
+      fixed_y_attrs.insert({2, 5});
+      fixed_z_attrs.insert({3, 6});
       break;
     default:
       SLIC_ERROR_ROOT("unsupported element type for patch test");
@@ -288,6 +300,12 @@ double pressure_error()
   std::string mesh_tag{"mesh"};
 
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+
+  Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(driven_attr));
+  Domain fixed_y  = Domain::ofBoundaryElements(pmesh, by_attr<dim>(fixed_y_attrs));
+  Domain fixed_z  = Domain::ofBoundaryElements(pmesh, by_attr<dim>(fixed_z_attrs));
+  Domain material_block = EntireDomain(pmesh);
+  Domain boundary       = EntireBoundary(pmesh);
 
 // Construct a solid mechanics solver
 #ifdef SERAC_USE_SUNDIALS
@@ -307,53 +325,33 @@ double pressure_error()
                                mesh_tag);
 
   solid_mechanics::NeoHookean mat{.density = 1.0, .K = 1.0, .G = 1.0};
-  Domain                      material_block = EntireDomain(pmesh);
-  Domain                      boundary       = EntireBoundary(pmesh);
+
   solid.setMaterial(mat, material_block);
 
   typename solid_mechanics::NeoHookean::State state;
-  auto                                        H = make_tensor<dim, dim>([](int i, int j) {
+  // clang-format off
+  auto H = make_tensor<dim, dim>([](int i, int j) {
     if (i == 0 && j == 0) {
       return -0.1;
     }
     return 0.0;
   });
+  // clang-format on
 
-  tensor<double, dim, dim> sigma    = mat(state, H);
-  auto                     P        = solid_mechanics::CauchyToPiola(sigma, H);
-  double                   pressure = -1.0 * P(0, 0);
+  tensor<double, dim, dim> P = mat(state, H);
+  auto F = H + Identity<dim>();
+  auto sigma = dot(P, transpose(F))/det(F);
+  double pressure = -sigma[0][0];
 
   // Set the pressure corresponding to 10% uniaxial strain
   solid.setPressure([pressure](auto&, double) { return pressure; }, boundary);
 
   // Define the essential boundary conditions corresponding to 10% uniaxial strain everywhere
   // except the pressure loaded surface
-  if constexpr (dim == 2) {
-    auto set_bcs = [&solid, exact_uniaxial_strain](Domain driven, Domain fixed) {
-      solid.setDisplacementBCs(exact_uniaxial_strain, driven);
-      solid.setFixedBCs(fixed, Y_COMPONENT);
-    };
-
-    if (element_type::geometry == mfem::Geometry::TRIANGLE) {
-      Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(4));
-      Domain fixed  = Domain::ofBoundaryElements(pmesh, by_attr<dim>({1, 3}));
-      set_bcs(driven, fixed);
-    } else if (element_type::geometry == mfem::Geometry::SQUARE) {
-      Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
-      Domain fixed  = Domain::ofBoundaryElements(pmesh, by_attr<dim>({2, 4}));
-      set_bcs(driven, fixed);
-    }
-  } else {  // dim == 3
-    auto set_bcs = [&solid, exact_uniaxial_strain](Domain driven, Domain fixed_y, Domain fixed_z) {
-      solid.setDisplacementBCs(exact_uniaxial_strain, driven);
-      solid.setFixedBCs(fixed_y, Y_COMPONENT);
-      solid.setFixedBCs(fixed_z, Z_COMPONENT);
-    };
-
-    Domain driven  = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
-    Domain fixed_y = Domain::ofBoundaryElements(pmesh, by_attr<dim>({2, 5}));
-    Domain fixed_z = Domain::ofBoundaryElements(pmesh, by_attr<dim>({3, 6}));
-    set_bcs(driven, fixed_y, fixed_z);
+  solid.setDisplacementBCs(exact_uniaxial_strain, driven);
+  solid.setFixedBCs(fixed_y, Component::Y);
+  if constexpr (dim == 3) {
+    solid.setFixedBCs(fixed_z, Component::Z);
   }
 
   // Finalize the data structures

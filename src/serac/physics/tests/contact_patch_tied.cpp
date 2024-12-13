@@ -45,6 +45,11 @@ TEST_P(ContactPatchTied, patch)
   auto  mesh  = mesh::refineAndDistribute(buildMeshFromFile(filename), 3, 0);
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "patch_mesh");
 
+  Domain x0_faces = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1));
+  Domain y0_faces = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(2));
+  Domain z0_face = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));
+  Domain zmax_face = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6));
+
 // TODO: investigate performance with Petsc
 // #ifdef SERAC_USE_PETSC
 //   LinearSolverOptions linear_options{
@@ -88,10 +93,10 @@ TEST_P(ContactPatchTied, patch)
   auto             nonzero_disp_bc = [](vec3, double t) { return vec3{{0.0, 0.0, -max_disp * t}}; };
 
   // Define a boundary attribute set and specify initial / boundary conditions
-  solid_solver.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(1)), X_COMPONENT);
-  solid_solver.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(2)), Y_COMPONENT);
-  solid_solver.setFixedBCs(Domain::ofBoundaryElements(pmesh, by_attr<dim>(3)), Z_COMPONENT);
-  solid_solver.setDisplacementBCs(nonzero_disp_bc, Domain::ofBoundaryElements(pmesh, by_attr<dim>(6)), Z_COMPONENT);
+  solid_solver.setFixedBCs(x0_faces, Component::X);
+  solid_solver.setFixedBCs(y0_faces, Component::Y);
+  solid_solver.setFixedBCs(z0_face, Component::Z);
+  solid_solver.setDisplacementBCs(nonzero_disp_bc, zmax_face, Component::Z);
 
   // Add the contact interaction
   solid_solver.addContactInteraction(0, {4}, {5}, contact_options);

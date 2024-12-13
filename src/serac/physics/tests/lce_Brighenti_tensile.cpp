@@ -12,6 +12,7 @@
 #include "serac/serac_config.hpp"
 #include "serac/numerics/functional/domain.hpp"
 #include "serac/mesh/mesh_utils.hpp"
+#include "serac/physics/boundary_conditions/components.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/physics/solid_mechanics.hpp"
 #include "serac/physics/materials/liquid_crystal_elastomer.hpp"
@@ -130,9 +131,9 @@ TEST(LiquidCrystalElastomer, Brighenti)
   solid_solver.setMaterial(DependsOn<TEMPERATURE_INDEX, GAMMA_INDEX>{}, mat, whole_mesh, qdata);
 
   // prescribe symmetry conditions
-  solid_solver.setFixedBCs(xmin_face, X_COMPONENT);
-  solid_solver.setFixedBCs(ymin_face, Y_COMPONENT);
-  solid_solver.setFixedBCs(zmin_face, Z_COMPONENT);
+  solid_solver.setFixedBCs(xmin_face, Component::X);
+  solid_solver.setFixedBCs(ymin_face, Component::Y);
+  solid_solver.setFixedBCs(zmin_face, Component::Z);
 
   // set initila displacement different than zero to help solver
   auto ini_displacement = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 1.0e-5; };

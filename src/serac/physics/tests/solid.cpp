@@ -18,6 +18,7 @@
 
 #include "serac/mesh/mesh_utils.hpp"
 #include "serac/numerics/functional/domain.hpp"
+#include "serac/physics/boundary_conditions/components.hpp"
 #include "serac/physics/state/state_manager.hpp"
 #include "serac/physics/materials/solid_material.hpp"
 #include "serac/physics/materials/parameterized_solid_material.hpp"
@@ -92,7 +93,7 @@ void functional_solid_test_static_J2()
     return u;
   };
   auto tip = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
-  solid_solver.setDisplacementBCs(translated_in_z, tip, Z_COMPONENT);
+  solid_solver.setDisplacementBCs(translated_in_z, tip, Component::Z);
 
   // Finalize the data structures
   solid_solver.completeSetup();
@@ -167,10 +168,10 @@ void functional_solid_spatial_essential_bc()
   Domain left = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
   Domain back = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
 
-  solid_solver.setFixedBCs(left, X_COMPONENT);
-  solid_solver.setFixedBCs(back, Y_COMPONENT);
-  solid_solver.setFixedBCs(bottom, Z_COMPONENT);
-  solid_solver.setDisplacementBCs([](vec3, double) { return vec3{{0.0, 0.0, -0.1}}; }, top, Z_COMPONENT);
+  solid_solver.setFixedBCs(left, Component::X);
+  solid_solver.setFixedBCs(back, Component::Y);
+  solid_solver.setFixedBCs(bottom, Component::Z);
+  solid_solver.setDisplacementBCs([](vec3, double) { return vec3{{0.0, 0.0, -0.1}}; }, top, Component::Z);
 
   // Set a zero initial guess
   solid_solver.setDisplacement([](const mfem::Vector&, mfem::Vector& u) { u = 0.0; });

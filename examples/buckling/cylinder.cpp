@@ -33,6 +33,7 @@
 #include "mfem.hpp"
 
 #include "serac/numerics/functional/domain.hpp"
+#include "serac/physics/boundary_conditions/components.hpp"
 #include "serac/physics/solid_mechanics_contact.hpp"
 #include "serac/infrastructure/terminator.hpp"
 #include "serac/mesh/mesh_utils.hpp"
@@ -174,8 +175,8 @@ int main(int argc, char* argv[])
     u[0] = u[2] = -1.5 / std::sqrt(2.0) * t;
     return u;
   };
-  solid_solver->setDisplacementBCs(compress, top, X_COMPONENT | Z_COMPONENT);
-  solid_solver->setDisplacementBCs(compress, top, Y_COMPONENT);  // BT: Would it be better to leave this component free?
+  solid_solver->setDisplacementBCs(compress, top, Component::X + Component::Z);
+  solid_solver->setDisplacementBCs(compress, top, Component::Y);  // BT: Would it be better to leave this component free?
 
   // Finalize the data structures
   solid_solver->completeSetup();

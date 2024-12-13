@@ -69,7 +69,7 @@ void functional_solid_test_robin_condition()
   // prescribe zero displacement in the y- and z-directions
   // at the supported end of the beam,
   Domain support = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
-  solid_solver.setFixedBCs(support, Y_COMPONENT | Z_COMPONENT);
+  solid_solver.setFixedBCs(support, Component::Y + Component::Z);
 
   // apply an axial displacement at the the tip of the beam
   auto translated_in_x = [](tensor<double, dim>, double t) -> vec3 {
@@ -78,20 +78,15 @@ void functional_solid_test_robin_condition()
     return u;
   };
   Domain tip = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
-  solid_solver.setDisplacementBCs(translated_in_x, tip, X_COMPONENT);
+  solid_solver.setDisplacementBCs(translated_in_x, tip, Component::X);
 
-  // clang-format off
-  Domain robinDomain = Domain::ofBoundaryElements(StateManager::mesh(mesh_tag),
-    [](std::vector<serac::tensor<double, dim>> elem_coordinates, int) {
-      return std::all_of(elem_coordinates.begin(), elem_coordinates.end(), [](auto X) { return X[0] < 0.01; });
-    });
   solid_solver.addCustomBoundaryIntegral(DependsOn<>{}, 
       [](double /* t */, auto /*position*/, auto displacement, auto /*acceleration*/) {
         auto [u, du_dxi] = displacement;
         auto f           = u * 3.0;
         return f;  // define a displacement-proportional traction at the support
-      }, robinDomain);
-  // clang-format on
+      },
+      support);
 
   auto zero_displacement = [](const mfem::Vector&, mfem::Vector& u) -> void { u = 0.0; };
   solid_solver.setDisplacement(zero_displacement);
