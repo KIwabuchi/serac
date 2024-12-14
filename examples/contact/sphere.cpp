@@ -55,6 +55,9 @@ int main(int argc, char* argv[])
   auto  mesh = serac::mesh::refineAndDistribute(mfem::Mesh(mesh_ptrs.data(), static_cast<int>(mesh_ptrs.size())), 0, 0);
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "sphere_mesh");
 
+  auto fixed_boundary = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));
+  auto driven_surface = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(12));
+
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};
 #ifndef MFEM_USE_STRUMPACK
   SLIC_INFO_ROOT("Contact requires MFEM built with strumpack.");
@@ -80,10 +83,8 @@ int main(int argc, char* argv[])
   solid_solver.setMaterial(mat, whole_mesh);
 
   // Pass the BC information to the solver object
-  auto fixed_boundary = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));
   solid_solver.setFixedBCs(fixed_boundary);
 
-  auto driven_surface       = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(12));
   auto applied_displacement = [](serac::tensor<double, dim> x, double t) {
     serac::tensor<double, dim> u{};
     if (t <= 3.0 + 1.0e-12) {
