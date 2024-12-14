@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
   auto  mesh  = serac::mesh::refineAndDistribute(serac::buildMeshFromFile(filename), 3, 0);
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "twist_mesh");
 
-  auto fixed_surface = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));
+  auto fixed_surface  = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));
   auto driven_surface = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6));
 
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};

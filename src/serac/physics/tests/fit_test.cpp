@@ -19,7 +19,7 @@ using namespace serac::profiling;
 int num_procs, myid;
 int nsamples = 1;  // because mfem doesn't take in unsigned int
 
-int n = 0; // index of tests used to send the output to different locations
+int n = 0;  // index of tests used to send the output to different locations
 
 template <typename output_space>
 void stress_extrapolation_test()

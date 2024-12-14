@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "beam_mesh");
 
   // create boundary domains for boundary conditions
-  auto support = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1));
+  auto support                      = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1));
   auto applied_displacement_surface = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6));
 
   serac::LinearSolverOptions linear_options{.linear_solver = serac::LinearSolver::Strumpack, .print_level = 1};
