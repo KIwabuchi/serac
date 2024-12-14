@@ -45,9 +45,9 @@ TEST(domain, of_edges)
     EXPECT_EQ(d3.edge_ids_.size(), 1);
     EXPECT_EQ(d3.dim_, 1);
 
-    // note: by_attrs doesn't apply to edge sets in 3D, since
+    // note: by_attr doesn't apply to edge sets in 3D, since
     //       mfem doesn't have the notion of edge attributes
-    // Domain d4 = Domain::ofEdges(mesh, by_attrs<dim>({3}));
+    // Domain d4 = Domain::ofEdges(mesh, by_attr<dim>({3}));
   }
 
   {
@@ -72,9 +72,9 @@ TEST(domain, of_edges)
     EXPECT_EQ(d3.edge_ids_.size(), 1);
     EXPECT_EQ(d3.dim_, 1);
 
-    // note: by_attrs doesn't apply to edge sets in 3D, since
+    // note: by_attr doesn't apply to edge sets in 3D, since
     //       mfem doesn't have the notion of edge attributes
-    // Domain d4 = Domain::ofEdges(mesh, by_attrs<dim>({3}));
+    // Domain d4 = Domain::ofEdges(mesh, by_attr<dim>({3}));
   }
 
   {
