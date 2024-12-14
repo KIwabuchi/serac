@@ -428,7 +428,7 @@ public:
    *
    * @param[in] applied_displacement Function specifying the applied displacement vector.
    * @param[in] domain Domain over which to apply the boundary condition.
-   * @param[in] components (optional) Bitmask indicating which vector components will be constrained.
+   * @param[in] components (optional) Indicator of vector components to be constrained.
    *            If argument is omitted, the default is to constrain all components.
    *
    * @note This method must be called prior to completeSetup()
@@ -444,10 +444,10 @@ public:
    * Usage examples:
    *
    * To constrain the Y component:
-   * setDisplacementBCs(applied_displacement, domain, Y_COMPONENT);
+   * setDisplacementBCs(applied_displacement, domain, Component::Y);
    *
    * To constrain the X and Z components:
-   * setDisplacementBCs(applied_displacement, domain, X_COMPONENT | Z_COMPONENT);
+   * setDisplacementBCs(applied_displacement, domain, Component::X + Component::Z);
    *
    * To constrain all components:
    * setDisplacementBCs((applied_displacement, domain);
@@ -477,7 +477,8 @@ public:
    * @brief Shortcut to set selected components of displacements to zero for all time
    *
    * @param[in] domain Domain to apply the homogeneous boundary condition to
-   * @param[in] components Indicates which vector components will be constrained.
+   * @param[in] components (optional) Indicator of vector components to be constrained.
+   *            If argument is omitted, the default is to constrain all components.
    *
    * @note This method must be called prior to completeSetup()
    */
