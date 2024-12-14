@@ -45,9 +45,9 @@ TEST_P(ContactTest, patch)
   auto  mesh  = mesh::refineAndDistribute(buildMeshFromFile(filename), 2, 0);
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "patch_mesh");
 
-  Domain x0_faces = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1));
-  Domain y0_faces = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(2));
-  Domain z0_face = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));
+  Domain x0_faces  = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1));
+  Domain y0_faces  = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(2));
+  Domain z0_face   = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));
   Domain zmax_face = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6));
 
 #ifdef SERAC_USE_PETSC

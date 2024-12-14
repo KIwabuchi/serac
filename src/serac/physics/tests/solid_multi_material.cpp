@@ -51,9 +51,9 @@ TEST(Solid, MultiMaterial)
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
   // identify the relevant boundary domains on this mesh
-  Domain x_min = Domain::ofBoundaryElements(pmesh, by_attr<dim>(5));
-  Domain y_min = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
-  Domain z_min = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
+  Domain x_min    = Domain::ofBoundaryElements(pmesh, by_attr<dim>(5));
+  Domain y_min    = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
+  Domain z_min    = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
   Domain end_face = Domain::ofBoundaryElements(pmesh, by_attr<dim>(3));
 
   // _solver_params_start
@@ -88,8 +88,9 @@ TEST(Solid, MultiMaterial)
   solid.setMaterial(mat_left, left);
   solid.setMaterial(mat_right, right);
 
-  constexpr double stress   = 1.0;
-  solid.setTraction(DependsOn<>{}, [stress](auto, auto n, auto) { return stress * n; }, end_face);
+  constexpr double stress = 1.0;
+  solid.setTraction(
+      DependsOn<>{}, [stress](auto, auto n, auto) { return stress * n; }, end_face);
 
   solid.setFixedBCs(x_min, Component::X);
   solid.setFixedBCs(y_min, Component::Y);

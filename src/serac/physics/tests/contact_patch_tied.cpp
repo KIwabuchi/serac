@@ -45,9 +45,9 @@ TEST_P(ContactPatchTied, patch)
   auto  mesh  = mesh::refineAndDistribute(buildMeshFromFile(filename), 3, 0);
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), "patch_mesh");
 
-  Domain x0_faces = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1));
-  Domain y0_faces = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(2));
-  Domain z0_face = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));
+  Domain x0_faces  = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(1));
+  Domain y0_faces  = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(2));
+  Domain z0_face   = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(3));
   Domain zmax_face = serac::Domain::ofBoundaryElements(pmesh, serac::by_attr<dim>(6));
 
 // TODO: investigate performance with Petsc

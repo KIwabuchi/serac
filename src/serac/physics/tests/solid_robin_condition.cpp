@@ -80,7 +80,8 @@ void functional_solid_test_robin_condition()
   Domain tip = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
   solid_solver.setDisplacementBCs(translated_in_x, tip, Component::X);
 
-  solid_solver.addCustomBoundaryIntegral(DependsOn<>{}, 
+  solid_solver.addCustomBoundaryIntegral(
+      DependsOn<>{},
       [](double /* t */, auto /*position*/, auto displacement, auto /*acceleration*/) {
         auto [u, du_dxi] = displacement;
         auto f           = u * 3.0;

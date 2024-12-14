@@ -137,7 +137,8 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <int p, typename Material>
-  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, Domain essential_boundary, Domain /* whole_domain */) const
+  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, Domain essential_boundary,
+                  Domain /* whole_domain */) const
   {
     // essential BCs
     auto ebc_func = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };
@@ -219,7 +220,8 @@ public:
    * @param essential_boundaries Boundary attributes on which essential boundary conditions are desired
    */
   template <int p, typename Material>
-  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, Domain essential_boundary, Domain whole_domain) const
+  void applyLoads(const Material& material, SolidMechanics<p, dim>& solid, Domain essential_boundary,
+                  Domain whole_domain) const
   {
     // essential BCs
     auto ebc_func = [*this](tensor<double, dim> X, double t) { return this->eval(X, t); };

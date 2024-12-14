@@ -264,29 +264,29 @@ double pressure_error()
     return u;
   };
 
-  std::string meshdir = std::string(SERAC_REPO_DIR) + "/data/meshes/";
-  std::string filename;
-  int driven_attr = -1;
+  std::string   meshdir = std::string(SERAC_REPO_DIR) + "/data/meshes/";
+  std::string   filename;
+  int           driven_attr = -1;
   std::set<int> fixed_y_attrs, fixed_z_attrs;
   switch (element_type::geometry) {
     case mfem::Geometry::TRIANGLE:
-      filename = meshdir + "patch2D_tris.mesh";
+      filename    = meshdir + "patch2D_tris.mesh";
       driven_attr = 4;
       fixed_y_attrs.insert({1, 3});
       break;
     case mfem::Geometry::SQUARE:
-      filename = meshdir + "patch2D_quads.mesh";
+      filename    = meshdir + "patch2D_quads.mesh";
       driven_attr = 1;
       fixed_y_attrs.insert({1, 3});
       break;
     case mfem::Geometry::TETRAHEDRON:
-      filename = meshdir + "patch3D_tets.mesh";
+      filename    = meshdir + "patch3D_tets.mesh";
       driven_attr = 1;
       fixed_y_attrs.insert({2, 5});
       fixed_z_attrs.insert({3, 6});
       break;
     case mfem::Geometry::CUBE:
-      filename = meshdir + "patch3D_hexes.mesh";
+      filename    = meshdir + "patch3D_hexes.mesh";
       driven_attr = 1;
       fixed_y_attrs.insert({2, 5});
       fixed_z_attrs.insert({3, 6});
@@ -301,9 +301,9 @@ double pressure_error()
 
   auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
 
-  Domain driven = Domain::ofBoundaryElements(pmesh, by_attr<dim>(driven_attr));
-  Domain fixed_y  = Domain::ofBoundaryElements(pmesh, by_attr<dim>(fixed_y_attrs));
-  Domain fixed_z  = Domain::ofBoundaryElements(pmesh, by_attr<dim>(fixed_z_attrs));
+  Domain driven         = Domain::ofBoundaryElements(pmesh, by_attr<dim>(driven_attr));
+  Domain fixed_y        = Domain::ofBoundaryElements(pmesh, by_attr<dim>(fixed_y_attrs));
+  Domain fixed_z        = Domain::ofBoundaryElements(pmesh, by_attr<dim>(fixed_z_attrs));
   Domain material_block = EntireDomain(pmesh);
   Domain boundary       = EntireBoundary(pmesh);
 
@@ -338,10 +338,10 @@ double pressure_error()
   });
   // clang-format on
 
-  tensor<double, dim, dim> P = mat(state, H);
-  auto F = H + Identity<dim>();
-  auto sigma = dot(P, transpose(F))/det(F);
-  double pressure = -sigma[0][0];
+  tensor<double, dim, dim> P        = mat(state, H);
+  auto                     F        = H + Identity<dim>();
+  auto                     sigma    = dot(P, transpose(F)) / det(F);
+  double                   pressure = -sigma[0][0];
 
   // Set the pressure corresponding to 10% uniaxial strain
   solid.setPressure([pressure](auto&, double) { return pressure; }, boundary);

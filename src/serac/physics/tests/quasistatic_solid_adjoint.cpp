@@ -146,11 +146,11 @@ TEST(quasistatic, finiteDifference)
   auto             pmesh   = ::std::make_unique<::mfem::ParMesh>(MPI_COMM_WORLD, mesh);
   ::mfem::ParMesh* meshPtr = &::serac::StateManager::setMesh(::std::move(pmesh), mesh_tag);
 
-  Domain whole_domain = EntireDomain(*meshPtr);
-  Domain xmax_face = ::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(3));
-  Domain ymax_face = ::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(4));
-  Domain zmin_face = ::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(1));
-  serac::Domain zmax_face = serac::Domain::ofBoundaryElements(*meshPtr, serac::by_attr<DIM>(6));
+  Domain        whole_domain = EntireDomain(*meshPtr);
+  Domain        xmax_face    = ::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(3));
+  Domain        ymax_face    = ::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(4));
+  Domain        zmin_face    = ::serac::Domain::ofBoundaryElements(*meshPtr, by_attr<DIM>(1));
+  serac::Domain zmax_face    = serac::Domain::ofBoundaryElements(*meshPtr, serac::by_attr<DIM>(6));
 
   // set up solver
   using solidType        = serac::SolidMechanics<ORDER, DIM, ::serac::Parameters<paramFES, paramFES>>;

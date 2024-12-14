@@ -176,7 +176,8 @@ int main(int argc, char* argv[])
     return u;
   };
   solid_solver->setDisplacementBCs(compress, top, Component::X + Component::Z);
-  solid_solver->setDisplacementBCs(compress, top, Component::Y);  // BT: Would it be better to leave this component free?
+  solid_solver->setDisplacementBCs(compress, top,
+                                   Component::Y);  // BT: Would it be better to leave this component free?
 
   // Finalize the data structures
   solid_solver->completeSetup();
