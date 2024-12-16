@@ -9,7 +9,7 @@ on:
 # Cancel previous jobs if an update has been made to the pull request
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/develop' }}
 
 env:
   CLANG_DOCKER_IMAGE: seracllnl/tpls:clang-14_08-15-24_21h-49m
