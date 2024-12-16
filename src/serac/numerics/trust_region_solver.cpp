@@ -438,7 +438,7 @@ std::tuple<mfem::Vector, std::vector<std::shared_ptr<mfem::Vector>>, std::vector
 
 /// @brief Remove any obvious dependent directions, namely ones which are scaled version of previous directions
 /// The case where they are linear combinations of previous direction will be handled in the QR solver
-std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> removeDependantDirections(
+std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> removeDependentDirections(
     std::vector<const mfem::Vector*> directions, std::vector<const mfem::Vector*> A_directions)
 {
   std::vector<double> norms;

@@ -399,7 +399,7 @@ struct NonlinearSolverOptions {
   /// Specify subspace option
   /// 0: no subspace solve
   /// 1: subspace solve only when indefinite system found
-  /// 2: subspace solve only when indefinite system of step to boundary
+  /// 2: subspace solve only when indefinite system or step to boundary
   /// 3: subspace solve always
   int subspace_option = 0;
 

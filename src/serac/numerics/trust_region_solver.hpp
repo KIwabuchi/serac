@@ -37,7 +37,7 @@ std::tuple<mfem::Vector, std::vector<std::shared_ptr<mfem::Vector>>, std::vector
     const std::vector<const mfem::Vector*>& directions, const std::vector<const mfem::Vector*>& A_directions,
     const mfem::Vector& b, double delta, int num_leftmost);
 
-std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> removeDependantDirections(
+std::pair<std::vector<const mfem::Vector*>, std::vector<const mfem::Vector*>> removeDependentDirections(
     std::vector<const mfem::Vector*> directions, std::vector<const mfem::Vector*> A_directions);
 
 }  // namespace serac

@@ -252,7 +252,7 @@ struct TrustRegionResults {
   }
 
   /// enumerates the possible final status of the trust region steps
-  enum Status
+  enum class Status
   {
     Interior,
     NegativeCurvature,
@@ -378,7 +378,7 @@ public:
       H_directions.emplace_back(H_left.get());
     }
 
-    std::tie(directions, H_directions) = removeDependantDirections(directions, H_directions);
+    std::tie(directions, H_directions) = removeDependentDirections(directions, H_directions);
 
     mfem::Vector b(g);
     b *= -1;
@@ -453,8 +453,7 @@ public:
   {
     SERAC_MARK_FUNCTION;
     double       rz = Dot(r_local, z);
-    mfem::Vector tmp(r_local);
-    tmp *= 0.0;
+    mfem::Vector tmp(r_local); tmp = 0.0;
     H(z, tmp);
     return rz + 0.5 * Dot(z, tmp);
   }
@@ -479,6 +478,7 @@ public:
     const double cg_tol_squared = settings.cg_tol * settings.cg_tol;
 
     if (Dot(r0, r0) <= cg_tol_squared && settings.min_cg_iterations == 0) {
+      mfem::out << "Trust region solution state within tolerance on first iteration." << "\n";
       return;
     }
 
@@ -498,7 +498,7 @@ public:
     // std::cout << "initial energy = " << computeEnergy(r0, hess_vec_func, z) << std::endl;
 
     for (cgIter = 1; cgIter <= settings.max_cg_iterations; ++cgIter) {
-      // check if this is a decent direction
+      // check if this is a descent direction
       if (Dot(d, rCurrent) > 0) {
         d *= -1;
         results.interior_status = TrustRegionResults::Status::NonDescentDirection;
@@ -512,13 +512,10 @@ public:
       add(z, alphaCg, d, zPred);
       double zzNp1 = Dot(zPred, zPred);
 
-      const bool go_to_boundary = curvature <= 0 || zzNp1 > trSize * trSize;
+      const bool go_to_boundary = curvature <= 0 || zzNp1 >= trSize * trSize;
       if (go_to_boundary) {
         projectToBoundaryWithCoefs(z, d, trSize, zz, zd, dd);
         if (curvature <= 0) {
-          if (print_options.iterations || print_options.warnings) {
-            mfem::out << "negative curvature direction found\n";
-          }
           results.interior_status = TrustRegionResults::Status::NegativeCurvature;
         } else {
           results.interior_status = TrustRegionResults::Status::OnBoundary;
@@ -530,7 +527,7 @@ public:
 
       if (results.interior_status == TrustRegionResults::Status::NonDescentDirection) {
         if (print_options.iterations || print_options.warnings) {
-          mfem::out << "found a non descent direction\n";
+          mfem::out << "Found a non descent direction\n";
         }
         return;
       }

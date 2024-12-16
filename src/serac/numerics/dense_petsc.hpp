@@ -19,15 +19,6 @@ struct DenseMat {
   DenseMat(const DenseMat& a)
   {
     MatDuplicate(a.A, MAT_COPY_VALUES, &A);
-    MatCopy(a.A, A, SAME_NONZERO_PATTERN);
-  }
-
-  /// @brief assignment
-  /// @param a matrix
-  DenseMat& operator=(const DenseMat& a)
-  {
-    MatCopy(a.A, A, SAME_NONZERO_PATTERN);
-    return *this;
   }
 
   /// @brief destructor
@@ -53,7 +44,7 @@ struct DenseMat {
   /// @brief set value
   void setValue(int i, int j, double val) { MatSetValues(A, 1, &i, 1, &j, &val, INSERT_VALUES); }
 
-  /// @brief scalar multiply
+  /// @brief matrix-vector multiply
   DenseVec operator*(const DenseVec& v) const;
 
   /// @brief solve
@@ -172,7 +163,7 @@ struct DenseVec {
   }
 
   /// @brief size
-  auto size() const
+  int size() const
   {
     int isize;
     VecGetSize(v, &isize);
@@ -190,10 +181,7 @@ struct DenseVec {
   /// @brief index into
   double operator[](size_t i) const
   {
-    int    i_int = static_cast<int>(i);
-    double val;
-    VecGetValues(v, 1, &i_int, &val);
-    return val;
+    return (*this)[int(i)];
   }
 
   /// @brief set value
@@ -202,8 +190,7 @@ struct DenseVec {
   /// @brief set value
   void setValue(size_t i, double val)
   {
-    int i_int = static_cast<int>(i);
-    VecSetValues(v, 1, &i_int, &val, INSERT_VALUES);
+    setValue(int(i), val);
   }
 
   /// @brief add scaled vector
@@ -240,7 +227,9 @@ struct DenseVec {
 DenseVec DenseMat::operator*(const DenseVec& v) const
 {
   Vec out;
-  VecDuplicate(v.v, &out);
+  auto [rows, cols] = size();
+  SLIC_ERROR_IF( cols != v.size(), "Column size of dense matrix and length of multiplied vector do not match" );
+  VecCreateSeq(PETSC_COMM_SELF, rows, &out);
   MatMult(A, v.v, out);
   return out;
 }
@@ -279,6 +268,11 @@ DenseVec operator+(const DenseVec& a, double b)
   VecSet(c, b);
   VecAXPY(c, 1.0, a.v);
   return c;
+}
+
+DenseVec operator+(double b, const DenseVec& a)
+{
+    return a + b;
 }
 
 /// @brief component-wise multiplication of vectors
@@ -347,7 +341,6 @@ auto eigh(const DenseMat& Adense)
   EPSGetType(eps, &type);
   // PetscPrintf(PETSC_COMM_SELF," Solution method: %s\n\n",type);
   EPSGetDimensions(eps, &jsize, NULL, NULL);
-  SLIC_WARNING_IF(isize != jsize, "The requested and achieved number of eigenvalues do not match eigh call");
   // PetscPrintf(PETSC_COMM_SELF," Number of requested eigenvalues: %" PetscInt_FMT "\n",isize);
   // PetscPrintf(PETSC_COMM_SELF," Number of requested eigenvalues: %" PetscInt_FMT "\n",jsize);
 
