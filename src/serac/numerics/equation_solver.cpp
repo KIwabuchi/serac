@@ -323,6 +323,13 @@ protected:
   Solver& tr_precond;
 
 public:
+
+  mutable size_t num_hess_vecs = 0;
+  mutable size_t num_preconds = 0;
+  mutable size_t num_residuals = 0;
+  mutable size_t num_subspace_solves = 0;
+  mutable size_t num_jacobian_assembles = 0;
+
 #ifdef MFEM_USE_MPI
   /// constructor
   TrustRegion(MPI_Comm comm_, const NonlinearSolverOptions& nonlinear_opts, const LinearSolverOptions& linear_opts,
@@ -352,6 +359,8 @@ public:
                                [[maybe_unused]] int num_leftmost) const
   {
 #ifdef SERAC_USE_SLEPC
+    SERAC_MARK_FUNCTION;
+    ++num_subspace_solves;
 
     std::vector<const mfem::Vector*> directions;
     for (auto& d : ds) {
@@ -442,6 +451,7 @@ public:
   template <typename HessVecFunc>
   double computeEnergy(const mfem::Vector& r_local, const HessVecFunc& H, const mfem::Vector& z) const
   {
+    SERAC_MARK_FUNCTION;
     double       rz = Dot(r_local, z);
     mfem::Vector tmp(r_local);
     tmp *= 0.0;
@@ -549,6 +559,7 @@ public:
   void assembleJacobian(const mfem::Vector& x) const
   {
     SERAC_MARK_FUNCTION;
+    ++num_jacobian_assembles;
     grad = &oper->GetGradient(x);
     if (nonlinear_options.force_monolithic) {
       auto* grad_blocked = dynamic_cast<mfem::BlockOperator*>(grad);
@@ -560,6 +571,7 @@ public:
   mfem::real_t computeResidual(const mfem::Vector& x_, mfem::Vector& r_) const
   {
     SERAC_MARK_FUNCTION;
+    ++num_residuals;
     oper->Mult(x_, r_);
     return Norm(r_);
   }
@@ -568,6 +580,7 @@ public:
   void hessVec(const mfem::Vector& x_, mfem::Vector& v_) const
   {
     SERAC_MARK_FUNCTION;
+    ++num_hess_vecs;
     grad->Mult(x_, v_);
   }
 
@@ -575,6 +588,7 @@ public:
   void precond(const mfem::Vector& x_, mfem::Vector& v_) const
   {
     SERAC_MARK_FUNCTION;
+    ++num_preconds;
     tr_precond.Mult(x_, v_);
   };
 
@@ -585,6 +599,12 @@ public:
     MFEM_ASSERT(prec != NULL, "the Solver is not set (use SetSolver).");
 
     using real_t = mfem::real_t;
+
+    num_hess_vecs = 0;
+    num_preconds = 0;
+    num_residuals = 0;
+    num_subspace_solves = 0;
+    num_jacobian_assembles = 0;
 
     real_t norm, norm_goal;
     norm = initial_norm = computeResidual(X, r);
@@ -817,6 +837,15 @@ public:
     if (!converged && (print_options.summary || print_options.warnings)) {
       mfem::out << "Newton: No convergence!\n";
     }
+
+    if (print_options.summary || print_options.warnings) {
+      mfem::out << "num hess vecs = " << num_hess_vecs << "\n";
+      mfem::out << "num preconds = " << num_preconds << "\n";
+      mfem::out << "num residuals = " << num_residuals << "\n";
+      mfem::out << "num subspace solves = " << num_subspace_solves << "\n";
+      mfem::out << "num jacobian_assembles = " << num_jacobian_assembles << "\n";
+    }
+
   }
 };
 

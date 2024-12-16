@@ -377,6 +377,7 @@ std::tuple<mfem::Vector, std::vector<std::shared_ptr<mfem::Vector>>, std::vector
     const std::vector<const mfem::Vector*>& states, const std::vector<const mfem::Vector*>& Astates,
     const mfem::Vector& b, double delta, int num_leftmost)
 {
+  SERAC_MARK_FUNCTION;
   DenseMat sAs1 = dot(states, Astates);
   DenseMat sAs  = sym(sAs1);
 
