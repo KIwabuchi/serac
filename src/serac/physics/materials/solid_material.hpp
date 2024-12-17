@@ -143,17 +143,17 @@ struct NeoHookeanAdditiveSplit {
   SERAC_HOST_DEVICE auto operator()(State& /* state */, const tensor<T, dim, dim>& du_dX) const
   {
     using std::pow;
-    constexpr auto I = Identity<dim>();
-    auto F = I + du_dX;
-    auto J = det(F);
-    auto Jm13 = pow(J, -1.0/3.0);
-    auto F_bar = Jm13*F;
-    auto Pdev = G*Jm13*(F_bar - 1.0/3.0*inner(F_bar, F_bar)*inv(transpose(F_bar)));
-    
+    constexpr auto I     = Identity<dim>();
+    auto           F     = I + du_dX;
+    auto           J     = det(F);
+    auto           Jm13  = pow(J, -1.0 / 3.0);
+    auto           F_bar = Jm13 * F;
+    auto           Pdev  = G * Jm13 * (F_bar - 1.0 / 3.0 * inner(F_bar, F_bar) * inv(transpose(F_bar)));
+
     // any volumetric model could be substituted here
     using std::log1p;
     auto logJ = log1p(detApIm1(du_dX));
-    auto Pvol = K*logJ*inv(transpose(F));
+    auto Pvol = K * logJ * inv(transpose(F));
 
     return Pdev + Pvol;
   }

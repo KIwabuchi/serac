@@ -6,7 +6,7 @@
 
 /**
  * @file neohookean_additive_split.cpp
- * 
+ *
  * Test of addivtive split version of neo-Hookean model
  */
 
@@ -21,26 +21,26 @@
 namespace serac {
 
 TEST(NeoHookeanSplit, zeroPoint)
-{    
-    constexpr int dim = 3;
-    double G = 1.0;
-    double K = 2.0;
-    solid_mechanics::NeoHookeanAdditiveSplit mat{.density = 1.0, .K = K, .G = G};
-    solid_mechanics::NeoHookeanAdditiveSplit::State state{};
-    tensor<double, dim, dim> H{};
-    auto P = mat(state, H);
-    EXPECT_LT(norm(P), 1e-10);
+{
+  constexpr int                                   dim = 3;
+  double                                          G   = 1.0;
+  double                                          K   = 2.0;
+  solid_mechanics::NeoHookeanAdditiveSplit        mat{.density = 1.0, .K = K, .G = G};
+  solid_mechanics::NeoHookeanAdditiveSplit::State state{};
+  tensor<double, dim, dim>                        H{};
+  auto                                            P = mat(state, H);
+  EXPECT_LT(norm(P), 1e-10);
 };
 
 TEST(NeoHookeanSplit, materialFrameIndifference)
 {
-    constexpr int dim = 3;
-    double G = 1.0;
-    double K = 2.0;
-    solid_mechanics::NeoHookeanAdditiveSplit mat{.density = 1.0, .K = K, .G = G};
-    solid_mechanics::NeoHookeanAdditiveSplit::State state{};
+  constexpr int                                   dim = 3;
+  double                                          G   = 1.0;
+  double                                          K   = 2.0;
+  solid_mechanics::NeoHookeanAdditiveSplit        mat{.density = 1.0, .K = K, .G = G};
+  solid_mechanics::NeoHookeanAdditiveSplit::State state{};
 
-    // clang-format off
+  // clang-format off
     // random rotation matrix
     tensor<double, dim, dim> Q{{{ 0.85293210845696,  0.40557741669729, -0.32865449552427},
                                 {-0.51876824611259,  0.72872528356249, -0.44703351990878},
@@ -51,39 +51,38 @@ TEST(NeoHookeanSplit, materialFrameIndifference)
     tensor<double, dim, dim> H{{{0.33749426589249, 0.19423845458191, 0.30783257318134},
                                 {0.0901473654803 , 0.6104025179124 , 0.45897891871615},
                                 {0.68930932313059, 0.19832140905316, 0.90197331346206}}};
-    // clang-format on
+  // clang-format on
 
-    auto P = mat(state, H);
-    auto H_star = dot(Q, H + Identity<dim>()) - Identity<dim>();
-    auto P_star = mat(state, H_star);
-    auto error = P_star - dot(Q, P);
-    EXPECT_LT(norm(error), 1e-12);
+  auto P      = mat(state, H);
+  auto H_star = dot(Q, H + Identity<dim>()) - Identity<dim>();
+  auto P_star = mat(state, H_star);
+  auto error  = P_star - dot(Q, P);
+  EXPECT_LT(norm(error), 1e-12);
 };
 
 TEST(NeoHookeanSplit, deviatoricPartIsCorrectlySplit)
 {
-    // When the bulk modulus is zero, the Cauchy stress should be strictly symmetric
-    
-    constexpr int dim = 3;
-    double G = 1.0;
-    double K = 0.0;
-    solid_mechanics::NeoHookeanAdditiveSplit mat{.density = 1.0, .K = K, .G = G};
-    solid_mechanics::NeoHookeanAdditiveSplit::State state{};
+  // When the bulk modulus is zero, the Cauchy stress should be strictly symmetric
 
-    // clang-format off
+  constexpr int                                   dim = 3;
+  double                                          G   = 1.0;
+  double                                          K   = 0.0;
+  solid_mechanics::NeoHookeanAdditiveSplit        mat{.density = 1.0, .K = K, .G = G};
+  solid_mechanics::NeoHookeanAdditiveSplit::State state{};
+
+  // clang-format off
     tensor<double, dim, dim> H{{{0.33749426589249, 0.19423845458191, 0.30783257318134},
                                 {0.0901473654803 , 0.6104025179124 , 0.45897891871615},
                                 {0.68930932313059, 0.19832140905316, 0.90197331346206}}};
-    // clang-format on
+  // clang-format on
 
-    auto P = mat(state, H);
-    auto F = H + Identity<dim>();
-    auto T = dot(P, transpose(F))/det(F); // Cauchy stress
-    EXPECT_LT(std::abs(tr(T)), 1e-12);
+  auto P = mat(state, H);
+  auto F = H + Identity<dim>();
+  auto T = dot(P, transpose(F)) / det(F);  // Cauchy stress
+  EXPECT_LT(std::abs(tr(T)), 1e-12);
 };
 
-
-} //namespace serac
+}  // namespace serac
 
 int main(int argc, char* argv[])
 {
