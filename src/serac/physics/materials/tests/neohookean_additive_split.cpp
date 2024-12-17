@@ -62,7 +62,7 @@ TEST(NeoHookeanSplit, materialFrameIndifference)
 
 TEST(NeoHookeanSplit, deviatoricPartIsCorrectlySplit)
 {
-  // When the bulk modulus is zero, the Cauchy stress should be strictly symmetric
+  // When the bulk modulus is zero, the Cauchy stress should be strictly deviatoric
 
   constexpr int                                   dim = 3;
   double                                          G   = 1.0;
