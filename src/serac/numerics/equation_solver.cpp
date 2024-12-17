@@ -508,7 +508,8 @@ public:
       const double curvature = Dot(d, Hd);
       const double alphaCg   = curvature != 0.0 ? rPr / curvature : 0.0;
 
-      auto& zPred = Pr;  // re-use Pr, carefully
+      auto& zPred = Pr;  // re-use Pr memory. 
+                         // This predicted step will no longer be used by the time Pr is, so we can avoid an extra vector floating around
       add(z, alphaCg, d, zPred);
       double zzNp1 = Dot(zPred, zPred);
 

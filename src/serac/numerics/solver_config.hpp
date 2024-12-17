@@ -369,6 +369,14 @@ struct LinearSolverOptions {
 };
 // _linear_options_end
 
+// Enumerated options for when to use trust-region subspace solver
+enum SubSpaceOptions {
+  NEVER,
+  WHEN_INDEFINITE,
+  WHEN_INDEFINITE_OR_BOUNDARY,
+  ALWAYS
+};
+
 // _nonlinear_options_start
 /// Nonlinear solution scheme parameters
 struct NonlinearSolverOptions {
@@ -396,12 +404,7 @@ struct NonlinearSolverOptions {
   /// Scaling for the initial trust region size
   double trust_region_scaling = 0.1;
 
-  /// Specify subspace option
-  /// 0: no subspace solve
-  /// 1: subspace solve only when indefinite system found
-  /// 2: subspace solve only when indefinite system or step to boundary
-  /// 3: subspace solve always
-  int subspace_option = 0;
+  SubSpaceOptions subspace_option = SubSpaceOptions::NEVER;
 
   /// Number of extra leftmost eigenvector to be stored between solves
   int num_leftmost = 1;
