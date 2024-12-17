@@ -77,7 +77,7 @@ jobs:
             --extra-cmake-options "${{ matrix.config.cmake_opts }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}" \
             --jobs 4
       - name: Upload Test Results
-        if: ${{ matrix.config.compiler_image != needs.set_image_vars.outputs.clang_docker_image }}
+        if: ${{ matrix.config.compiler_image != needs.set_image_vars.outputs.cuda_docker_image }}
         uses: actions/upload-artifact@v4
         with:
           name: Test Results ${{ matrix.config.host_config }} ${{ matrix.build_type }} ${{ matrix.config.cmake_opts }}
