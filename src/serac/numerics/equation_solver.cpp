@@ -323,11 +323,10 @@ protected:
   Solver& tr_precond;
 
 public:
-
-  mutable size_t num_hess_vecs = 0;
-  mutable size_t num_preconds = 0;
-  mutable size_t num_residuals = 0;
-  mutable size_t num_subspace_solves = 0;
+  mutable size_t num_hess_vecs          = 0;
+  mutable size_t num_preconds           = 0;
+  mutable size_t num_residuals          = 0;
+  mutable size_t num_subspace_solves    = 0;
   mutable size_t num_jacobian_assembles = 0;
 
 #ifdef MFEM_USE_MPI
@@ -453,7 +452,8 @@ public:
   {
     SERAC_MARK_FUNCTION;
     double       rz = Dot(r_local, z);
-    mfem::Vector tmp(r_local); tmp = 0.0;
+    mfem::Vector tmp(r_local);
+    tmp = 0.0;
     H(z, tmp);
     return rz + 0.5 * Dot(z, tmp);
   }
@@ -478,7 +478,8 @@ public:
     const double cg_tol_squared = settings.cg_tol * settings.cg_tol;
 
     if (Dot(r0, r0) <= cg_tol_squared && settings.min_cg_iterations == 0) {
-      mfem::out << "Trust region solution state within tolerance on first iteration." << "\n";
+      mfem::out << "Trust region solution state within tolerance on first iteration."
+                << "\n";
       return;
     }
 
@@ -508,8 +509,9 @@ public:
       const double curvature = Dot(d, Hd);
       const double alphaCg   = curvature != 0.0 ? rPr / curvature : 0.0;
 
-      auto& zPred = Pr;  // re-use Pr memory. 
-                         // This predicted step will no longer be used by the time Pr is, so we can avoid an extra vector floating around
+      auto& zPred = Pr;  // re-use Pr memory.
+                         // This predicted step will no longer be used by the time Pr is, so we can avoid an extra
+                         // vector floating around
       add(z, alphaCg, d, zPred);
       double zzNp1 = Dot(zPred, zPred);
 
@@ -598,10 +600,10 @@ public:
 
     using real_t = mfem::real_t;
 
-    num_hess_vecs = 0;
-    num_preconds = 0;
-    num_residuals = 0;
-    num_subspace_solves = 0;
+    num_hess_vecs          = 0;
+    num_preconds           = 0;
+    num_residuals          = 0;
+    num_subspace_solves    = 0;
     num_jacobian_assembles = 0;
 
     real_t norm, norm_goal;
@@ -843,7 +845,6 @@ public:
       mfem::out << "num subspace solves = " << num_subspace_solves << "\n";
       mfem::out << "num jacobian_assembles = " << num_jacobian_assembles << "\n";
     }
-
   }
 };
 

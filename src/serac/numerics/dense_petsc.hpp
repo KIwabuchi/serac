@@ -16,10 +16,7 @@ struct DenseMat {
 
   /// @brief constructor
   /// @param a matrix
-  DenseMat(const DenseMat& a)
-  {
-    MatDuplicate(a.A, MAT_COPY_VALUES, &A);
-  }
+  DenseMat(const DenseMat& a) { MatDuplicate(a.A, MAT_COPY_VALUES, &A); }
 
   /// @brief destructor
   ~DenseMat() { MatDestroy(&A); }
@@ -179,19 +176,13 @@ struct DenseVec {
   }
 
   /// @brief index into
-  double operator[](size_t i) const
-  {
-    return (*this)[int(i)];
-  }
+  double operator[](size_t i) const { return (*this)[int(i)]; }
 
   /// @brief set value
   void setValue(int i, double val) { VecSetValues(v, 1, &i, &val, INSERT_VALUES); }
 
   /// @brief set value
-  void setValue(size_t i, double val)
-  {
-    setValue(int(i), val);
-  }
+  void setValue(size_t i, double val) { setValue(int(i), val); }
 
   /// @brief add scaled vector
   void add(double val, const DenseVec& w) { VecAXPY(v, val, w.v); }
@@ -228,7 +219,7 @@ DenseVec DenseMat::operator*(const DenseVec& v) const
 {
   Vec out;
   auto [rows, cols] = size();
-  SLIC_ERROR_IF( cols != v.size(), "Column size of dense matrix and length of multiplied vector do not match" );
+  SLIC_ERROR_IF(cols != v.size(), "Column size of dense matrix and length of multiplied vector do not match");
   VecCreateSeq(PETSC_COMM_SELF, rows, &out);
   MatMult(A, v.v, out);
   return out;
@@ -270,10 +261,7 @@ DenseVec operator+(const DenseVec& a, double b)
   return c;
 }
 
-DenseVec operator+(double b, const DenseVec& a)
-{
-    return a + b;
-}
+DenseVec operator+(double b, const DenseVec& a) { return a + b; }
 
 /// @brief component-wise multiplication of vectors
 DenseVec operator*(const DenseVec& a, const DenseVec& b)

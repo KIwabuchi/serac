@@ -370,7 +370,8 @@ struct LinearSolverOptions {
 // _linear_options_end
 
 // Enumerated options for when to use trust-region subspace solver
-enum SubSpaceOptions {
+enum SubSpaceOptions
+{
   NEVER,
   WHEN_INDEFINITE,
   WHEN_INDEFINITE_OR_BOUNDARY,
