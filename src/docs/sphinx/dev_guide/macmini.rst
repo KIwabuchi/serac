@@ -48,3 +48,14 @@ how to do this, instructions can be found on
 
 You're now able to clone Serac and get started with the installation process. Further instructions for doing so are currently on 
 the `quickstart page <https://serac.readthedocs.io/en/latest/sphinx/quickstart.html#quickstart-label>`_ of the Serac documentation.
+
+================
+Cron Job Example
+================
+
+The following is an example of a cron job that could be used to test a Mac build, assuming TPLs have been built for Serac. Run
+`crontab -e` to edit the cron file.
+
+.. code-block:: bash
+
+    0 7 * * 4 /Users/chapman39/dev/serac/ci/repo/scripts/shared-macmini/build-and-test.sh
