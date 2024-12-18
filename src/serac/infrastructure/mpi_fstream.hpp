@@ -15,11 +15,13 @@ struct ofstream : public std::ofstream {
   template <typename T>
   friend ofstream& operator<<(ofstream&, T);
 
+  /// default ctor
   ofstream() {
     initialized = false;
   }
 
-  bool initialized;
+  /// whether or not the fstream is in use or not
+  bool initialized; 
 
 };
 
