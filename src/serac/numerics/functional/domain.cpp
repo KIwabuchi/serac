@@ -56,7 +56,7 @@ static Domain domain_of_edges(const mesh_t& mesh, std::function<T> predicate)
 {
   assert(mesh.SpaceDimension() == d);
 
-  Domain output{mesh, 1 /* edges are 1-dimensional */};
+  Domain output{mesh, 1 /* edges are 1-dimensional */, Domain::Type::Elements};
 
   // layout is undocumented, but it seems to be
   // [x1, x2, x3, ..., y1, y2, y3 ..., (z1, z2, z3, ...)]
@@ -109,7 +109,7 @@ static Domain domain_of_faces(const mesh_t& mesh, std::function<bool(std::vector
 {
   assert(mesh.SpaceDimension() == d);
 
-  Domain output{mesh, 2 /* faces are 2-dimensional */};
+  Domain output{mesh, 2 /* faces are 2-dimensional */, Domain::Type::Elements};
 
   // layout is undocumented, but it seems to be
   // [x1, x2, x3, ..., y1, y2, y3 ..., (z1, z2, z3, ...)]
@@ -189,7 +189,7 @@ static Domain domain_of_elems(const mesh_t& mesh, std::function<bool(std::vector
 {
   assert(mesh.SpaceDimension() == d);
 
-  Domain output{mesh, mesh.SpaceDimension() /* elems can be 2 or 3 dimensional */};
+  Domain output{mesh, mesh.SpaceDimension() /* elems can be 2 or 3 dimensional */, Domain::Type::Elements};
 
   // layout is undocumented, but it seems to be
   // [x1, x2, x3, ..., y1, y2, y3 ..., (z1, z2, z3, ...)]
@@ -582,8 +582,9 @@ Domain set_operation(SET_OPERATION op, const Domain& a, const Domain& b)
 {
   assert(&a.mesh_ == &b.mesh_);
   assert(a.dim_ == b.dim_);
+  assert(a.type_ == b.type_);
 
-  Domain combined{a.mesh_, a.dim_};
+  Domain combined{a.mesh_, a.dim_, a.type_};
 
   using Ids         = std::vector<int>;
   auto apply_set_op = [&op](const Ids& x, const Ids& y) { return set_operation(op, x, y); };
