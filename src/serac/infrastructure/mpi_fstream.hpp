@@ -7,7 +7,6 @@ namespace mpi {
 
 /// a tool for writing processor-specific log files
 struct ofstream : public std::ofstream {
-
   /// open an output file for this processor (don't call directly)
   void initialize();
 
@@ -16,13 +15,10 @@ struct ofstream : public std::ofstream {
   friend ofstream& operator<<(ofstream&, T);
 
   /// default ctor
-  ofstream() {
-    initialized = false;
-  }
+  ofstream() { initialized = false; }
 
   /// whether or not the fstream is in use or not
-  bool initialized; 
-
+  bool initialized;
 };
 
 /// analogous to operator<< used with e.g. std::cout
@@ -38,7 +34,7 @@ ofstream& operator<<(ofstream& out, T op)
 extern ofstream out;
 
 /// open an output file for this processor (don't call directly)
-inline void ofstream::initialize() 
+inline void ofstream::initialize()
 {
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
