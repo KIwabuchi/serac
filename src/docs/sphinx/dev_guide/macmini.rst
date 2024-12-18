@@ -54,7 +54,7 @@ Cron Job Example
 ================
 
 The following is an example of a cron job that could be used to test a Mac build, assuming TPLs have been built for Serac. Run
-`crontab -e` to edit the cron file.
+``crontab -e`` to edit the cron file.
 
 .. code-block:: bash
 
