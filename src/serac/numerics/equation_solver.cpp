@@ -323,10 +323,15 @@ protected:
   Solver& tr_precond;
 
 public:
-  mutable size_t num_hess_vecs          = 0;
-  mutable size_t num_preconds           = 0;
-  mutable size_t num_residuals          = 0;
-  mutable size_t num_subspace_solves    = 0;
+  /// internal counter for hess-vecs
+  mutable size_t num_hess_vecs = 0;
+  /// internal counter for preconditions
+  mutable size_t num_preconds = 0;
+  /// internal counter for residuals
+  mutable size_t num_residuals = 0;
+  /// internal counter for subspace solves
+  mutable size_t num_subspace_solves = 0;
+  /// internal counter for matrix assembles
   mutable size_t num_jacobian_assembles = 0;
 
 #ifdef MFEM_USE_MPI
@@ -838,7 +843,7 @@ public:
       mfem::out << "Newton: No convergence!\n";
     }
 
-    if (print_options.summary || print_options.warnings) {
+    if (false && (print_options.summary || print_options.warnings)) {
       mfem::out << "num hess vecs = " << num_hess_vecs << "\n";
       mfem::out << "num preconds = " << num_preconds << "\n";
       mfem::out << "num residuals = " << num_residuals << "\n";

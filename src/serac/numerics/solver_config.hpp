@@ -369,7 +369,7 @@ struct LinearSolverOptions {
 };
 // _linear_options_end
 
-// Enumerated options for when to use trust-region subspace solver
+/// Enumerated options for when to use trust-region subspace solver
 enum SubSpaceOptions
 {
   NEVER,
@@ -405,6 +405,7 @@ struct NonlinearSolverOptions {
   /// Scaling for the initial trust region size
   double trust_region_scaling = 0.1;
 
+  /// Option for how when the subspace solver should be utilized within trust-region solver
   SubSpaceOptions subspace_option = SubSpaceOptions::NEVER;
 
   /// Number of extra leftmost eigenvector to be stored between solves

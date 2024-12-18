@@ -1513,8 +1513,6 @@ public:
   /// @brief getter for nodal forces (before zeroing-out essential dofs)
   const serac::FiniteElementDual& reactions() const { return reactions_; };
 
-  const mfem::NewtonSolver* nonlinearSolver() { return &nonlin_solver_->nonlinearSolver(); }
-
 protected:
   /// The compile-time finite element trial space for displacement and velocity (H1 of order p)
   using trial = H1<order, dim>;
