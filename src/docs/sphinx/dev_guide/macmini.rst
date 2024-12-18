@@ -31,7 +31,7 @@ Next, request admin access to the machine by visiting either ServiceNow or the `
 4. **Two Logins**
 
 Once you have a MyPass and you have admin rights, try to log in again. There should be two passwords required to log in. The first one
-is for your MyPass (assuming it's connected to the machine) and the other is for the account login.
+is for your MyPass (assuming it's plugged into to the machine) and the other is for the account login.
 
 5. **Download and setup Brew**
 
