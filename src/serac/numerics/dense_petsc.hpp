@@ -16,10 +16,10 @@ struct DenseMat {
 
   /// @brief constructor
   /// @param a matrix
-  DenseMat(const DenseMat& a) 
+  DenseMat(const DenseMat& a)
   {
     MatDuplicate(a.A, MAT_COPY_VALUES, &A);
-    MatCopy(a.A, A, SAME_NONZERO_PATTERN); 
+    MatCopy(a.A, A, SAME_NONZERO_PATTERN);
     MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
   }
@@ -69,9 +69,9 @@ struct DenseMat {
   bool hasNan() const
   {
     auto [rows, cols] = size();
-    for (int i=0; i < rows; ++i) {
-      for (int j=0; j < cols; ++j) {
-        double val = (*this)(i,j);
+    for (int i = 0; i < rows; ++i) {
+      for (int j = 0; j < cols; ++j) {
+        double val = (*this)(i, j);
         if (val != val) return true;
       }
     }
@@ -79,7 +79,8 @@ struct DenseMat {
   }
 
   /// @brief  reassemble petsc dense matrix after values have been modified
-  void reassemble() {
+  void reassemble()
+  {
     MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);
   }
