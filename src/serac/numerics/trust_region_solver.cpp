@@ -175,6 +175,7 @@ Vec dot(const std::vector<const mfem::Vector*>& s, const mfem::Vector& b)
 /**
  * @brief The qr decomposition of the state vectors
  * @param states The vector of mfem::vectors of directions
+ * @return Pair of BV Q and DenseMat R
  */
 auto qr(const std::vector<const mfem::Vector*>& states)
 {
@@ -194,6 +195,7 @@ auto qr(const std::vector<const mfem::Vector*>& states)
  * @param A The stiffness matrix
  * @param b The rhs vector
  * @param x The current solution vector
+ * @return The quadratic, linearized energy approximation
  */
 double quadraticEnergy(const DenseMat& A, const DenseVec& b, const DenseVec& x)
 {
