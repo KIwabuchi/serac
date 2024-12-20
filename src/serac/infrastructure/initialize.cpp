@@ -73,6 +73,7 @@ std::pair<int, int> initialize(int argc, char* argv[], MPI_Comm comm)
   mfem::MFEMInitializePetsc(&argc, &argv);
 #endif
   PetscPopSignalHandler();
+  PetscPopSignalHandler();
 #endif
 
   // Initialize GPU (no-op if not enabled/available)
