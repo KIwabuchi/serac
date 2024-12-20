@@ -78,6 +78,7 @@ struct DenseMat {
     return false;
   }
 
+  /// @brief  reassemble petsc dense matrix after values have been modified
   void reassemble() {
     MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY);

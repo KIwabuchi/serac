@@ -385,8 +385,6 @@ std::tuple<mfem::Vector, std::vector<std::shared_ptr<mfem::Vector>>, std::vector
   DenseMat sAs1 = dot(states, Astates);
   DenseMat sAs  = sym(sAs1);
 
-  printf("check for nan 1\n");
-
   if (sAs.hasNan()) {
     throw PetscException("States in subspace solve contain NaNs.");
     return std::make_tuple(b, std::vector<std::shared_ptr<mfem::Vector>>{}, std::vector<double>{}, 0);
