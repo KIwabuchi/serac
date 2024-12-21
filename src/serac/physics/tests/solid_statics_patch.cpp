@@ -277,7 +277,7 @@ double pressure_error()
     case mfem::Geometry::SQUARE:
       filename    = meshdir + "patch2D_quads.mesh";
       driven_attr = 1;
-      fixed_y_attrs.insert({1, 3});
+      fixed_y_attrs.insert({2, 4});
       break;
     case mfem::Geometry::TETRAHEDRON:
       filename    = meshdir + "patch3D_tets.mesh";
