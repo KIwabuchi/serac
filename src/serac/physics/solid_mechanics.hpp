@@ -456,19 +456,34 @@ public:
   void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain,
                           Components components = Component::ALL)
   {
-    for (size_t i = 0; i < dim; ++i) {
-      if (components[i]) {
+    for (int i = 0; i < dim; ++i) {
+      if (components[size_t(i)]) {
         auto mfem_coefficient_function = [applied_displacement, i](const mfem::Vector& X_mfem, double t) {
           auto X = make_tensor<dim>([&X_mfem](int k) { return X_mfem[k]; });
-          return applied_displacement(X, t)[int(i)];
+          return applied_displacement(X, t)[i];
         };
 
         component_disp_bdr_coef_ = std::make_shared<mfem::FunctionCoefficient>(mfem_coefficient_function);
 
         auto dof_list = domain.dof_list(&displacement_.space());
-        displacement_.space().DofsToVDofs(int(i), dof_list);
 
-        bcs_.addEssential(dof_list, component_disp_bdr_coef_, displacement_.space(), int(i));
+        // scalar ldofs -> vector ldofs
+        displacement_.space().DofsToVDofs(i, dof_list);
+
+        // get vector ldofs that are on domain, but are owned by neighbor ranks
+        mfem::Array<int> local_dof_markers;
+        mfem::FiniteElementSpace::ListToMarker(dof_list, displacement_.space().GetVSize(), local_dof_markers, 1);
+        displacement_.space().Synchronize(local_dof_markers);
+        mfem::FiniteElementSpace::MarkerToList(local_dof_markers, dof_list);
+
+        // translate vector ldofs to tdofs (discarding ldofs that are not owned by this rank)
+        mfem::Array<int> tdof_list;
+        for (int j = 0; j < dof_list.Size(); ++j) {
+          int tdof = displacement_.space().GetLocalTDofNumber(dof_list[j]);
+          if (tdof >= 0) tdof_list.Append(tdof);
+        }
+
+        bcs_.addEssential(tdof_list, component_disp_bdr_coef_, displacement_.space(), i);
       }
     }
   }
