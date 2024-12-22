@@ -47,7 +47,7 @@ TEST(domain, of_edges)
 
     // note: by_attr doesn't apply to edge sets in 3D, since
     //       mfem doesn't have the notion of edge attributes
-    // Domain d4 = Domain::ofEdges(mesh, by_attr<dim>({3}));
+    // Domain d4 = Domain::ofEdges(mesh, by_attr<dim>(3));
   }
 
   {
@@ -74,7 +74,7 @@ TEST(domain, of_edges)
 
     // note: by_attr doesn't apply to edge sets in 3D, since
     //       mfem doesn't have the notion of edge attributes
-    // Domain d4 = Domain::ofEdges(mesh, by_attr<dim>({3}));
+    // Domain d4 = Domain::ofEdges(mesh, by_attr<dim>(3));
   }
 
   {
