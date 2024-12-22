@@ -424,7 +424,7 @@ public:
    *   u, vector of applied displacements
    */
   template <typename AppliedDisplacementFunction>
-  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain,
+  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, Domain& domain,
                           Components components = Component::ALL)
   {
     solid_.setDisplacementBCs(applied_displacement, domain, components);
@@ -439,7 +439,7 @@ public:
    *
    * @note This method must be called prior to completeSetup()
    */
-  void setFixedBCs(const Domain& domain, Components components = Component::ALL)
+  void setFixedBCs(Domain& domain, Components components = Component::ALL)
   {
     solid_.setFixedBCs(domain, components);
   }

@@ -453,7 +453,7 @@ public:
    * setDisplacementBCs((applied_displacement, domain);
    */
   template <typename AppliedDisplacementFunction>
-  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, const Domain& domain,
+  void setDisplacementBCs(AppliedDisplacementFunction applied_displacement, Domain& domain,
                           Components components = Component::ALL)
   {
     for (int i = 0; i < dim; ++i) {
@@ -497,7 +497,7 @@ public:
    *
    * @note This method must be called prior to completeSetup()
    */
-  void setFixedBCs(const Domain& domain, Components components = Component::ALL)
+  void setFixedBCs(Domain& domain, Components components = Component::ALL)
   {
     auto zero_vector_function = [](tensor<double, dim>, double) { return tensor<double, dim>{}; };
     setDisplacementBCs(zero_vector_function, domain, components);
