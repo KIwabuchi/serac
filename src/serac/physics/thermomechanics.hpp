@@ -439,10 +439,7 @@ public:
    *
    * @note This method must be called prior to completeSetup()
    */
-  void setFixedBCs(Domain& domain, Components components = Component::ALL)
-  {
-    solid_.setFixedBCs(domain, components);
-  }
+  void setFixedBCs(Domain& domain, Components components = Component::ALL) { solid_.setFixedBCs(domain, components); }
 
   /**
    * @brief Set the thermal flux boundary condition
