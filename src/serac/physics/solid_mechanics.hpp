@@ -470,12 +470,6 @@ public:
         // scalar ldofs -> vector ldofs
         displacement_.space().DofsToVDofs(i, dof_list);
 
-        // get vector ldofs that are on domain, but are owned by neighbor ranks
-        mfem::Array<int> local_dof_markers;
-        mfem::FiniteElementSpace::ListToMarker(dof_list, displacement_.space().GetVSize(), local_dof_markers, 1);
-        displacement_.space().Synchronize(local_dof_markers);
-        mfem::FiniteElementSpace::MarkerToList(local_dof_markers, dof_list);
-
         // translate vector ldofs to tdofs (discarding ldofs that are not owned by this rank)
         mfem::Array<int> tdof_list;
         for (int j = 0; j < dof_list.Size(); ++j) {
