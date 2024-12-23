@@ -369,7 +369,8 @@ public:
   virtual void setAdjointLoad(std::unordered_map<std::string, const serac::FiniteElementDual&> string_to_dual)
   {
     if (string_to_dual.size()) {
-      SLIC_ERROR_ROOT(axom::fmt::format("Failed to setAdjointLoad.  Adjoint analysis not defined for physics module {}", name_));
+      SLIC_ERROR_ROOT(
+          axom::fmt::format("Failed to setAdjointLoad.  Adjoint analysis not defined for physics module {}", name_));
     }
   }
 
@@ -382,7 +383,8 @@ public:
   virtual void setDualAdjointBcs(std::unordered_map<std::string, const serac::FiniteElementState&> string_to_bc)
   {
     if (string_to_bc.size()) {
-      SLIC_ERROR_ROOT(axom::fmt::format("Failed to setDualAdjointBCs.  Adjoint analysis not defined for physics module {}", name_));
+      SLIC_ERROR_ROOT(
+          axom::fmt::format("Failed to setDualAdjointBCs.  Adjoint analysis not defined for physics module {}", name_));
     }
   }
 
