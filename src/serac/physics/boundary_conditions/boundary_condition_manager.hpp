@@ -44,14 +44,14 @@ public:
                     mfem::ParFiniteElementSpace& space, const std::optional<int> component = {});
 
   /**
-   * @brief Set a list of true degrees of freedom from a scalar coefficient
+   * @brief Set a list of local degrees of freedom from a scalar coefficient
    *
-   * @param[in] true_dofs The true degrees of freedom to set with a Dirichlet condition
+   * @param[in] local_dofs Indices of ldofs to set with a Dirichlet condition
    * @param[in] ess_bdr_coef The scalar coefficient that evaluates to the Dirichlet condition
    * @param[in] space The finite element space to which the BC should be applied
    * @param[in] component The component to set (null implies all components are set)
    */
-  void addEssential(const mfem::Array<int>& true_dofs, std::shared_ptr<mfem::Coefficient> ess_bdr_coef,
+  void addEssential(const mfem::Array<int>& local_dofs, std::shared_ptr<mfem::Coefficient> ess_bdr_coef,
                     mfem::ParFiniteElementSpace& space, std::optional<int> component = {});
 
   /**

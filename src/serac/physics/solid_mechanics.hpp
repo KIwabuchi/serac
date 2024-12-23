@@ -470,14 +470,7 @@ public:
         // scalar ldofs -> vector ldofs
         displacement_.space().DofsToVDofs(i, dof_list);
 
-        // translate vector ldofs to tdofs (discarding ldofs that are not owned by this rank)
-        mfem::Array<int> tdof_list;
-        for (int j = 0; j < dof_list.Size(); ++j) {
-          int tdof = displacement_.space().GetLocalTDofNumber(dof_list[j]);
-          if (tdof >= 0) tdof_list.Append(tdof);
-        }
-
-        bcs_.addEssential(tdof_list, component_disp_bdr_coef_, displacement_.space(), i);
+        bcs_.addEssential(dof_list, component_disp_bdr_coef_, displacement_.space(), i);
       }
     }
   }
