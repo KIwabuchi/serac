@@ -42,7 +42,7 @@ TEST(BoundaryCond, SimpleRepeatedDofs)
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
-TEST(BoundaryCond, DirectTrueDofs)
+TEST(BoundaryCond, DirectLocalDofs)
 {
   MPI_Barrier(MPI_COMM_WORLD);
   constexpr int      N    = 15;
@@ -54,32 +54,34 @@ TEST(BoundaryCond, DirectTrueDofs)
 
   auto coef = std::make_shared<mfem::ConstantCoefficient>(1.0);
 
-  mfem::Array<int> true_dofs;
+  mfem::Array<int> local_dofs;
 
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   if (rank == 0) {
-    true_dofs.SetSize(1);
-    true_dofs[0] = 1;
+    local_dofs.SetSize(1);
+    local_dofs[0] = 1;
   } else if (rank == 1) {
-    true_dofs.SetSize(2);
-    true_dofs[0] = 5;
-    true_dofs[1] = 48;
+    local_dofs.SetSize(2);
+    local_dofs[0] = 5;
+    local_dofs[1] = 48;
   }
 
-  bcs.addEssential(true_dofs, coef, state.space());
-  auto local_dofs = bcs.allEssentialLocalDofs();
+  mfem::Array<int> true_dofs;
+  for (int i = 0; i < local_dofs.Size(); i++) {
+    true_dofs.Append(state.space().GetLocalTDofNumber(local_dofs[i]));
+  }
 
-  local_dofs.Sort();
+  bcs.addEssential(local_dofs, coef, state.space());
+  auto should_be_true_dofs = bcs.allEssentialTrueDofs();
 
-  if (rank == 0) {
-    EXPECT_EQ(local_dofs.Size(), 1);
-    EXPECT_EQ(local_dofs[0], 1);
-  } else if (rank == 1) {
-    EXPECT_EQ(local_dofs.Size(), 2);
-    EXPECT_EQ(local_dofs[0], 6);
-    EXPECT_EQ(local_dofs[1], 53);
+  should_be_true_dofs.Sort();
+
+  EXPECT_EQ(should_be_true_dofs.Size(), true_dofs.Size());
+
+  for (int i = 0; i < should_be_true_dofs.Size(); i++) {
+    EXPECT_EQ(should_be_true_dofs[i], true_dofs[i]);
   }
 }
 
