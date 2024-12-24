@@ -490,6 +490,37 @@ public:
     setDisplacementBCs(zero_vector_function, domain, components);
   }
 
+  [[deprecated("Please use the boundary condition methods that take Domain objects. This method will be removed.")]]
+  void setDisplacementBCs(std::function<bool(const mfem::Vector&)>           is_node_constrained,
+                          std::function<double(const mfem::Vector&, double)> disp, int component)
+  {
+    // Get the nodal positions for the displacement vector in grid function form
+    mfem::ParGridFunction coordinates(
+        const_cast<mfem::ParFiniteElementSpace*>(&displacement_.space()));  // mfem const correctness issue
+    mesh_.GetNodes(coordinates);
+
+    mfem::Array<int> ldof_list;
+
+    const int num_nodes = coordinates.FESpace()->GetNDofs();
+    for (int i = 0; i < num_nodes; i++) {
+      mfem::Array<int> dofs;
+      dofs.Append(i);
+      displacement_.space().DofsToVDofs(dofs);
+      mfem::Vector X(dim);
+      for (int j = 0; j < dim; j++) {
+        X(i) = coordinates(dofs[i]);
+      }
+      if (is_node_constrained(X)) {
+        int ldof = displacement_.space().DofToVDof(i, component);
+        ldof_list.Append(ldof);
+      }
+    }
+
+    component_disp_bdr_coef_ = std::make_shared<mfem::FunctionCoefficient>(disp);
+
+    bcs_.addEssential(ldof_list, component_disp_bdr_coef_, displacement_.space(), component);
+  }
+
   /// @overload
   const FiniteElementState& state(const std::string& state_name) const override
   {
