@@ -370,8 +370,8 @@ Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::ve
 /* Get local dofs that are part of a domain, but are owned by a neighboring MPI rank
  *
  *  This is necessary for situations like this:
- *  Mesh before parallel partition: 
- *      3 @--------@ 2 
+ *  Mesh before parallel partition:
+ *      3 @--------@ 2
  *        |       /|
  *        |      / |
  *        |     /  |
@@ -381,7 +381,7 @@ Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::ve
  *        | /      |
  *        |/       |
  * Node 0 @--------@ 1
- * 
+ *
  * Possible mesh after partition into two ranks:
  *
  *    RANK 0           RANK 1
@@ -394,7 +394,7 @@ Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::ve
  *   |   /             /    |
  *   |  /             /     |
  *   | /             /      |
- *   |/             /       |   
+ *   |/             /       |
  * 0 @           0 o--------@ 1
  *
  *   @: locally owned node
@@ -404,8 +404,8 @@ Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::ve
  * The dof list returned for Rank 1 will be correct, containing the local indices for nodes
  * 1 and 2. However, the dof list on rank 0 will not be correct without parallel communication.
  * It will see that it doesn't own the edge in question, so when it then goes to fetch the
- * local dofs on the domain, it will be an empty list. 
- * 
+ * local dofs on the domain, it will be an empty list.
+ *
  * This function corrects for that, flagging the dofs we want on the domain on each rank
  * (using the local_dof_ids list), and then exchanging this info with
  * neighboring ranks, so that rank 0 will be told that its local dof for node 2 should be
@@ -421,7 +421,7 @@ Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::ve
  *
  * Note: the sets will actually contain the ldof indices corresponding to the global (tdof)
  * indices in the sets above.
- * 
+ *
  * This function operates on the local_dof_ids data in place.
  */
 void findDomainDofsOnNeighborRanks(const serac::fes_t* fes, mfem::Array<int>& local_dof_ids)
@@ -432,18 +432,18 @@ void findDomainDofsOnNeighborRanks(const serac::fes_t* fes, mfem::Array<int>& lo
     // As far as I can tell, the parallel communication in mfem only works with
     // vector field dof indexing. So we need to get the parallel-correct scalar
     // dof ids, we do the following:
-    // (1) transform scalar ldof ids to vector ldof ids, 
-    // (2) transform the vector ldof ids into a boolean "marker" ldof field 
-    // (3) do our parallel sync, which applies an OR logic operator to the 
+    // (1) transform scalar ldof ids to vector ldof ids,
+    // (2) transform the vector ldof ids into a boolean "marker" ldof field
+    // (3) do our parallel sync, which applies an OR logic operator to the
     //     boolean fields from all ranks at each dof
-    // (4) get the ldof indices of the TRUE values of the parallel-correct 
+    // (4) get the ldof indices of the TRUE values of the parallel-correct
     //     boolean ldof field
     // (5) transform the parallel-correct vector ldof ids back to scalar dof ids.
     fes->DofsToVDofs(0, local_dof_ids);
 
     mfem::Array<int> local_dof_markers;
     mfem::FiniteElementSpace::ListToMarker(local_dof_ids, par_fes->GetVSize(), local_dof_markers, 1);
-  
+
     par_fes->Synchronize(local_dof_markers);
 
     mfem::FiniteElementSpace::MarkerToList(local_dof_markers, local_dof_ids);

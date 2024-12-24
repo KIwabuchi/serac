@@ -490,9 +490,29 @@ public:
     setDisplacementBCs(zero_vector_function, domain, components);
   }
 
+  /**
+   * @brief Set the displacement boundary conditions on a set of nodes within a spatially-defined area for a single
+   * displacement vector component
+   *
+   * @param is_node_constrained A callback function that returns true if displacement nodes at a certain position should
+   * be constrained by this boundary condition
+   * @param disp The scalar function containing the prescribed component displacement values
+   * @param component The component of the displacement vector that should be set by this boundary condition. The other
+   * components of displacement are unconstrained.
+   *
+   * The displacement function takes a spatial position as the first argument and current time as the second argument.
+   * It computes the desired displacement scalar for the given component and returns that value.
+   *
+   * @note This method searches over the entire mesh, not just the boundary nodes.
+   *
+   * @note This method must be called prior to completeSetup()
+   */
+  //clang-format off
   [[deprecated("Please use the boundary condition methods that take Domain objects. This method will be removed.")]]
-  void setDisplacementBCs(std::function<bool(const mfem::Vector&)>           is_node_constrained,
-                          std::function<double(const mfem::Vector&, double)> disp, int component)
+  //clang-format on
+  void
+  setDisplacementBCs(std::function<bool(const mfem::Vector&)>           is_node_constrained,
+                     std::function<double(const mfem::Vector&, double)> disp, int component)
   {
     // Get the nodal positions for the displacement vector in grid function form
     mfem::ParGridFunction coordinates(
