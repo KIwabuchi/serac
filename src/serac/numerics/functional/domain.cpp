@@ -367,11 +367,12 @@ Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::ve
   return domain_of_boundary_elems<3>(mesh, func);
 }
 
-/* Get local dofs that are part of a domain, but are owned by a neighboring MPI rank
+/**
+ * @brief  Get local dofs that are part of a domain, but are owned by a neighboring MPI rank
  *
  *  This is necessary for situations like this:
  *  Mesh before parallel partition:
- *      3 @--------@ 2
+ *      3 *--------* 2
  *        |       /|
  *        |      / |
  *        |     /  |
@@ -380,13 +381,13 @@ Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::ve
  *        |  /     |
  *        | /      |
  *        |/       |
- * Node 0 @--------@ 1
+ * Node 0 *--------* 1
  *
  * Possible mesh after partition into two ranks:
  *
  *    RANK 0           RANK 1
  *
- * 3 @--------@ 2         2 o
+ * 3 *--------* 2         2 o
  *   |       /             /|
  *   |      /             / |
  *   |     /             /  |
@@ -395,9 +396,9 @@ Domain Domain::ofBoundaryElements(const mesh_t& mesh, std::function<bool(std::ve
  *   |  /             /     |
  *   | /             /      |
  *   |/             /       |
- * 0 @           0 o--------@ 1
+ * 0 *           0 o--------* 1
  *
- *   @: locally owned node
+ *   *: locally owned node
  *   o: node owned by a neighbor rank
  *
  * We create a domain containing the right vertical edge, and then ask for its local dofs.
