@@ -171,7 +171,10 @@ void functional_solid_spatial_essential_bc()
   solid_solver.setFixedBCs(left, Component::X);
   solid_solver.setFixedBCs(back, Component::Y);
   solid_solver.setFixedBCs(bottom, Component::Z);
-  solid_solver.setDisplacementBCs([](vec3, double) { return vec3{{0.0, 0.0, -0.1}}; }, top, Component::Z);
+
+  auto is_on_top    = [](const mfem::Vector& X) { return X[2] > 1.0 - node_tol; };
+  auto applied_disp = [](const mfem::Vector&, double) { return -0.1; };
+  solid_solver.setDisplacementBCs(is_on_top, applied_disp, 2);
 
   // Set a zero initial guess
   solid_solver.setDisplacement([](const mfem::Vector&, mfem::Vector& u) { u = 0.0; });

@@ -528,7 +528,7 @@ public:
       displacement_.space().DofsToVDofs(dofs);
       mfem::Vector X(dim);
       for (int j = 0; j < dim; j++) {
-        X(i) = coordinates(dofs[i]);
+        X(j) = coordinates(dofs[j]);
       }
       if (is_node_constrained(X)) {
         int ldof = displacement_.space().DofToVDof(i, component);
