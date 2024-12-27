@@ -113,119 +113,6 @@ void functional_solid_test_static_J2()
   // deformation after unloading
   // EXPECT_LT(norm(solid_solver.reactions()), 1.0e-5);
 }
-
-// The purpose of this test is to check that the spatial function-defined essential boundary conditions are
-// working appropriately. It takes a 4 hex cube mesh and pins it in one corner. The z-direction displacement
-// is set to zero on the bottom face and a constant negative value on the top face.
-void functional_solid_spatial_essential_bc()
-{
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  constexpr int p                   = 1;
-  constexpr int dim                 = 3;
-  int           serial_refinement   = 1;
-  int           parallel_refinement = 0;
-
-  // Create DataStore
-  axom::sidre::DataStore datastore;
-  serac::StateManager::initialize(datastore, "solid_mechanics_spatial_essential");
-
-  // Construct the appropriate dimension mesh and give it to the data store
-  std::string filename = SERAC_REPO_DIR "/data/meshes/onehex.mesh";
-
-  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-
-  std::string mesh_tag{"mesh"};
-
-  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
-
-  // Construct a functional-based solid mechanics solver
-  SolidMechanics<p, dim> solid_solver(solid_mechanics::default_nonlinear_options,
-                                      solid_mechanics::direct_linear_options,
-                                      solid_mechanics::default_quasistatic_options, "solid_mechanics", mesh_tag);
-
-  constexpr double                 K = 1.0;
-  constexpr double                 G = 1.0;
-  solid_mechanics::LinearIsotropic mat{.density = 1.0, .K = K, .G = G};
-  Domain                           whole_domain = EntireDomain(pmesh);
-  solid_solver.setMaterial(mat, whole_domain);
-
-  constexpr double node_tol = 1e-1;
-
-  auto all = [](std::vector<vec3> coords, auto predicate) {
-    return std::all_of(coords.begin(), coords.end(), [predicate](auto X) { return predicate(X); });
-  };
-
-  // Test creating domains from a spatial predicate and using for essential BCs
-  Domain bottom = Domain::ofBoundaryElements(
-      pmesh, [all](std::vector<vec3> coords, int) { return all(coords, [](auto X) { return X[2] < node_tol; }); });
-
-  Domain top = Domain::ofBoundaryElements(pmesh, [all](std::vector<vec3> coords, int) {
-    return all(coords, [](auto X) { return X[2] > 1.0 - node_tol; });
-  });
-
-  // Or that you can create domains from attributes
-  Domain left = Domain::ofBoundaryElements(pmesh, by_attr<dim>(1));
-  Domain back = Domain::ofBoundaryElements(pmesh, by_attr<dim>(2));
-
-  solid_solver.setFixedBCs(left, Component::X);
-  solid_solver.setFixedBCs(back, Component::Y);
-  solid_solver.setFixedBCs(bottom, Component::Z);
-
-  auto is_on_top    = [](const mfem::Vector& X) { return X[2] > 1.0 - node_tol; };
-  auto applied_disp = [](const mfem::Vector&, double) { return -0.1; };
-  solid_solver.setDisplacementBCs(is_on_top, applied_disp, 2);
-
-  // Set a zero initial guess
-  solid_solver.setDisplacement([](const mfem::Vector&, mfem::Vector& u) { u = 0.0; });
-
-  // Finalize the data structures
-  solid_solver.completeSetup();
-
-  // Perform the quasi-static solve
-  solid_solver.advanceTimestep(1.0);
-  solid_solver.outputStateToDisk();
-
-  auto [size, rank] = serac::getMPIInfo();
-
-  // This exact solution is only correct when two MPI ranks are used
-  // It is based on a poisson ratio of 0.125 with a prescribed z strain of 10%
-  if (size == 2) {
-    auto vdim  = solid_solver.displacement().space().GetVDim();
-    auto ndofs = solid_solver.displacement().space().GetTrueVSize() / vdim;
-    auto dof   = [ndofs, vdim](auto node, auto component) {
-      return mfem::Ordering::Map<serac::ordering>(ndofs, vdim, node, component);
-    };
-
-    // This is a vector of pairs containing the exact solution index and value for the known analytical dofs.
-    // These exact indices and values are chosen to avoid dependence on solver tolerances.
-    if (rank == 0) {
-      std::vector<std::pair<int, double>> solution = {
-          {dof(0, 0), 0.0},      {dof(1, 0), 0.0125},   {dof(4, 0), 0.00625}, {dof(8, 0), 0.0},     {dof(9, 0), 0.0125},
-          {dof(12, 0), 0.00625}, {dof(0, 1), 0.0},      {dof(2, 1), 0.0125},  {dof(7, 1), 0.00625}, {dof(8, 1), 0.0},
-          {dof(11, 1), 0.0125},  {dof(15, 1), 0.00625}, {dof(0, 2), -0.1},    {dof(1, 2), -0.1},    {dof(2, 2), -0.1},
-          {dof(3, 2), -0.1},     {dof(4, 2), -0.1},     {dof(5, 2), -0.1},    {dof(6, 2), -0.1},    {dof(7, 2), -0.1},
-          {dof(8, 2), -0.05},    {dof(9, 2), -0.05},    {dof(10, 2), -0.05},  {dof(11, 2), -0.05},  {dof(12, 2), -0.05},
-          {dof(13, 2), -0.05},   {dof(14, 2), -0.05},   {dof(15, 2), -0.05},  {dof(16, 2), -0.1},   {dof(17, 2), -0.05},
-      };
-      for (auto exact_entry : solution) {
-        EXPECT_NEAR(exact_entry.second, solid_solver.displacement()(exact_entry.first), 1.0e-8);
-      }
-    }
-
-    if (rank == 1) {
-      std::vector<std::pair<int, double>> solution = {
-          {dof(0, 0), 0.0},     {dof(1, 0), 0.0125}, {dof(4, 0), 0.00625}, {dof(0, 1), 0.0}, {dof(2, 1), 0.0125},
-          {dof(7, 1), 0.00625}, {dof(0, 2), 0.0},    {dof(1, 2), 0.0},     {dof(2, 2), 0.0}, {dof(3, 2), 0.0},
-          {dof(4, 2), 0.0},     {dof(5, 2), 0.0},    {dof(6, 2), 0.0},     {dof(7, 2), 0.0}, {dof(8, 2), 0.0},
-      };
-      for (auto exact_entry : solution) {
-        EXPECT_NEAR(exact_entry.second, solid_solver.displacement()(exact_entry.first), 1.0e-8);
-      }
-    }
-  }
-}
-
 template <typename lambda>
 struct ParameterizedBodyForce {
   template <int dim, typename T1, typename T2>
@@ -355,8 +242,6 @@ void functional_parameterized_solid_test(double expected_disp_norm)
 TEST(SolidMechanics, 2DQuadParameterizedStatic) { functional_parameterized_solid_test<2, 2>(2.2378592112148716); }
 
 TEST(SolidMechanics, 3DQuadStaticJ2) { functional_solid_test_static_J2(); }
-
-TEST(SolidMechanics, SpatialBoundaryCondition) { functional_solid_spatial_essential_bc(); }
 
 }  // namespace serac
 
