@@ -30,16 +30,59 @@ TEST(BoundaryCond, SimpleRepeatedDofs)
 
   BoundaryConditionManager bcs(par_mesh);
   auto                     coef = std::make_shared<mfem::ConstantCoefficient>(1);
-  bcs.addEssential({ATTR}, coef, state.space(), 1);
+  bcs.addEssential(std::set<int>{ATTR}, coef, state.space(), 1);
   const auto before_dofs = bcs.allEssentialTrueDofs();
 
-  bcs.addEssential({ATTR}, coef, state.space(), 1);
+  bcs.addEssential(std::set<int>{ATTR}, coef, state.space(), 1);
   const auto after_dofs = bcs.allEssentialTrueDofs();
 
   // Make sure that attempting to add a boundary condition
   // on already-used elements doesn't change the dofs
   EXPECT_EQ(before_dofs.Size(), after_dofs.Size());
   MPI_Barrier(MPI_COMM_WORLD);
+}
+
+TEST(BoundaryCond, DirectLocalDofs)
+{
+  MPI_Barrier(MPI_COMM_WORLD);
+  constexpr int      N    = 15;
+  auto               mesh = mfem::Mesh::MakeCartesian2D(N, N, mfem::Element::TRIANGLE);
+  mfem::ParMesh      par_mesh(MPI_COMM_WORLD, mesh);
+  FiniteElementState state(par_mesh, H1<1>{});
+
+  BoundaryConditionManager bcs(par_mesh);
+
+  auto coef = std::make_shared<mfem::ConstantCoefficient>(1.0);
+
+  mfem::Array<int> local_dofs;
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  if (rank == 0) {
+    local_dofs.SetSize(1);
+    local_dofs[0] = 1;
+  } else if (rank == 1) {
+    local_dofs.SetSize(2);
+    local_dofs[0] = 5;
+    local_dofs[1] = 48;
+  }
+
+  mfem::Array<int> true_dofs;
+  for (int i = 0; i < local_dofs.Size(); i++) {
+    true_dofs.Append(state.space().GetLocalTDofNumber(local_dofs[i]));
+  }
+
+  bcs.addEssential(local_dofs, coef, state.space());
+  auto should_be_true_dofs = bcs.allEssentialTrueDofs();
+
+  should_be_true_dofs.Sort();
+
+  EXPECT_EQ(should_be_true_dofs.Size(), true_dofs.Size());
+
+  for (int i = 0; i < should_be_true_dofs.Size(); i++) {
+    EXPECT_EQ(should_be_true_dofs[i], true_dofs[i]);
+  }
 }
 
 TEST(BoundaryCondHelper, ElementAttributeDofListScalar)
