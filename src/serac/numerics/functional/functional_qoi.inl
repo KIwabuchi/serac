@@ -396,7 +396,7 @@ private:
     {
     }
 
-    void Mult(const mfem::Vector& x, mfem::Vector& y) const { form_.GradientMult(x, y); }
+    void Mult(const mfem::Vector& x, mfem::Vector& y) const { form_.ActionOfGradient(x, y, which_argument); }
 
     double operator()(const mfem::Vector& x) const { return form_.ActionOfGradient(x, which_argument); }
 
