@@ -24,7 +24,7 @@ after your program is done running.  Asan's behavior can be modified with a set 
 
 .. note::
     Asan only works with the Clang and GCC compiler chains.  Our build system will throw
-    an error if you try to build with anything else while ENABLE_ASAN is ON.
+    an error if you try to build with anything else while ``ENABLE_ASAN`` is ``ON``.
 
 Here is a recommended workflow:
 
