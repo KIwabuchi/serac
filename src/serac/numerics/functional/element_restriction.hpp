@@ -243,7 +243,8 @@ struct BlockElementRestriction {
  * @param fes the finite element space containing the dof information
  * @param geom the kind of element geometry
  */
-axom::Array<DoF, 2, serac::detail::host_memory_space> GetElementDofs(const serac::fes_t* fes, mfem::Geometry::Type geom);
+axom::Array<DoF, 2, serac::detail::host_memory_space> GetElementDofs(const serac::fes_t*  fes,
+                                                                     mfem::Geometry::Type geom);
 
 /**
  * @brief Get the list of dofs for each face element (of the specified geometry) from the fes_t
@@ -252,9 +253,10 @@ axom::Array<DoF, 2, serac::detail::host_memory_space> GetElementDofs(const serac
  * @param geom the kind of element geometry
  * @param type whether the face is of interior or boundary type
  */
-axom::Array<DoF, 2, serac::detail::host_memory_space> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
-                                                         FaceType type);
+axom::Array<DoF, 2, serac::detail::host_memory_space> GetFaceDofs(const serac::fes_t*  fes,
+                                                                  mfem::Geometry::Type face_geom, FaceType type);
 
 /// @overload
-axom::Array<DoF, 2, serac::detail::host_memory_space> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
-                                                         const std::vector<int>& mfem_face_ids);
+axom::Array<DoF, 2, serac::detail::host_memory_space> GetFaceDofs(const serac::fes_t*     fes,
+                                                                  mfem::Geometry::Type    face_geom,
+                                                                  const std::vector<int>& mfem_face_ids);
