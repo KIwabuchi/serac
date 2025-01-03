@@ -122,7 +122,7 @@ void zero_out(axom::Array<T, dim, space>& arr)
 
 /// @brief set the contents of an array to zero, byte-wise
 template <typename T, int dim>
-void zero_out(axom::ArrayView<T, dim, HostMemorySpace>& arr)
+void zero_out(axom::ArrayView<T, dim, detail::host_memory_space>& arr)
 {
   std::memset(arr.data(), 0, static_cast<std::size_t>(arr.size()) * sizeof(T));
 }

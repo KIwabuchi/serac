@@ -14,8 +14,18 @@
 
 #include "axom/core.hpp"
 
+#include "serac/serac_config.hpp"
+
+namespace serac {
+
+namespace detail {
+
 #ifdef SERAC_USE_UMPIRE
-constexpr axom::MemorySpace HostMemorySpace = axom::MemorySpace::Host;
+constexpr axom::MemorySpace host_memory_space = axom::MemorySpace::Host;
 #else
-constexpr axom::MemorySpace HostMemorySpace = axom::MemorySpace::Dynamic;
+constexpr axom::MemorySpace host_memory_space = axom::MemorySpace::Dynamic;
 #endif
+
+}  // namespace detail
+
+}  // namespace serac

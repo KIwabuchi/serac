@@ -216,7 +216,7 @@ std::vector<Array2D<int> > geom_local_face_dofs(int p)
   return output;
 }
 
-axom::Array<DoF, 2, HostMemorySpace> GetElementRestriction(const serac::fes_t* fes, mfem::Geometry::Type geom)
+axom::Array<DoF, 2, serac::detail::host_memory_space> GetElementRestriction(const serac::fes_t* fes, mfem::Geometry::Type geom)
 {
   std::vector<DoF> elem_dofs{};
   mfem::Mesh*      mesh = fes->GetMesh();
@@ -269,16 +269,16 @@ axom::Array<DoF, 2, HostMemorySpace> GetElementRestriction(const serac::fes_t* f
   }
 
   if (n == 0) {
-    return axom::Array<DoF, 2, HostMemorySpace>{};
+    return axom::Array<DoF, 2, serac::detail::host_memory_space>{};
   } else {
     uint64_t                                     dofs_per_elem = elem_dofs.size() / n;
-    axom::Array<DoF, 2, HostMemorySpace> output(n, dofs_per_elem);
+    axom::Array<DoF, 2, serac::detail::host_memory_space> output(n, dofs_per_elem);
     std::memcpy(output.data(), elem_dofs.data(), sizeof(DoF) * n * dofs_per_elem);
     return output;
   }
 }
 
-axom::Array<DoF, 2, HostMemorySpace> GetElementDofs(const serac::fes_t* fes, mfem::Geometry::Type geom,
+axom::Array<DoF, 2, serac::detail::host_memory_space> GetElementDofs(const serac::fes_t* fes, mfem::Geometry::Type geom,
                                                             const std::vector<int>& mfem_elem_ids)
 
 {
@@ -335,16 +335,16 @@ axom::Array<DoF, 2, HostMemorySpace> GetElementDofs(const serac::fes_t* fes, mfe
   }
 
   if (n == 0) {
-    return axom::Array<DoF, 2, HostMemorySpace>{};
+    return axom::Array<DoF, 2, serac::detail::host_memory_space>{};
   } else {
     uint64_t                                     dofs_per_elem = elem_dofs.size() / n;
-    axom::Array<DoF, 2, HostMemorySpace> output(n, dofs_per_elem);
+    axom::Array<DoF, 2, serac::detail::host_memory_space> output(n, dofs_per_elem);
     std::memcpy(output.data(), elem_dofs.data(), sizeof(DoF) * n * dofs_per_elem);
     return output;
   }
 }
 
-axom::Array<DoF, 2, HostMemorySpace> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
+axom::Array<DoF, 2, serac::detail::host_memory_space> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
                                                          FaceType type)
 {
   std::vector<DoF> face_dofs;
@@ -450,16 +450,16 @@ axom::Array<DoF, 2, HostMemorySpace> GetFaceDofs(const serac::fes_t* fes, mfem::
   delete face_to_elem;
 
   if (n == 0) {
-    return axom::Array<DoF, 2, HostMemorySpace>{};
+    return axom::Array<DoF, 2, serac::detail::host_memory_space>{};
   } else {
     uint64_t                                     dofs_per_face = face_dofs.size() / n;
-    axom::Array<DoF, 2, HostMemorySpace> output(n, dofs_per_face);
+    axom::Array<DoF, 2, serac::detail::host_memory_space> output(n, dofs_per_face);
     std::memcpy(output.data(), face_dofs.data(), sizeof(DoF) * n * dofs_per_face);
     return output;
   }
 }
 
-axom::Array<DoF, 2, HostMemorySpace> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
+axom::Array<DoF, 2, serac::detail::host_memory_space> GetFaceDofs(const serac::fes_t* fes, mfem::Geometry::Type face_geom,
                                                          const std::vector<int>& mfem_face_ids)
 {
   std::vector<DoF> face_dofs;
@@ -617,10 +617,10 @@ axom::Array<DoF, 2, HostMemorySpace> GetFaceDofs(const serac::fes_t* fes, mfem::
   delete face_to_elem;
 
   if (n == 0) {
-    return axom::Array<DoF, 2, HostMemorySpace>{};
+    return axom::Array<DoF, 2, serac::detail::host_memory_space>{};
   } else {
     uint64_t                                     dofs_per_face = face_dofs.size() / n;
-    axom::Array<DoF, 2, HostMemorySpace> output(n, dofs_per_face);
+    axom::Array<DoF, 2, serac::detail::host_memory_space> output(n, dofs_per_face);
     std::memcpy(output.data(), face_dofs.data(), sizeof(DoF) * n * dofs_per_face);
     return output;
   }
