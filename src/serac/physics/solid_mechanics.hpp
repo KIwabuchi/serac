@@ -507,12 +507,8 @@ public:
    *
    * @note This method must be called prior to completeSetup()
    */
-  //clang-format off
-  [[deprecated("Please use the boundary condition methods that take Domain objects. This method will be removed.")]]
-  //clang-format on
-  void
-  setDisplacementBCs(std::function<bool(const mfem::Vector&)>           is_node_constrained,
-                     std::function<double(const mfem::Vector&, double)> disp, int component)
+  void setDisplacementBCs(std::function<bool(const mfem::Vector&)>           is_node_constrained,
+                          std::function<double(const mfem::Vector&, double)> disp, int component)
   {
     // Get the nodal positions for the displacement vector in grid function form
     mfem::ParGridFunction coordinates(
