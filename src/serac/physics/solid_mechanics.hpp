@@ -507,9 +507,8 @@ public:
    *
    * @note This method must be called prior to completeSetup()
    */
-  void
-  setDisplacementBCs(std::function<bool(const mfem::Vector&)>           is_node_constrained,
-                     std::function<double(const mfem::Vector&, double)> disp, int component)
+  void setDisplacementBCs(std::function<bool(const mfem::Vector&)>           is_node_constrained,
+                          std::function<double(const mfem::Vector&, double)> disp, int component)
   {
     // Get the nodal positions for the displacement vector in grid function form
     mfem::ParGridFunction coordinates(
