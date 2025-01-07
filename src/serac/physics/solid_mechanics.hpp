@@ -537,7 +537,6 @@ public:
     bcs_.addEssential(ldof_list, component_disp_bdr_coef_, displacement_.space(), component);
   }
 
-
   /// @overload
   const FiniteElementState& state(const std::string& state_name) const override
   {
