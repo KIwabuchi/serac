@@ -111,10 +111,7 @@ class AffineSolution {
     for (int i = 0; i < dim; ++i) u[i] = u_tensor[i];
   }
 
-  tensor<double, dim> velocity(tensor<double, dim> X, double /* t */) const
-  {
-    return dot(disp_grad_rate, X);
-  }
+  tensor<double, dim> velocity(tensor<double, dim> X, double /* t */) const { return dot(disp_grad_rate, X); }
 
   /**
    * @brief Apply forcing that should produce this exact displacement
@@ -193,10 +190,7 @@ class ConstantAccelerationSolution {
     for (int i = 0; i < dim; ++i) u[i] = u_tensor[i];
   }
 
-  tensor<double, dim> velocity(tensor<double, dim>, double t) const
-  {
-    return t*acceleration;
-  }
+  tensor<double, dim> velocity(tensor<double, dim>, double t) const { return t * acceleration; }
 
   /**
    * @brief Apply forcing that should produce this exact displacement

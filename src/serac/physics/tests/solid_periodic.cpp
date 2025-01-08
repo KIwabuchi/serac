@@ -86,7 +86,7 @@ void periodic_test(mfem::Element::Type element_type)
   solid_solver.setFixedBCs(support);
 
   constexpr double iniDispVal = 5.0e-6;
-  auto initial_displacement = [](tensor<double, dim>){ return make_tensor<dim>([](int) { return iniDispVal; }); };
+  auto initial_displacement = [](tensor<double, dim>) { return make_tensor<dim>([](int) { return iniDispVal; }); };
   solid_solver.setDisplacement(initial_displacement);
 
   tensor<double, dim> constant_force{};

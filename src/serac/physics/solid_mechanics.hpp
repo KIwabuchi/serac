@@ -825,10 +825,10 @@ class SolidMechanics<order, dim, Parameters<parameter_space...>, std::integer_se
    * @param applied_displacement The displacement field as a callable,
    *   which must have the signature:
    *   tensor<double, dim> applied_displacement(tensor<double, dim> X)
-   *   
+   *
    *   args:
    *   X: coordinates of the material point in the reference configuration
-   * 
+   *
    *   returns: u, the displacement at X.
    */
   template <typename Callable>
@@ -853,10 +853,10 @@ class SolidMechanics<order, dim, Parameters<parameter_space...>, std::integer_se
    * @param applied_velocity The velocity field as a callable,
    *   which must have the signature:
    *   tensor<double, dim> applied_velocity(tensor<double, dim> X)
-   *   
+   *
    *   args:
    *   X: coordinates of the material point in the reference configuration
-   * 
+   *
    *   returns: v, the velocity at X.
    */
   template <typename Callable>

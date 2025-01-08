@@ -118,7 +118,8 @@ void shape_test()
     solid_solver.setDisplacementBCs(applied_displacement, ess_bdr);
 
     // For consistency of the problem, this value should match the one in the BCs
-    solid_solver.setDisplacement([applied_displacement](tensor<double, dim> X) { return applied_displacement(X, 0.0); });
+    solid_solver.setDisplacement(
+        [applied_displacement](tensor<double, dim> X) { return applied_displacement(X, 0.0); });
 
     solid_solver.setShapeDisplacement(user_defined_shape_displacement);
 
@@ -168,7 +169,8 @@ void shape_test()
 
     // Set the initial displacement and boundary condition
     solid_solver_no_shape.setDisplacementBCs(applied_displacement_pure, ess_bdr);
-    solid_solver_no_shape.setDisplacement([applied_displacement_pure](tensor<double, dim> X) { return applied_displacement_pure(X, 0.0); });
+    solid_solver_no_shape.setDisplacement(
+        [applied_displacement_pure](tensor<double, dim> X) { return applied_displacement_pure(X, 0.0); });
 
     Domain whole_mesh = EntireDomain(StateManager::mesh(new_mesh_tag));
 

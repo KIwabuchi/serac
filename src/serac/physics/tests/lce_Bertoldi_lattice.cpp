@@ -125,7 +125,7 @@ TEST(LiquidCrystalElastomer, Bertoldi)
   solid_solver.setFixedBCs(support);
 
   constexpr double iniDispVal = 5.0e-6;
-  auto initial_displacement = [lx](vec3 X) { return vec3{0.0, (X[0]/lx)*iniDispVal, 0.0}; };
+  auto initial_displacement = [lx](vec3 X) { return vec3{0.0, (X[0] / lx) * iniDispVal, 0.0}; };
   solid_solver.setDisplacement(initial_displacement);
 
   // Finalize the data structures
