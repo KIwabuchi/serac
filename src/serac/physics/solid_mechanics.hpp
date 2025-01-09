@@ -834,14 +834,7 @@ class SolidMechanics<order, dim, Parameters<parameter_space...>, std::integer_se
   template <typename Callable>
   void setDisplacement(Callable applied_displacement)
   {
-    auto evaluate_mfem = [applied_displacement](const mfem::Vector& X_mfem, mfem::Vector& u_mfem) {
-      auto X = make_tensor<dim>([&X_mfem](int i) { return X_mfem[i]; });
-      auto u = applied_displacement(X);
-      for (int i = 0; i < dim; i++) u_mfem(i) = u[i];
-    };
-
-    mfem::VectorFunctionCoefficient disp_coef(dim, evaluate_mfem);
-    displacement_.project(disp_coef);
+    displacement_.setFromField<dim>(applied_displacement);
   }
 
   /// @overload
@@ -862,14 +855,7 @@ class SolidMechanics<order, dim, Parameters<parameter_space...>, std::integer_se
   template <typename Callable>
   void setVelocity(Callable applied_velocity)
   {
-    auto evaluate_mfem = [applied_velocity](const mfem::Vector& X_mfem, mfem::Vector& v_mfem) {
-      auto X = make_tensor<dim>([&X_mfem](int i) { return X_mfem[i]; });
-      auto v = applied_velocity(X);
-      for (int i = 0; i < dim; i++) v_mfem(i) = v[i];
-    };
-
-    mfem::VectorFunctionCoefficient vel_coef(dim, evaluate_mfem);
-    velocity_.project(vel_coef);
+    velocity_.setFromField<dim>(applied_velocity);
   }
 
   /// @overload

@@ -242,6 +242,51 @@ TEST(SolidMechanics, 2DQuadParameterizedStatic) { functional_parameterized_solid
 
 TEST(SolidMechanics, 3DQuadStaticJ2) { functional_solid_test_static_J2(); }
 
+TEST(FiniteElementState, Set)
+{
+  constexpr int p                   = 1;
+  constexpr int spatial_dim = 3;
+  int           serial_refinement   = 0;
+  int           parallel_refinement = 0;
+
+  // Create DataStore
+  axom::sidre::DataStore datastore;
+  serac::StateManager::initialize(datastore, "test_FiniteElementState");
+
+  // Construct the appropriate dimension mesh and give it to the data store
+  std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex.mesh";
+
+  auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
+
+  std::string mesh_tag{"mesh"};
+
+  auto& pmesh = serac::StateManager::setMesh(std::move(mesh), mesh_tag);
+
+  auto paraview_dc = std::make_unique<mfem::ParaViewDataCollection>("pv", &pmesh);
+
+  paraview_dc->SetLevelsOfDetail(p);
+  paraview_dc->SetHighOrderOutput(true);
+  paraview_dc->SetDataFormat(mfem::VTKFormat::BINARY);
+  paraview_dc->SetCompression(true);
+
+  auto scalar_state = serac::StateManager::newState(H1<p>{}, "scalar_field", mesh_tag);
+  auto scalar_field = [](tensor<double, spatial_dim> X) -> double { return X[0]; };
+  scalar_state.setFromField<spatial_dim>(scalar_field);
+  paraview_dc->RegisterField(scalar_state.name(), &scalar_state.gridFunction());
+
+  // constexpr int vdim = 3;
+  // auto vector_state = serac::StateManager::newState(H1<p, vdim>{}, "vector_field", mesh_tag);
+  // auto vector_field = [](tensor<double, spatial_dim> X) { return X; };
+  // vector_state.setFromField<vdim, spatial_dim>(vector_field);
+  // paraview_dc->RegisterField(vector_state.name(), &vector_state.gridFunction());
+
+  paraview_dc->SetCycle(0);
+  paraview_dc->SetTime(0.0);
+  paraview_dc->SetPrefixPath("test_state");
+
+  paraview_dc->Save();
+}
+
 }  // namespace serac
 
 int main(int argc, char* argv[])

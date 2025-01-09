@@ -41,6 +41,17 @@ inline bool is_vector_valued(const GeneralCoefficient& coef)
   return holds_alternative<std::shared_ptr<mfem::VectorCoefficient>>(coef);
 }
 
+template <int dim>
+void setMfemVectorFromTensorOrDouble(mfem::Vector& u_mfem, const tensor<double, dim>& u)
+{
+  for (int i = 0; i < dim; i++) u_mfem(i) = u[i];
+}
+
+inline void setMfemVectorFromTensorOrDouble(mfem::Vector& u_mfem, double u)
+{
+  u_mfem = u;
+}
+
 /**
  * @brief Class for encapsulating the critical MFEM components of a primal finite element field
  *
@@ -205,6 +216,36 @@ class FiniteElementState : public FiniteElementVector {
 
   /// \overload
   void project(mfem::VectorCoefficient& coef, const Domain& d);
+
+  /**
+   * @brief Set state as interpolant of an analytical function
+   * 
+   * In other words, this sets the dofs by direct evaluation of the analytical
+   * field at the nodal points.
+   * 
+   * @tparam dim Number of components of this FiniteElementState
+   * @param field An analytical field function with the signature:
+   *   tensor<double, dim> field(tensor<double, dim> X)
+   *   
+   *   args:
+   *   X: coordinates of the material point
+   * 
+   *   returns: the value of the field at X.
+   */
+  template <int spatial_dim, typename Callable>
+  void setFromField(Callable&& field)
+  {
+    SLIC_ERROR_IF(mesh_.get().SpaceDimension() != spatial_dim, "Spatial dim parameter does not match mesh.");
+
+    auto evaluate_mfem = [&field](const mfem::Vector& X_mfem, mfem::Vector& u_mfem) {
+      auto X = make_tensor<spatial_dim>([&X_mfem](int i) { return X_mfem[i]; });
+      auto u = field(X);
+      setMfemVectorFromTensorOrDouble(u_mfem, u);
+    };
+
+    mfem::VectorFunctionCoefficient coef(space_->GetVDim(), evaluate_mfem);
+    project(coef);
+  }
 
   /**
    * @brief Construct a grid function from the finite element state true vector
