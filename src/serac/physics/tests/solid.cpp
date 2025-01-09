@@ -271,14 +271,14 @@ TEST(FiniteElementState, Set)
 
   auto scalar_state = serac::StateManager::newState(H1<p>{}, "scalar_field", mesh_tag);
   auto scalar_field = [](tensor<double, spatial_dim> X) -> double { return X[0]; };
-  scalar_state.setFromField<spatial_dim>(scalar_field);
+  scalar_state.setFromField(scalar_field);
   paraview_dc->RegisterField(scalar_state.name(), &scalar_state.gridFunction());
 
-  // constexpr int vdim = 3;
-  // auto vector_state = serac::StateManager::newState(H1<p, vdim>{}, "vector_field", mesh_tag);
-  // auto vector_field = [](tensor<double, spatial_dim> X) { return X; };
-  // vector_state.setFromField<vdim, spatial_dim>(vector_field);
-  // paraview_dc->RegisterField(vector_state.name(), &vector_state.gridFunction());
+  constexpr int vdim = 3;
+  auto vector_state = serac::StateManager::newState(H1<p, vdim>{}, "vector_field", mesh_tag);
+  auto vector_field = [](tensor<double, spatial_dim> X) { return X; };
+  vector_state.setFromField(vector_field);
+  paraview_dc->RegisterField(vector_state.name(), &vector_state.gridFunction());
 
   paraview_dc->SetCycle(0);
   paraview_dc->SetTime(0.0);

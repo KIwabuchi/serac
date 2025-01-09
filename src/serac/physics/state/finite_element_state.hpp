@@ -52,6 +52,24 @@ inline void setMfemVectorFromTensorOrDouble(mfem::Vector& u_mfem, double u)
   u_mfem = u;
 }
 
+template<typename Ret, typename Arg, typename... Rest>
+Arg first_argument_helper(Ret(*) (Arg, Rest...));
+template<typename Ret, typename F, typename Arg, typename... Rest>
+Arg first_argument_helper(Ret(F::*) (Arg, Rest...));
+template<typename Ret, typename F, typename Arg, typename... Rest>
+Arg first_argument_helper(Ret(F::*) (Arg, Rest...) const);
+template <typename F>decltype(first_argument_helper(&F::operator())) first_argument_helper(F);
+template <typename T>using first_argument = decltype(first_argument_helper(std::declval<T>()));
+
+template <typename Callable>
+auto evaluateTensorFunctionOnMfemVector(const mfem::Vector& X_mfem, Callable&& f)
+{
+    first_argument<Callable> X;
+    SLIC_ERROR_IF(X_mfem.Size() != size(X), "Size of tensor in callable does not match spatial dimension of MFEM Vector.");
+    for (int i = 0; i < X_mfem.Size(); i++) X[i] = X_mfem[i];
+    return f(X);
+}
+
 /**
  * @brief Class for encapsulating the critical MFEM components of a primal finite element field
  *
@@ -232,14 +250,11 @@ class FiniteElementState : public FiniteElementVector {
    * 
    *   returns: the value of the field at X.
    */
-  template <int spatial_dim, typename Callable>
+  template <typename Callable>
   void setFromField(Callable&& field)
   {
-    SLIC_ERROR_IF(mesh_.get().SpaceDimension() != spatial_dim, "Spatial dim parameter does not match mesh.");
-
     auto evaluate_mfem = [&field](const mfem::Vector& X_mfem, mfem::Vector& u_mfem) {
-      auto X = make_tensor<spatial_dim>([&X_mfem](int i) { return X_mfem[i]; });
-      auto u = field(X);
+      auto u = evaluateTensorFunctionOnMfemVector(X_mfem, field);
       setMfemVectorFromTensorOrDouble(u_mfem, u);
     };
 

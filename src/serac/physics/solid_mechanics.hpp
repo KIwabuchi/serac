@@ -834,7 +834,7 @@ class SolidMechanics<order, dim, Parameters<parameter_space...>, std::integer_se
   template <typename Callable>
   void setDisplacement(Callable applied_displacement)
   {
-    displacement_.setFromField<dim>(applied_displacement);
+    displacement_.setFromField(applied_displacement);
   }
 
   /// @overload
@@ -855,7 +855,7 @@ class SolidMechanics<order, dim, Parameters<parameter_space...>, std::integer_se
   template <typename Callable>
   void setVelocity(Callable applied_velocity)
   {
-    velocity_.setFromField<dim>(applied_velocity);
+    velocity_.setFromField(applied_velocity);
   }
 
   /// @overload
