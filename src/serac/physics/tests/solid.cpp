@@ -270,7 +270,8 @@ TEST(FiniteElementState, Set)
   paraview_dc->SetCompression(true);
 
   auto scalar_state = serac::StateManager::newState(H1<p>{}, "scalar_field", mesh_tag);
-  auto scalar_field = [](tensor<double, spatial_dim> X) -> double { return X[0]; };
+  double c = 2.0;
+  auto scalar_field = [c](tensor<double, spatial_dim> X) -> double { return c*X[0]; };
   scalar_state.setFromField(scalar_field);
   paraview_dc->RegisterField(scalar_state.name(), &scalar_state.gridFunction());
 

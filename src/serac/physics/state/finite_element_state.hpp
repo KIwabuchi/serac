@@ -25,6 +25,69 @@
 
 namespace serac {
 
+namespace detail {
+/** 
+ * @brief Helper function to copy a tensor into an mfem Vector
+ */
+template <int dim>
+void setMfemVectorFromTensorOrDouble(mfem::Vector& v_mfem, const tensor<double, dim>& v)
+{
+  SLIC_ERROR_IF(v_mfem.Size() != dim, "Cannot copy tensor into an MFEM Vector with incompatible size.");
+  for (int i = 0; i < dim; i++) v_mfem(i) = v[i];
+}
+
+/**
+ * @brief Helper function to copy a double into a singleton mfem Vector
+ */
+inline void setMfemVectorFromTensorOrDouble(mfem::Vector& v_mfem, double v)
+{
+  SLIC_ERROR_IF(v_mfem.Size() != 1, "Mfem Vector is not a singleton.");
+  v_mfem = v;
+}
+
+/**
+ * @brief Helper for extracting type of first argument of a free function
+ */
+template<typename Ret, typename Arg, typename... Rest>
+Arg first_argument_helper(Ret(*) (Arg, Rest...));
+
+/**
+ * @brief Helper for extracting type of first argument of a class method
+ */
+template<typename Ret, typename F, typename Arg, typename... Rest>
+Arg first_argument_helper(Ret(F::*) (Arg, Rest...));
+
+/**
+ * @brief Helper for extracting type of first argument of a const class method
+ */
+template<typename Ret, typename F, typename Arg, typename... Rest>
+Arg first_argument_helper(Ret(F::*) (Arg, Rest...) const);
+
+/**
+ * Extract type of first argument of a class method
+ */
+template <typename F>decltype(first_argument_helper(&F::operator())) first_argument_helper(F);
+
+/**
+ * Extract type of first argument of a free callable
+ */
+template <typename T>using first_argument = decltype(first_argument_helper(std::declval<T>()));
+
+/**
+ * @brief Evaluate a function of a \ref tensor with an mfem Vector object
+ */
+template <typename Callable>
+auto evaluateTensorFunctionOnMfemVector(const mfem::Vector& X_mfem, Callable&& f)
+{
+    first_argument<Callable> X;
+    SLIC_ERROR_IF(X_mfem.Size() != size(X), "Size of tensor in callable does not match spatial dimension of MFEM Vector.");
+    for (int i = 0; i < X_mfem.Size(); i++) X[i] = X_mfem[i];
+    return f(X);
+}
+
+} // namespace detail
+
+
 /**
  * @brief convenience function for querying the type stored in a GeneralCoefficient
  */
@@ -39,35 +102,6 @@ inline bool is_scalar_valued(const GeneralCoefficient& coef)
 inline bool is_vector_valued(const GeneralCoefficient& coef)
 {
   return holds_alternative<std::shared_ptr<mfem::VectorCoefficient>>(coef);
-}
-
-template <int dim>
-void setMfemVectorFromTensorOrDouble(mfem::Vector& u_mfem, const tensor<double, dim>& u)
-{
-  for (int i = 0; i < dim; i++) u_mfem(i) = u[i];
-}
-
-inline void setMfemVectorFromTensorOrDouble(mfem::Vector& u_mfem, double u)
-{
-  u_mfem = u;
-}
-
-template<typename Ret, typename Arg, typename... Rest>
-Arg first_argument_helper(Ret(*) (Arg, Rest...));
-template<typename Ret, typename F, typename Arg, typename... Rest>
-Arg first_argument_helper(Ret(F::*) (Arg, Rest...));
-template<typename Ret, typename F, typename Arg, typename... Rest>
-Arg first_argument_helper(Ret(F::*) (Arg, Rest...) const);
-template <typename F>decltype(first_argument_helper(&F::operator())) first_argument_helper(F);
-template <typename T>using first_argument = decltype(first_argument_helper(std::declval<T>()));
-
-template <typename Callable>
-auto evaluateTensorFunctionOnMfemVector(const mfem::Vector& X_mfem, Callable&& f)
-{
-    first_argument<Callable> X;
-    SLIC_ERROR_IF(X_mfem.Size() != size(X), "Size of tensor in callable does not match spatial dimension of MFEM Vector.");
-    for (int i = 0; i < X_mfem.Size(); i++) X[i] = X_mfem[i];
-    return f(X);
 }
 
 /**
@@ -254,8 +288,8 @@ class FiniteElementState : public FiniteElementVector {
   void setFromField(Callable&& field)
   {
     auto evaluate_mfem = [&field](const mfem::Vector& X_mfem, mfem::Vector& u_mfem) {
-      auto u = evaluateTensorFunctionOnMfemVector(X_mfem, field);
-      setMfemVectorFromTensorOrDouble(u_mfem, u);
+      auto u = detail::evaluateTensorFunctionOnMfemVector(X_mfem, field);
+      detail::setMfemVectorFromTensorOrDouble(u_mfem, u);
     };
 
     mfem::VectorFunctionCoefficient coef(space_->GetVDim(), evaluate_mfem);
