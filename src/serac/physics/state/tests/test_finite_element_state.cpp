@@ -20,7 +20,7 @@
 
 namespace serac {
 
-TEST(FiniteElementState, Set)
+TEST(FiniteElementState, SetFromFieldFunction)
 {
     constexpr int p = 1;
     constexpr int spatial_dim = 3;
@@ -35,6 +35,20 @@ TEST(FiniteElementState, Set)
     double c = 2.0;
     auto scalar_field = [c](tensor<double, spatial_dim> X) -> double { return c*X[0]; };
     scalar_state.setFromField(scalar_field);
+
+    // Get the nodal positions for the state in grid function form
+    mfem::ParGridFunction nodal_coords(const_cast<mfem::ParFiniteElementSpace*>(&scalar_state.space()));
+    mesh->GetNodes(nodal_coords);
+
+    for (int node = 0; node < scalar_state.space().GetNDofs(); node++) {
+        tensor<double, spatial_dim> Xn;
+        for (int i = 0; i < spatial_dim; i++) {
+            int dof_index = mfem::Ordering::Map<serac::ordering>(
+                nodal_coords.FESpace()->GetNDofs(), nodal_coords.FESpace()->GetVDim(), node, i);
+            Xn[i] = nodal_coords(dof_index);
+        }
+        EXPECT_DOUBLE_EQ(scalar_field(Xn), scalar_state(node));
+    }
 
     // constexpr int vdim = 3;
     // auto vector_state = serac::StateManager::newState(H1<p, vdim>{}, "vector_field", mesh_tag);
