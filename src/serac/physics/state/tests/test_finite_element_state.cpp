@@ -23,58 +23,25 @@ namespace serac {
 
 
 
-// class FiniteElementTest : public testing::Test {
-//  protected:
+class TestFiniteElementState : public testing::Test {
+ protected:
+    void SetUp() override
+    {
+        int serial_refinement = 0;
+        int parallel_refinement = 0;
 
-//     FiniteElementTest() : spatial_dim_(3) {}
+        std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex.mesh";
+        mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
+        ASSERT_EQ(spatial_dim, mesh->SpaceDimension()) << "Test configured incorrectly. The variable spatial_dim must match the spatial dimension of the mesh.";
+    }
 
-//     void SetUp override {
-//         constexpr int p = 2;
-//         constexpr int spatial_dim = 3;
-//         int serial_refinement = 0;
-//         int parallel_refinement = 0;
+    static constexpr int spatial_dim{3};
+    std::unique_ptr<mfem::ParMesh> mesh;
+};
 
-//         std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex.mesh";
-//         auto mesh_ptr = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-//         mesh_ = std::move(mesh_ptr);
-//     }
-
-//     void foo(const FiniteElementState& state) const
-//     {
-//         for (int node = 0; node < state.space().GetNDofs(); node++) {
-//         tensor<double, spatial_dim> Xn;
-//         for (int i = 0; i < spatial_dim; i++) {
-//             int dof_index = mfem::Ordering::Map<serac::ordering>(
-//                 nodal_coords.FESpace()->GetNDofs(), nodal_coords.FESpace()->GetVDim(), node, i);
-//             Xn[i] = nodal_coords(dof_index);
-//         }
-//         EXPECT_DOUBLE_EQ(scalar_field(Xn), scalar_state(node));
-//     }
-//     }
-
-//     const int spatial_dim_;
-//     std::unique_ptr<mfem::ParMesh> mesh_;
-// };
-
-// TEST_F(FiniteElementTest, SetFromScalarFieldFunction)
-// {
-//     FiniteElementState scalar_state(*mesh, H1<p>{}, "scalar_field");
-//     double c = 2.0;
-//     auto scalar_field = [c](tensor<double, spatial_dim> X) -> double { return c*X[0]; };
-//     scalar_state.setFromField(scalar_field);
-
-// }
-
-TEST(FiniteElementState, SetScalarStateFromFieldFunction)
+TEST_F(TestFiniteElementState, SetScalarStateFromFieldFunction)
 {
     constexpr int p = 1;
-    constexpr int spatial_dim = 3;
-    int serial_refinement = 0;
-    int parallel_refinement = 0;
-
-    // Construct the appropriate dimension mesh and give it to the data store
-    std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex.mesh";
-    auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
 
     FiniteElementState scalar_state(*mesh, H1<p>{}, "scalar_field");
     // check that captures work
@@ -97,17 +64,9 @@ TEST(FiniteElementState, SetScalarStateFromFieldFunction)
     }
 }
 
-TEST(FiniteElementState, SetVectorStateFromFieldFunction)
+TEST_F(TestFiniteElementState, SetVectorStateFromFieldFunction)
 {
     constexpr int p = 2;
-    constexpr int spatial_dim = 3;
-    int serial_refinement = 0;
-    int parallel_refinement = 0;
-
-    // Construct mesh
-    std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex.mesh";
-    auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-    ASSERT_EQ(spatial_dim, mesh->SpaceDimension()) << "Test configured incorrectly. The variable spatial_dim must match the spatial dimension of the mesh.";
 
     // Choose vector dimension for state field that is different from spatial dimension
     // to test the field indexing more thoroughly.
@@ -148,17 +107,9 @@ TEST(FiniteElementState, SetVectorStateFromFieldFunction)
     }
 }
 
-TEST(FiniteElementState, ErrorsIfFieldFunctionDimensionMismatchedToState)
+TEST_F(TestFiniteElementState, ErrorsIfFieldFunctionDimensionMismatchedToState)
 {
     constexpr int p = 2;
-    constexpr int spatial_dim = 3;
-    int serial_refinement = 0;
-    int parallel_refinement = 0;
-
-    // Construct mesh
-    std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex.mesh";
-    auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
-    ASSERT_EQ(spatial_dim, mesh->SpaceDimension()) << "Test configured incorrectly. The variable spatial_dim must match the spatial dimension of the mesh.";
 
     // Choose vector dimension for state field that is different from spatial dimension
     constexpr int vdim = 2;
