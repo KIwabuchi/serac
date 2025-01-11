@@ -49,16 +49,16 @@ TEST_F(TestFiniteElementState, SetScalarStateFromFieldFunction)
     auto scalar_field = [c](tensor<double, spatial_dim> X) -> double { return c*X[0]; };
     scalar_state.setFromField(scalar_field);
 
-    // Get the nodal positions for the state in grid function form
-    mfem::ParGridFunction nodal_coords(const_cast<mfem::ParFiniteElementSpace*>(&scalar_state.space()));
-    mesh->GetNodes(nodal_coords);
+    // Get the nodal positions for the state in a grid function
+    auto [coords_fe_space, coords_fe_coll] = serac::generateParFiniteElementSpace<H1<p, spatial_dim>>(mesh.get());
+    mfem::ParGridFunction nodal_coords_gf(coords_fe_space.get());
+    mesh->GetNodes(nodal_coords_gf);
 
     for (int node = 0; node < scalar_state.space().GetNDofs(); node++) {
         tensor<double, spatial_dim> Xn;
         for (int i = 0; i < spatial_dim; i++) {
-            int dof_index = mfem::Ordering::Map<serac::ordering>(
-                nodal_coords.FESpace()->GetNDofs(), nodal_coords.FESpace()->GetVDim(), node, i);
-            Xn[i] = nodal_coords(dof_index);
+            int dof_index = nodal_coords_gf.FESpace()->DofToVDof(node, i);
+            Xn[i] = nodal_coords_gf(dof_index);
         }
         EXPECT_DOUBLE_EQ(scalar_field(Xn), scalar_state(node));
     }
