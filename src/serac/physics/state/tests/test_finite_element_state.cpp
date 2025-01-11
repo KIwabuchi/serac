@@ -54,11 +54,14 @@ TEST_F(TestFiniteElementState, SetScalarStateFromFieldFunction)
   mesh->GetNodes(nodal_coords_gf);
 
   for (int node = 0; node < scalar_state.space().GetNDofs(); node++) {
+    // Fill a tensor with the coordinates of the node
     tensor<double, spatial_dim> Xn;
     for (int i = 0; i < spatial_dim; i++) {
       int dof_index = nodal_coords_gf.FESpace()->DofToVDof(node, i);
       Xn[i] = nodal_coords_gf(dof_index);
     }
+
+    // check that value set in the state matches the field function
     EXPECT_DOUBLE_EQ(scalar_field(Xn), scalar_state(node));
   }
 }
