@@ -76,7 +76,7 @@ template <typename T>
 using first_argument = decltype(first_argument_helper(std::declval<T>()));
 
 /**
- * @brief Evaluate a function of a \ref tensor with an mfem Vector object
+ * @brief Evaluate a function of a tensor with an mfem Vector object
  */
 template <typename Callable>
 auto evaluateTensorFunctionOnMfemVector(const mfem::Vector& X_mfem, Callable&& f)
