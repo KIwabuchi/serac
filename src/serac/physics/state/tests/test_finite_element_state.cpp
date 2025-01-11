@@ -148,6 +148,29 @@ TEST(FiniteElementState, SetVectorStateFromFieldFunction)
     }
 }
 
+TEST(FiniteElementState, ErrorsIfFieldFunctionDimensionMismatchedToState)
+{
+    constexpr int p = 2;
+    constexpr int spatial_dim = 3;
+    int serial_refinement = 0;
+    int parallel_refinement = 0;
+
+    // Construct mesh
+    std::string filename = SERAC_REPO_DIR "/data/meshes/beam-hex.mesh";
+    auto mesh = mesh::refineAndDistribute(buildMeshFromFile(filename), serial_refinement, parallel_refinement);
+    ASSERT_EQ(spatial_dim, mesh->SpaceDimension()) << "Test configured incorrectly. The variable spatial_dim must match the spatial dimension of the mesh.";
+
+    // Choose vector dimension for state field that is different from spatial dimension
+    constexpr int vdim = 2;
+    FiniteElementState state(*mesh, H1<p, vdim>{}, "vector_field");
+
+    // Set the field with a field function with the wrong vector dimension.
+    // Should return tensor of size vdim!
+    auto vector_field = [](tensor<double, spatial_dim> X) { return X; };
+
+    EXPECT_DEATH(state.setFromField(vector_field), "Cannot copy tensor into an MFEM Vector with incompatible size.");
+}
+
 } // namespace serac
 
 int main(int argc, char* argv[])
