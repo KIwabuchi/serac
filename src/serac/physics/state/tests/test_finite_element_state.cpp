@@ -40,15 +40,17 @@ class TestFiniteElementState : public testing::Test {
 
 TEST_F(TestFiniteElementState, SetScalarStateFromFieldFunction)
 {
+  // make a scalar-valued state
   constexpr int p = 1;
-
   FiniteElementState scalar_state(*mesh, H1<p>{}, "scalar_field");
-  // check that lambda captures work
+
+  // Set state with field function.
+  // Check that lambda captures work with this.
   double c = 2.0;
   auto scalar_field = [c](tensor<double, spatial_dim> X) -> double { return c * X[0]; };
   scalar_state.setFromField(scalar_field);
 
-  // Get the nodal positions for the state in a grid function
+  // Get the nodal positions corresponding to state dofs in a grid function
   auto [coords_fe_space, coords_fe_coll] = serac::generateParFiniteElementSpace<H1<p, spatial_dim>>(mesh.get());
   mfem::ParGridFunction nodal_coords_gf(coords_fe_space.get());
   mesh->GetNodes(nodal_coords_gf);
@@ -61,7 +63,7 @@ TEST_F(TestFiniteElementState, SetScalarStateFromFieldFunction)
       Xn[i] = nodal_coords_gf(dof_index);
     }
 
-    // check that value set in the state matches the field function
+    // check that value set in the state for this node matches the field function
     EXPECT_DOUBLE_EQ(scalar_field(Xn), scalar_state(node));
   }
 }
