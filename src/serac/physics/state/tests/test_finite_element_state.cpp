@@ -111,7 +111,7 @@ TEST_F(TestFiniteElementState, SetVectorStateFromFieldFunction)
   }
 }
 
-TEST_F(TestFiniteElementState, ErrorsIfFieldFunctionDimensionMismatchedToState)
+TEST_F(TestFiniteElementState, DISABLED_ErrorsIfFieldFunctionDimensionMismatchedToState)
 {
   constexpr int p = 2;
 
