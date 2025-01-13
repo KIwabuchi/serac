@@ -123,7 +123,8 @@ TEST_F(TestFiniteElementState, DISABLED_ErrorsIfFieldFunctionDimensionMismatched
   // Should return tensor of size vdim!
   auto vector_field = [](tensor<double, spatial_dim> X) { return X; };
 
-  EXPECT_DEATH(state.setFromFieldFunction(vector_field), "Cannot copy tensor into an MFEM Vector with incompatible size.");
+  EXPECT_DEATH(state.setFromFieldFunction(vector_field),
+               "Cannot copy tensor into an MFEM Vector with incompatible size.");
 }
 
 }  // namespace serac
