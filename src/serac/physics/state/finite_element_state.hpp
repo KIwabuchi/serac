@@ -278,13 +278,20 @@ class FiniteElementState : public FiniteElementVector {
    * field at the nodal points.
    *
    * @tparam dim Number of components of this FiniteElementState
-   * @param field An analytical field function with the signature:
-   *   tensor<double, dim> field(tensor<double, dim> X)
+   * @param field An analytical field function that should have the signature:
+   *   tensor<double, field_dim> field(tensor<double, spatial_dim> X)
+   *
+   *   template params:
+   *     spatial_dim: number of components in the mesh coordinates
+   *     field_dim: number of components of the FiniteElementState field
    *
    *   args:
-   *   X: coordinates of the material point
+   *     X: coordinates of the material point
    *
    *   returns: the value of the field at X.
+   *
+   *   If the field is scalar-valued, then alternatively the signature may be
+   *   double field(tensor<double, spatial_dim> X)
    */
   template <typename Callable>
   void setFromField(Callable&& field)
