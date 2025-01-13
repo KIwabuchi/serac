@@ -294,10 +294,10 @@ class FiniteElementState : public FiniteElementVector {
    *   double field_function(tensor<double, spatial_dim> X)
    */
   template <typename FieldFunction>
-  void setFromFieldFunction(FieldFunction&& field)
+  void setFromFieldFunction(FieldFunction&& field_function)
   {
-    auto evaluate_mfem = [&field](const mfem::Vector& X_mfem, mfem::Vector& u_mfem) {
-      auto u = detail::evaluateTensorFunctionOnMfemVector(X_mfem, field);
+    auto evaluate_mfem = [&field_function](const mfem::Vector& X_mfem, mfem::Vector& u_mfem) {
+      auto u = detail::evaluateTensorFunctionOnMfemVector(X_mfem, field_function);
       detail::setMfemVectorFromTensorOrDouble(u_mfem, u);
     };
 
