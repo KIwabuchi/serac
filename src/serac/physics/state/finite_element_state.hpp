@@ -277,9 +277,9 @@ class FiniteElementState : public FiniteElementVector {
    * In other words, this sets the dofs by direct evaluation of the analytical
    * field at the nodal points.
    *
-   * @tparam dim Number of components of this FiniteElementState
-   * @param field An analytical field function that should have the signature:
-   *   tensor<double, field_dim> field(tensor<double, spatial_dim> X)
+   * @tparam FieldFunction A callable type
+   * @param field_function A function that should have the signature:
+   *   tensor<double, field_dim> field_function(tensor<double, spatial_dim> X)
    *
    *   template params:
    *     spatial_dim: number of components in the mesh coordinates
@@ -290,11 +290,11 @@ class FiniteElementState : public FiniteElementVector {
    *
    *   returns: the value of the field at X.
    *
-   *   If the field is scalar-valued, then alternatively the signature may be
-   *   double field(tensor<double, spatial_dim> X)
+   *   If the field is scalar-valued, then alternatively the signature may be:
+   *   double field_function(tensor<double, spatial_dim> X)
    */
-  template <typename Callable>
-  void setFromField(Callable&& field)
+  template <typename FieldFunction>
+  void setFromFieldFunction(FieldFunction&& field)
   {
     auto evaluate_mfem = [&field](const mfem::Vector& X_mfem, mfem::Vector& u_mfem) {
       auto u = detail::evaluateTensorFunctionOnMfemVector(X_mfem, field);

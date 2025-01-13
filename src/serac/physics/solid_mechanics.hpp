@@ -831,10 +831,10 @@ class SolidMechanics<order, dim, Parameters<parameter_space...>, std::integer_se
    *
    *   returns: u, the displacement at X.
    */
-  template <typename Callable>
-  void setDisplacement(Callable applied_displacement)
+  template <typename AppliedDisplacementFunction>
+  void setDisplacement(AppliedDisplacementFunction applied_displacement)
   {
-    displacement_.setFromField(applied_displacement);
+    displacement_.setFromFieldFunction(applied_displacement);
   }
 
   /// @overload
@@ -852,10 +852,10 @@ class SolidMechanics<order, dim, Parameters<parameter_space...>, std::integer_se
    *
    *   returns: v, the velocity at X.
    */
-  template <typename Callable>
-  void setVelocity(Callable applied_velocity)
+  template <typename AppliedVelocityFunction>
+  void setVelocity(AppliedVelocityFunction applied_velocity)
   {
-    velocity_.setFromField(applied_velocity);
+    velocity_.setFromFieldFunction(applied_velocity);
   }
 
   /// @overload

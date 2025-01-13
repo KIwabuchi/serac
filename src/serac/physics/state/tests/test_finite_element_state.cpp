@@ -48,7 +48,7 @@ TEST_F(TestFiniteElementState, SetScalarStateFromFieldFunction)
   // Check that lambda captures work with this.
   double c = 2.0;
   auto scalar_field = [c](tensor<double, spatial_dim> X) -> double { return c * X[0]; };
-  scalar_state.setFromField(scalar_field);
+  scalar_state.setFromFieldFunction(scalar_field);
 
   // Get the nodal positions corresponding to state dofs in a grid function
   auto [coords_fe_space, coords_fe_coll] = serac::generateParFiniteElementSpace<H1<p, spatial_dim>>(mesh.get());
@@ -81,7 +81,7 @@ TEST_F(TestFiniteElementState, SetVectorStateFromFieldFunction)
   auto vector_field = [](tensor<double, spatial_dim> X) {
     return tensor<double, vdim>{norm(X), 1.0 / (1.0 + norm(X))};
   };
-  state.setFromField(vector_field);
+  state.setFromFieldFunction(vector_field);
 
   // Get the nodal positions for the state in a grid function
   auto [coords_fe_space, coords_fe_coll] = serac::generateParFiniteElementSpace<H1<p, spatial_dim>>(mesh.get());
@@ -123,7 +123,7 @@ TEST_F(TestFiniteElementState, DISABLED_ErrorsIfFieldFunctionDimensionMismatched
   // Should return tensor of size vdim!
   auto vector_field = [](tensor<double, spatial_dim> X) { return X; };
 
-  EXPECT_DEATH(state.setFromField(vector_field), "Cannot copy tensor into an MFEM Vector with incompatible size.");
+  EXPECT_DEATH(state.setFromFieldFunction(vector_field), "Cannot copy tensor into an MFEM Vector with incompatible size.");
 }
 
 }  // namespace serac
