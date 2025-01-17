@@ -346,7 +346,7 @@ Next, you will need to install wheel, sphinx, and `ATS <https://github.com/LLNL/
    git clone git@github.com:LLNL/ATS.git --branch 7.0.105
    pip install ATS/
 
-Keep track of the sphinx version while installing, since you'll need it for the next step.
+Keep track of the Sphinx version while installing, since you'll need it for the next step.
 
 Adding Developer Tools to Spack Environment File
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
