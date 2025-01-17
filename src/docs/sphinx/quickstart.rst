@@ -335,7 +335,7 @@ Installing Project Developer Tools with Pip
 This step is only required if you wish to use Serac's developer tools. In order to use Python devtools, you will need to create a Python venv. This is much more reliable than having Spack install 20+ Python packages.
 In this example, we are using the builtin Python in ``/usr/bin``, but it is possible to use a version installed from Homebrew or elsewhere.
 
-Next, you will need to install wheel, sphinx, and `ATS <https://github.com/LLNL/ATS/tree/7.0.105>`_:
+Next, you will need to install wheel, Sphinx, and `ATS <https://github.com/LLNL/ATS/tree/7.0.105>`_:
 
 .. code-block:: bash
 
