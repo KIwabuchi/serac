@@ -33,9 +33,9 @@ Next, request admin access to the machine by visiting either ServiceNow or the `
 Once you have a MyPass and you have admin rights, try to log in again. There should be two passwords required to log in. The first one
 is for your MyPass (assuming it's plugged into to the machine) and the other is for the account login.
 
-5. **Download and setup Brew**
+5. **Download and setup Homebrew**
 
-Visit `Brew's website <https://brew.sh/>`_ to install and setup Brew. This is required to install some of Serac's third-party libraries
+Visit `Homebrew's website <https://brew.sh/>`_ to install and setup Homebrew. This is required to install some of Serac's third-party libraries
 (TPLs).
 
 6. **Add New SSH Key to GitHub**
