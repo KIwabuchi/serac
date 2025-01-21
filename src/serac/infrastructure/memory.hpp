@@ -20,6 +20,9 @@ namespace serac {
 
 namespace detail {
 
+/**
+ * @brief Sets the axom memory space based on whether or not Umpire is being used
+ */
 #ifdef SERAC_USE_UMPIRE
 constexpr axom::MemorySpace host_memory_space = axom::MemorySpace::Host;
 #else
