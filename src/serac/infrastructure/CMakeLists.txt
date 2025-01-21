@@ -21,6 +21,7 @@ set(infrastructure_headers
     initialize.hpp
     input.hpp
     logger.hpp
+    memory.hpp
     mpi_fstream.hpp
     output.hpp
     profiling.hpp
